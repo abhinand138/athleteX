@@ -1,0 +1,45 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Cinzel", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-peach: #EE9B74;
+  --color-brand-dark: #080809;
+  --color-brand-navy: #0F172A;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    font-family: var(--font-sans);
+    background-color: var(--color-brand-dark);
+    color: #F3F4F6;
+  }
+}
+
+/* Custom Utilities for AthleteX Redesign */
+.grid-bg {
+  background-image: 
+    linear-gradient(to right, rgba(238, 155, 116, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(238, 155, 116, 0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.radial-glow {
+  background: radial-gradient(circle at center, rgba(238, 155, 116, 0.08) 0%, transparent 65%);
+}
+
+.radial-glow-strong {
+  background: radial-gradient(circle at center, rgba(238, 155, 116, 0.12) 0%, transparent 55%);
+}
+
+.glass-card {
+  background: rgba(12, 12, 14, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(238, 155, 116, 0.3);
+  box-shadow: 0 0 25px rgba(238, 155, 116, 0.08);
+}

@@ -1,33 +1,34 @@
 export default function UpcomingTraining() {
-  return (
-    <div className="bg-[#111317] rounded-2xl border border-white/5 p-6">
+  const sessions = [
+    { title: "Sprint Practice", time: "Today • 6:00 PM", category: "Speed" },
+    { title: "Strength Training", time: "Tomorrow • 8:00 AM", category: "Power" }
+  ];
 
-      <h2 className="text-white text-xl font-bold mb-5">
+  return (
+    <div className="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden group">
+      
+      <div className="absolute top-0 right-0 w-32 h-32 bg-brand-peach/5 blur-[40px] rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none group-hover:bg-brand-peach/10 transition-colors duration-700" />
+
+      <h2 className="text-sm font-bold text-gray-400 tracking-widest uppercase mb-6 relative z-10">
         Upcoming Training
       </h2>
 
-      <div className="space-y-4">
-
-        <div>
-          <p className="text-white">
-            Sprint Practice
-          </p>
-
-          <span className="text-gray-400">
-            Today • 6:00 PM
-          </span>
-        </div>
-
-        <div>
-          <p className="text-white">
-            Strength Training
-          </p>
-
-          <span className="text-gray-400">
-            Tomorrow • 8:00 AM
-          </span>
-        </div>
-
+      <div className="space-y-4 relative z-10">
+        {sessions.map((session, index) => (
+          <div key={index} className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5 hover:border-brand-peach/30 transition-all cursor-pointer group/item">
+            <div>
+              <p className="text-white font-semibold group-hover/item:text-brand-peach transition-colors">
+                {session.title}
+              </p>
+              <span className="text-xs text-gray-500 font-mono mt-1 block">
+                {session.time}
+              </span>
+            </div>
+            <span className="text-[10px] font-bold tracking-widest uppercase bg-brand-peach/10 text-brand-peach px-2 py-1 rounded border border-brand-peach/20">
+              {session.category}
+            </span>
+          </div>
+        ))}
       </div>
 
     </div>

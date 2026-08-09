@@ -1,5 +1,5 @@
 package com.athletex.backend.service;
-
+import com.athletex.backend.dto.LoginResponse;
 import com.athletex.backend.dto.LoginRequest;
 import com.athletex.backend.dto.RegisterRequest;
 import com.athletex.backend.model.User;
@@ -32,19 +32,26 @@ public class AuthService {
         return "Registration Successful";
     }
 
-    public String login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request) {
 
     User user = userRepository.findByEmail(request.getEmail())
             .orElse(null);
 
     if (user == null) {
-        return "User not found";
+        throw new RuntimeException("User not found");
     }
 
     if (!user.getPassword().equals(request.getPassword())) {
-        return "Invalid password";
+        throw new RuntimeException("Invalid password");
     }
 
-    return "Login Successful";
+    return new LoginResponse(
+            "Login Successful",
+            user.getId(),
+            user.getFullName(),
+            user.getEmail(),
+            user.getPhone(),
+            user.getRole()
+    );
 }
 }

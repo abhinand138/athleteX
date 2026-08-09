@@ -28,22 +28,37 @@ export default function Login() {
     setMessage({ type: "", text: "" });
 
     try {
-      const response = await api.post("/auth/login", loginData);
-      
-      if (response.data === "Login Successful") {
-        setMessage({ type: "success", text: "ACCESS GRANTED. INITIALIZING DASHBOARD..." });
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1500);
-      } else {
-        setMessage({ type: "error", text: response.data || "INVALID IDENTITY PARAMETERS" });
-      }
-    } catch (error) {
-      setMessage({ type: "error", text: "AUTHENTICATION TIMEOUT // INVALID SIGNATURE" });
-      console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
+  const response = await api.post("/auth/login", loginData);
+
+  console.log(response.data);
+
+  if (response.data.message === "Login Successful") {
+
+    localStorage.setItem("user", JSON.stringify(response.data));
+
+    setMessage({
+      type: "success",
+      text: response.data.message,
+    });
+
+    setTimeout(() => {
+      navigate("/dashboard");
+    }, 1500);
+
+  }
+
+} catch (error) {
+
+  setMessage({
+    type: "error",
+    text: error.response?.data?.message || "AUTHENTICATION FAILED",
+  });
+
+  console.error(error);
+
+} finally {
+  setIsLoading(false);
+}
   };
 
   return (

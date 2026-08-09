@@ -1,5 +1,6 @@
 package com.athletex.backend.controller;
 
+import com.athletex.backend.dto.LoginResponse;
 import com.athletex.backend.dto.LoginRequest;
 import com.athletex.backend.dto.RegisterRequest;
 import com.athletex.backend.service.AuthService;
@@ -20,8 +21,8 @@ public class AuthController {
         return authService.register(request);
     }
 
-    @PostMapping("/login")
-    public String login(@Valid @RequestBody LoginRequest request) {
+   @PostMapping("/login")
+    public LoginResponse login(@Valid @RequestBody LoginRequest request) {
     return authService.login(request);
 }
 }

@@ -7,64 +7,90 @@ import {
   FaSignOutAlt,
 } from "react-icons/fa";
 
+import { NavLink, useNavigate } from "react-router-dom";
+
 export default function Sidebar() {
+
+  const navigate = useNavigate();
 
   const menu = [
     {
       icon: <FaHome />,
       name: "Dashboard",
+      path: "/dashboard"
     },
     {
       icon: <FaUser />,
       name: "Profile",
+      path: "/profile"
     },
     {
       icon: <FaChartBar />,
       name: "Performance",
+      path: "/performance"
     },
     {
       icon: <FaTrophy />,
       name: "Achievements",
+      path: "/achievements"
     },
     {
       icon: <FaCog />,
       name: "Settings",
+      path: "/settings"
     },
   ];
 
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
   return (
 
-    <aside className="w-72 bg-[#0F1115] border-r border-white/5 flex flex-col">
+    <aside className="w-72 bg-brand-dark/95 backdrop-blur-xl border-r border-white/5 flex flex-col shadow-2xl relative z-20">
 
-      <div className="h-20 flex items-center justify-center">
-
-        <h1 className="text-3xl font-bold text-brand-peach">
+      <div className="h-28 flex items-center justify-center relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-peach/5 to-transparent pointer-events-none" />
+        <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-brand-peach to-orange-400 tracking-wider uppercase drop-shadow-sm">
           AthleteX
         </h1>
-
       </div>
 
-      <nav className="flex-1 px-5">
+      <nav className="flex-1 px-5 mt-4 space-y-2">
 
         {menu.map((item) => (
 
-          <button
+          <NavLink
             key={item.name}
-            className="w-full flex items-center gap-4 px-5 py-4 mb-2 rounded-xl hover:bg-brand-peach hover:text-black transition-all"
+            to={item.path}
+            className={({ isActive }) => `w-full flex items-center gap-4 px-5 py-3.5 rounded-xl font-bold tracking-wide transition-all group overflow-hidden relative ${isActive ? 'text-black bg-brand-peach shadow-[0_0_20px_rgba(238,155,116,0.3)]' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
           >
-            {item.icon}
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <div className="absolute inset-0 bg-white/20 scale-x-0 group-hover:scale-x-100 transform origin-left transition-transform duration-300 ease-out" />
+                )}
+                
+                <span className={`text-xl relative z-10 ${!isActive && 'group-hover:text-brand-peach transition-colors'}`}>
+                  {item.icon}
+                </span>
 
-            {item.name}
-
-          </button>
+                <span className="relative z-10">{item.name}</span>
+              </>
+            )}
+          </NavLink>
 
         ))}
 
       </nav>
 
-      <button className="m-5 flex items-center gap-4 px-5 py-4 rounded-xl bg-red-500 hover:bg-red-600">
+      <button 
+        onClick={handleLogout}
+        className="m-6 flex items-center justify-center gap-3 px-5 py-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white font-bold tracking-wide transition-all shadow-inner hover:shadow-[0_0_20px_rgba(239,68,68,0.4)] group"
+      >
 
-        <FaSignOutAlt />
+        <FaSignOutAlt className="text-lg group-hover:-translate-x-1 transition-transform" />
 
         Logout
 

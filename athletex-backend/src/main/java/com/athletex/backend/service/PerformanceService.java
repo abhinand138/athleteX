@@ -1,0 +1,145 @@
+package com.athletex.backend.service;
+
+import com.athletex.backend.model.Performance;
+import com.athletex.backend.repository.PerformanceRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+
+import com.athletex.backend.model.PerformanceHistory;
+import com.athletex.backend.repository.PerformanceHistoryRepository;
+
+@Service
+@RequiredArgsConstructor
+public class PerformanceService {
+
+    private final PerformanceRepository performanceRepository;
+    private final PerformanceHistoryRepository performanceHistoryRepository;
+    private final ActivityService activityService;
+
+    /*
+     * GET PERFORMANCE
+     */
+    public Performance getPerformance(String userId) {
+
+        return performanceRepository.findByUserId(userId)
+                .orElseGet(() -> {
+
+                    Performance performance = Performance.builder()
+                            .userId(userId)
+                            .speed(0.0)
+                            .strength(0.0)
+                            .endurance(0.0)
+                            .agility(0.0)
+                            .overallScore(0.0)
+                            .lastUpdated(LocalDateTime.now())
+                            .build();
+
+                    return performanceRepository.save(performance);
+                });
+    }
+
+
+    /*
+     * UPDATE PERFORMANCE
+     */
+    public Performance updatePerformance(
+            String userId,
+            Double speed,
+            Double strength,
+            Double endurance,
+            Double agility
+    ) {
+
+        Performance performance = performanceRepository
+                .findByUserId(userId)
+                .orElseGet(() -> Performance.builder()
+                        .userId(userId)
+                        .build());
+
+
+        // Validate values
+        speed = validateScore(speed);
+        strength = validateScore(strength);
+        endurance = validateScore(endurance);
+        agility = validateScore(agility);
+
+
+        // Update individual metrics
+        performance.setSpeed(speed);
+        performance.setStrength(strength);
+        performance.setEndurance(endurance);
+        performance.setAgility(agility);
+
+
+        // Calculate overall score
+        double overallScore =
+                (speed + strength + endurance + agility) / 4.0;
+
+        performance.setOverallScore(
+                Math.round(overallScore * 100.0) / 100.0
+        );
+
+
+        // Update timestamp
+        performance.setLastUpdated(
+                LocalDateTime.now()
+        );
+
+
+        // Save to MongoDB
+        Performance savedPerformance = performanceRepository.save(performance);
+
+        // Save history snapshot
+        PerformanceHistory history = PerformanceHistory.builder()
+                .userId(userId)
+                .speed(speed)
+                .strength(strength)
+                .endurance(endurance)
+                .agility(agility)
+                .overallScore(overallScore)
+                .recordedAt(LocalDateTime.now())
+                .build();
+        performanceHistoryRepository.save(history);
+
+        // Record activity
+        activityService.createActivity(
+                userId,
+                "performance_update",
+                "Performance Updated",
+                "You updated your performance metrics.",
+                "🏃"
+        );
+
+        return savedPerformance;
+    }
+
+
+    /*
+     * SCORE VALIDATION
+     */
+    private Double validateScore(Double score) {
+
+        if (score == null) {
+            return 0.0;
+        }
+
+        if (score < 0) {
+            return 0.0;
+        }
+
+        if (score > 100) {
+            return 100.0;
+        }
+
+        return score;
+    }
+
+    /*
+     * GET PERFORMANCE HISTORY
+     */
+    public java.util.List<PerformanceHistory> getPerformanceHistory(String userId) {
+        return performanceHistoryRepository.findByUserIdOrderByRecordedAtAsc(userId);
+    }
+}

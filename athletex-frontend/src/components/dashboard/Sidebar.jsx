@@ -13,33 +13,49 @@ export default function Sidebar() {
 
   const navigate = useNavigate();
 
-  const menu = [
-    {
-      icon: <FaHome />,
-      name: "Dashboard",
-      path: "/dashboard"
-    },
-    {
-      icon: <FaUser />,
-      name: "Profile",
-      path: "/profile"
-    },
-    {
-      icon: <FaChartBar />,
-      name: "Performance",
-      path: "/performance"
-    },
-    {
-      icon: <FaTrophy />,
-      name: "Achievements",
-      path: "/achievements"
-    },
-    {
-      icon: <FaCog />,
-      name: "Settings",
-      path: "/settings"
-    },
-  ];
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isCoach = user.role === "COACH";
+
+  const menu = isCoach 
+    ? [
+        {
+          icon: <FaHome />,
+          name: "Dashboard",
+          path: "/coach/dashboard"
+        },
+        {
+          icon: <FaCog />,
+          name: "Settings",
+          path: "/settings"
+        }
+      ]
+    : [
+        {
+          icon: <FaHome />,
+          name: "Dashboard",
+          path: "/dashboard"
+        },
+        {
+          icon: <FaUser />,
+          name: "Profile",
+          path: "/profile"
+        },
+        {
+          icon: <FaChartBar />,
+          name: "Performance",
+          path: "/performance"
+        },
+        {
+          icon: <FaTrophy />,
+          name: "Achievements",
+          path: "/achievements"
+        },
+        {
+          icon: <FaCog />,
+          name: "Settings",
+          path: "/settings"
+        },
+      ];
 
   const handleLogout = () => {
     localStorage.removeItem("user");

@@ -5,6 +5,7 @@ import com.athletex.backend.dto.UpdateProfileRequest;
 import com.athletex.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -25,5 +26,13 @@ public class UserController {
             @RequestBody UpdateProfileRequest request) {
 
         return userService.updateProfile(id, request);
+    }
+
+    @PutMapping("/password/{id}")
+    public String updatePassword(
+            @PathVariable String id,
+            @RequestBody Map<String, String> request) {
+
+        return userService.updatePassword(id, request);
     }
 }

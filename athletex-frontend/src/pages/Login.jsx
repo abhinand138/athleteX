@@ -103,7 +103,11 @@ export default function Login() {
     });
 
     setTimeout(() => {
-      navigate("/dashboard");
+      if (response.data.role === "COACH") {
+        navigate("/coach/dashboard");
+      } else {
+        navigate("/dashboard");
+      }
     }, 1500);
 
   }

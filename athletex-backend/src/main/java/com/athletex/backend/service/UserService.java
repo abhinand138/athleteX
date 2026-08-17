@@ -6,12 +6,16 @@ import com.athletex.backend.model.User;
 import com.athletex.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class UserService {
 
     private final UserRepository userRepository;
+    private final ActivityService activityService;
+    private final PasswordEncoder passwordEncoder;
 
     // Get Profile
     public ProfileResponse getProfile(String id) {
@@ -61,6 +65,47 @@ public class UserService {
 
         userRepository.save(user);
 
+        activityService.createActivity(
+                user.getId(),
+                "profile_update",
+                "Profile Updated",
+                "You updated your athlete profile.",
+                "👤"
+        );
+
         return "Profile Updated Successfully";
+    }
+
+    // Update Password
+    public String updatePassword(String id, Map<String, String> request) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String currentPassword = request.get("currentPassword");
+        String newPassword = request.get("newPassword");
+
+        boolean passwordMatches = false;
+        if (user.getPassword().startsWith("$2a$") || user.getPassword().startsWith("$2b$") || user.getPassword().startsWith("$2y$")) {
+            passwordMatches = passwordEncoder.matches(currentPassword, user.getPassword());
+        } else {
+            passwordMatches = user.getPassword().equals(currentPassword);
+        }
+
+        if (!passwordMatches) {
+            throw new RuntimeException("Invalid current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        activityService.createActivity(
+                user.getId(),
+                "password_update",
+                "Security Settings Updated",
+                "You changed your password.",
+                "🛡️"
+        );
+
+        return "Password Updated Successfully";
     }
 }

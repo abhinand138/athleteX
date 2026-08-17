@@ -127,7 +127,7 @@ export default function Dashboard() {
           <div className="absolute -left-10 -top-10 w-64 h-64 bg-brand-peach/10 blur-[80px] rounded-full pointer-events-none" />
 
           <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
-            Welcome Back, {dashboard.fullName} 👋
+            Welcome Back, {dashboard.fullName || "Athlete"} 👋
           </h1>
 
           <p className="text-gray-400 mt-3 text-lg font-medium">
@@ -144,14 +144,14 @@ export default function Dashboard() {
 
           <StatCard
             title="Performance"
-            value={`${dashboard.performance}%`}
+            value={`${dashboard.performance || 0}%`}
             icon={<FaRunning />}
             color="text-blue-500"
           />
 
           <StatCard
             title="Achievements"
-            value={dashboard.achievements}
+            value={dashboard.achievements || 0}
             icon={<FaTrophy />}
             color="text-yellow-400"
           />
@@ -179,7 +179,7 @@ export default function Dashboard() {
         <div className="grid lg:grid-cols-2 gap-6">
 
          <RecentActivity
-        activities={dashboard.recentActivities}
+        activities={dashboard.recentActivities || []}
         />
 
           {/* Dynamic Athlete Profile */}
@@ -188,7 +188,7 @@ export default function Dashboard() {
           />
 
          <UpcomingTraining
-  sessions={dashboard.upcomingTraining}
+  sessions={dashboard.upcomingTraining || []}
 />
 
           <QuickActions />

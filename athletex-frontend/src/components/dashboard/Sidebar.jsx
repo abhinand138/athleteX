@@ -5,6 +5,8 @@ import {
   FaTrophy,
   FaCog,
   FaSignOutAlt,
+  FaUserFriends,
+  FaDumbbell,
 } from "react-icons/fa";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -22,6 +24,26 @@ export default function Sidebar() {
           icon: <FaHome />,
           name: "Dashboard",
           path: "/coach/dashboard"
+        },
+        {
+          icon: <FaUserFriends />,
+          name: "Athletes",
+          path: "/coach/athletes"
+        },
+        {
+          icon: <FaDumbbell />,
+          name: "Training",
+          path: "/coach/training"
+        },
+        {
+          icon: <FaTrophy />,
+          name: "Achievements",
+          path: "/coach/achievements"
+        },
+        {
+          icon: <FaChartBar />,
+          name: "Analytics",
+          path: "/coach/analytics"
         },
         {
           icon: <FaCog />,

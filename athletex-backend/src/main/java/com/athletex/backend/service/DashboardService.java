@@ -4,20 +4,22 @@ import com.athletex.backend.dto.ActivityItem;
 import com.athletex.backend.dto.DashboardResponse;
 import com.athletex.backend.dto.TrainingItem;
 import com.athletex.backend.model.Performance;
+import com.athletex.backend.model.Training;
+import com.athletex.backend.model.TrainingStatus;
 import com.athletex.backend.model.User;
 import com.athletex.backend.repository.AchievementRepository;
 import com.athletex.backend.repository.PerformanceRepository;
+import com.athletex.backend.repository.TrainingRepository;
 import com.athletex.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.time.format.DateTimeFormatter;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-import com.athletex.backend.model.Activity;
 import com.athletex.backend.repository.ActivityRepository;
 
 @Service
@@ -28,133 +30,82 @@ public class DashboardService {
     private final PerformanceRepository performanceRepository;
     private final AchievementRepository achievementRepository;
     private final ActivityRepository activityRepository;
+    private final TrainingRepository trainingRepository;
 
     public DashboardResponse getDashboard(String userId) {
 
         // =============================
         // FIND USER
         // =============================
-
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-
 
         // =============================
         // FIND PERFORMANCE
         // =============================
-
         Performance performance = performanceRepository
                 .findByUserId(userId)
                 .orElse(null);
 
-
-        // =============================
-        // PERFORMANCE SCORE
-        // =============================
-
         Integer performanceScore = 0;
-
-        if (performance != null &&
-                performance.getOverallScore() != null) {
-
-            performanceScore = (int) Math.round(
-                    performance.getOverallScore()
-            );
+        if (performance != null && performance.getOverallScore() != null) {
+            performanceScore = (int) Math.round(performance.getOverallScore());
         }
-
 
         // =============================
         // ACHIEVEMENT COUNT
         // =============================
+        long achievementCount = achievementRepository.countByUserId(userId);
 
-        long achievementCount =
-                achievementRepository.countByUserId(userId);
+        // =============================
+        // REAL TRAINING SESSIONS COUNT & UPCOMING LIST
+        // =============================
+        long trainingSessionCount = trainingRepository.countByAthleteId(userId);
 
+        List<Training> scheduledTrainings = trainingRepository.findByAthleteIdAndStatusOrderByDateAscTimeAsc(
+                userId, TrainingStatus.SCHEDULED
+        );
+
+        List<TrainingItem> upcomingTrainingItems;
+        if (scheduledTrainings != null && !scheduledTrainings.isEmpty()) {
+            upcomingTrainingItems = scheduledTrainings.stream()
+                    .map(t -> TrainingItem.builder()
+                            .id(t.getId())
+                            .title(t.getTitle())
+                            .time(t.getTime() != null ? t.getTime() : "")
+                            .category(t.getCategory() != null ? t.getCategory() : "General")
+                            .date(t.getDate())
+                            .status(t.getStatus())
+                            .build())
+                    .collect(Collectors.toList());
+        } else {
+            upcomingTrainingItems = Collections.emptyList();
+        }
 
         // =============================
         // BUILD DASHBOARD RESPONSE
         // =============================
-
         return DashboardResponse.builder()
-
-                // =============================
-                // USER INFORMATION
-                // =============================
-
                 .id(user.getId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .role(user.getRole())
-
-
-                // =============================
-                // SPORTS INFORMATION
-                // =============================
-
                 .sport(user.getSport())
                 .position(user.getPosition())
-
-
-                // =============================
-                // PERSONAL INFORMATION
-                // =============================
-
                 .age(user.getAge())
                 .gender(user.getGender())
-
-
-                // =============================
-                // PHYSICAL INFORMATION
-                // =============================
-
                 .height(user.getHeight())
                 .weight(user.getWeight())
-
-
-                // =============================
-                // LOCATION
-                // =============================
-
                 .city(user.getCity())
                 .state(user.getState())
                 .country(user.getCountry())
-
-
-                // =============================
-                // PROFILE
-                // =============================
-
                 .bio(user.getBio())
                 .profileImage(user.getProfileImage())
-
-
-                // =============================
-                // REAL PERFORMANCE
-                // =============================
-
                 .performance(performanceScore)
-
-
-                // =============================
-                // REAL ACHIEVEMENTS
-                // =============================
-
                 .achievements((int) achievementCount)
-
-
-                // =============================
-                // TEMPORARY STATISTICS
-                // =============================
-
-                .scoutsViewed(28)
-                .trainingSessions(53)
-
-
-                // =============================
-                // RECENT ACTIVITY
-                // =============================
-
+                .scoutsViewed(0)
+                .trainingSessions((int) trainingSessionCount)
                 .recentActivities(
                         activityRepository.findByUserIdOrderByTimestampDesc(userId).stream()
                                 .limit(5)
@@ -165,28 +116,7 @@ public class DashboardService {
                                 ))
                                 .collect(Collectors.toList())
                 )
-
-
-                // =============================
-                // UPCOMING TRAINING
-                // =============================
-
-                .upcomingTraining(List.of(
-
-                        new TrainingItem(
-                                "Sprint Practice",
-                                "Today • 6:00 PM",
-                                "Speed"
-                        ),
-
-                        new TrainingItem(
-                                "Strength Training",
-                                "Tomorrow • 8:00 AM",
-                                "Power"
-                        )
-                ))
-
-
+                .upcomingTraining(upcomingTrainingItems)
                 .build();
     }
 

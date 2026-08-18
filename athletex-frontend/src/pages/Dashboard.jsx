@@ -21,46 +21,46 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchDashboard = async () => {
-      try {
-        const storedUser = localStorage.getItem("user");
+  const fetchDashboard = async () => {
+    try {
+      const storedUser = localStorage.getItem("user");
 
-        if (!storedUser) {
-          setError("User session not found. Please login again.");
-          setLoading(false);
-          return;
-        }
-
-        const user = JSON.parse(storedUser);
-
-        if (!user?.id) {
-          setError("User ID not found. Please login again.");
-          setLoading(false);
-          return;
-        }
-
-        const response = await api.get(
-          `/dashboard/${user.id}`
-        );
-
-        console.log("Dashboard data:", response.data);
-
-        setDashboard(response.data);
-
-      } catch (error) {
-        console.error("Dashboard API Error:", error);
-
-        setError(
-          error.response?.data?.message ||
-          "Unable to load dashboard."
-        );
-
-      } finally {
+      if (!storedUser) {
+        setError("User session not found. Please login again.");
         setLoading(false);
+        return;
       }
-    };
 
+      const user = JSON.parse(storedUser);
+
+      if (!user?.id) {
+        setError("User ID not found. Please login again.");
+        setLoading(false);
+        return;
+      }
+
+      const response = await api.get(
+        `/dashboard/${user.id}`
+      );
+
+      console.log("Dashboard data:", response.data);
+
+      setDashboard(response.data);
+
+    } catch (error) {
+      console.error("Dashboard API Error:", error);
+
+      setError(
+        error.response?.data?.message ||
+        "Unable to load dashboard."
+      );
+
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchDashboard();
   }, []);
 
@@ -187,9 +187,10 @@ export default function Dashboard() {
             user={dashboard}
           />
 
-         <UpcomingTraining
-  sessions={dashboard.upcomingTraining || []}
-/>
+          <UpcomingTraining
+            sessions={dashboard.upcomingTraining || []}
+            onComplete={fetchDashboard}
+          />
 
           <QuickActions />
 

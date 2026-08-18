@@ -52,10 +52,10 @@ export default function Achievements() {
       }
 
       const response = await api.get(
-        `/achievements/${user.id}`
+        `/achievements/athlete/${user.id}`
       );
 
-      setAchievements(response.data);
+      setAchievements(response.data || []);
 
     } catch (error) {
       console.error("Achievements API Error:", error);

@@ -7,23 +7,24 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class TrainingItem {
+public class TrainingResponse {
 
     private String id;
+    private String coachId;
+    private String coachName;
+    private String athleteId;
+    private String athleteName;
     private String title;
-    private String time;
+    private String description;
     private String category;
     private LocalDate date;
+    private String time;
     private TrainingStatus status;
-
-    public TrainingItem(String title, String time, String category) {
-        this.title = title;
-        this.time = time;
-        this.category = category;
-    }
+    private LocalDateTime createdAt;
 }

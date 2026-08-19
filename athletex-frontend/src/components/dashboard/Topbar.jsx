@@ -2,7 +2,7 @@ import { FaBell } from "react-icons/fa";
 
 export default function Topbar() {
   return (
-    <header className="h-24 bg-brand-dark/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-10 sticky top-0 z-10 shadow-sm">
+    <header className="h-24 bg-brand-dark/80 backdrop-blur-md border-b border-white/5 flex items-center justify-between px-10 sticky top-0 z-10 shadow-sm print:hidden">
 
       <div>
 

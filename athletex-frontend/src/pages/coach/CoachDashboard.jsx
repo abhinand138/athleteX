@@ -96,22 +96,22 @@ export default function CoachDashboard() {
         </div>
 
         {/* Quick Access Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* My Athletes */}
-          <div className="glass-card rounded-3xl p-8 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between group">
+          <div className="glass-card rounded-3xl p-7 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between group">
             <div className="absolute right-0 top-0 w-64 h-64 bg-brand-peach/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-brand-peach/10 transition-colors" />
-            <div className="flex items-center gap-5 relative z-10 mb-6">
-              <div className="p-4 rounded-2xl bg-brand-peach/10 border border-brand-peach/20 text-brand-peach text-2xl">
+            <div className="flex items-center gap-4 relative z-10 mb-6">
+              <div className="p-3.5 rounded-2xl bg-brand-peach/10 border border-brand-peach/20 text-brand-peach text-2xl shrink-0">
                 <FaUserFriends />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">My Athletes</h2>
-                <p className="text-gray-400 text-xs mt-1">View and manage assigned athlete roster</p>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-white truncate">My Athletes</h2>
+                <p className="text-gray-400 text-xs mt-0.5">View & manage roster</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/coach/athletes")}
-              className="flex items-center justify-center gap-3 px-6 py-3 bg-brand-peach text-black font-bold rounded-xl hover:bg-brand-peach/90 hover:shadow-[0_0_20px_rgba(255,123,84,0.3)] transition-all cursor-pointer relative z-10 group"
+              className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-brand-peach text-black font-bold text-xs rounded-xl hover:bg-brand-peach/90 transition-all cursor-pointer relative z-10 group"
             >
               View Athletes
               <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
@@ -119,22 +119,43 @@ export default function CoachDashboard() {
           </div>
 
           {/* Performance Analytics Preview */}
-          <div className="glass-card rounded-3xl p-8 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between group">
+          <div className="glass-card rounded-3xl p-7 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between group">
             <div className="absolute right-0 top-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-blue-500/10 transition-colors" />
-            <div className="flex items-center gap-5 relative z-10 mb-6">
-              <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-2xl">
+            <div className="flex items-center gap-4 relative z-10 mb-6">
+              <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-2xl shrink-0">
                 <FaChartLine />
               </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Performance Analytics</h2>
-                <p className="text-gray-400 text-xs mt-1">Deep insights, progression trends & athlete comparison</p>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-white truncate">Analytics</h2>
+                <p className="text-gray-400 text-xs mt-0.5">Progression & insights</p>
               </div>
             </div>
             <button
               onClick={() => navigate("/coach/analytics")}
-              className="flex items-center justify-center gap-3 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-bold rounded-xl hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] transition-all cursor-pointer relative z-10 group"
+              className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white font-bold text-xs rounded-xl transition-all cursor-pointer relative z-10 group"
             >
               View Analytics
+              <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+
+          {/* Performance Reports Preview */}
+          <div className="glass-card rounded-3xl p-7 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between group">
+            <div className="absolute right-0 top-0 w-64 h-64 bg-emerald-500/5 blur-[80px] rounded-full pointer-events-none group-hover:bg-emerald-500/10 transition-colors" />
+            <div className="flex items-center gap-4 relative z-10 mb-6">
+              <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-2xl shrink-0">
+                <FaCalendarAlt />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-lg font-bold text-white truncate">Reports</h2>
+                <p className="text-gray-400 text-xs mt-0.5">Export PDF & CSV</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate("/coach/reports")}
+              className="flex items-center justify-center gap-2.5 px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs rounded-xl transition-all cursor-pointer relative z-10 group"
+            >
+              Generate Reports
               <FaArrowRight className="group-hover:translate-x-1 transition-transform" />
             </button>
           </div>

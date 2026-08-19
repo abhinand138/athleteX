@@ -7,6 +7,7 @@ import {
   FaSignOutAlt,
   FaUserFriends,
   FaDumbbell,
+  FaFileAlt,
 } from "react-icons/fa";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -44,6 +45,11 @@ export default function Sidebar() {
           icon: <FaChartBar />,
           name: "Analytics",
           path: "/coach/analytics"
+        },
+        {
+          icon: <FaFileAlt />,
+          name: "Reports",
+          path: "/coach/reports"
         },
         {
           icon: <FaCog />,
@@ -86,7 +92,7 @@ export default function Sidebar() {
 
   return (
 
-    <aside className="w-72 bg-brand-dark/95 backdrop-blur-xl border-r border-white/5 flex flex-col shadow-2xl relative z-20">
+    <aside className="w-72 bg-brand-dark/95 backdrop-blur-xl border-r border-white/5 flex flex-col shadow-2xl relative z-20 print:hidden">
 
       <div className="h-28 flex items-center justify-center relative">
         <div className="absolute inset-0 bg-gradient-to-b from-brand-peach/5 to-transparent pointer-events-none" />

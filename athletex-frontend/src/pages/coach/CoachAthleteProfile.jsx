@@ -144,8 +144,8 @@ export default function CoachAthleteProfile() {
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8 pb-16 relative z-10">
 
-        {/* Top Navigation / Back Button */}
-        <div className="flex items-center justify-between">
+        {/* Top Navigation / Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-4">
           <button
             onClick={() => navigate("/coach/athletes")}
             className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 hover:text-white text-sm font-semibold transition-all cursor-pointer group"
@@ -153,9 +153,19 @@ export default function CoachAthleteProfile() {
             <FaArrowLeft className="group-hover:-translate-x-1 transition-transform" />
             Back to Athletes
           </button>
-          <span className="text-xs font-mono font-bold text-gray-500 uppercase tracking-widest bg-white/5 px-3.5 py-1.5 rounded-full border border-white/5">
-            Coach Monitoring Mode (Read-Only)
-          </span>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(`/coach/reports?athleteId=${athleteId}`)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-peach/10 hover:bg-brand-peach/20 border border-brand-peach/30 text-brand-peach text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+            >
+              <FaFileAlt className="text-xs" />
+              Generate Athlete Report
+            </button>
+            <span className="text-xs font-mono font-bold text-gray-500 uppercase tracking-widest bg-white/5 px-3.5 py-2 rounded-xl border border-white/5 hidden sm:inline-block">
+              Coach Monitoring Mode (Read-Only)
+            </span>
+          </div>
         </div>
 
         {/* ========================================================================= */}

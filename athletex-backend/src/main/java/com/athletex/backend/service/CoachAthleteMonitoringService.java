@@ -1,6 +1,7 @@
 package com.athletex.backend.service;
 
 import com.athletex.backend.dto.CoachAthleteResponse;
+import com.athletex.backend.dto.CoachEvaluationResponse;
 import com.athletex.backend.model.*;
 import com.athletex.backend.repository.*;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +20,7 @@ public class CoachAthleteMonitoringService {
     private final PerformanceRepository performanceRepository;
     private final PerformanceHistoryRepository performanceHistoryRepository;
     private final AchievementRepository achievementRepository;
+    private final CoachEvaluationRepository evaluationRepository;
 
     public CoachAthleteResponse getAthleteMonitoringDetails(String coachId, String athleteId) {
         // 1. Verify Coach exists and has COACH role
@@ -72,7 +74,26 @@ public class CoachAthleteMonitoringService {
             achievements = Collections.emptyList();
         }
 
-        // 7. Build and return response
+        // 7. Fetch Coach Evaluation
+        CoachEvaluationResponse evaluationResponse = evaluationRepository
+                .findFirstByCoachIdAndAthleteIdOrderByCreatedAtDesc(coachId, athleteId)
+                .map(e -> CoachEvaluationResponse.builder()
+                        .id(e.getId())
+                        .coachId(e.getCoachId())
+                        .coachName(coach.getFullName())
+                        .athleteId(e.getAthleteId())
+                        .readinessStatus(e.getReadinessStatus())
+                        .coachFeedback(e.getCoachFeedback())
+                        .targetSpeed(e.getTargetSpeed())
+                        .targetStrength(e.getTargetStrength())
+                        .targetEndurance(e.getTargetEndurance())
+                        .targetAgility(e.getTargetAgility())
+                        .createdAt(e.getCreatedAt())
+                        .updatedAt(e.getUpdatedAt())
+                        .build())
+                .orElse(null);
+
+        // 8. Build and return response
         return CoachAthleteResponse.builder()
                 .id(athlete.getId())
                 .fullName(athlete.getFullName() != null ? athlete.getFullName() : "")
@@ -96,6 +117,7 @@ public class CoachAthleteMonitoringService {
                 .agility(agility)
                 .achievements(achievements)
                 .performanceHistory(history)
+                .coachEvaluation(evaluationResponse)
                 .build();
     }
 }

@@ -40,6 +40,7 @@ export default function CoachAchievements() {
 
   // Filters & Sorting
   const [activeCategory, setActiveCategory] = useState("ALL");
+  const [verificationFilter, setVerificationFilter] = useState("ALL"); // ALL, VERIFIED, UNVERIFIED
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("NEWEST"); // NEWEST, OLDEST
 
@@ -47,6 +48,16 @@ export default function CoachAchievements() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingAchievement, setEditingAchievement] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+
+  const handleVerifyAchievement = async (id) => {
+    try {
+      await api.put(`/achievements/${id}/verify?coachId=${coachId}`);
+      toast.success("Achievement verification status updated! ✔");
+      loadAllData();
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to update verification.");
+    }
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -183,6 +194,10 @@ export default function CoachAchievements() {
       const matchesCategory =
         activeCategory === "ALL" ||
         a.category?.toUpperCase() === activeCategory.toUpperCase();
+      const matchesVerification =
+        verificationFilter === "ALL" ||
+        (verificationFilter === "VERIFIED" && Boolean(a.isVerified)) ||
+        (verificationFilter === "UNVERIFIED" && !Boolean(a.isVerified));
       const q = search.toLowerCase().trim();
       const matchesSearch =
         !q ||
@@ -191,7 +206,7 @@ export default function CoachAchievements() {
         a.category?.toLowerCase().includes(q) ||
         a.description?.toLowerCase().includes(q) ||
         a.level?.toLowerCase().includes(q);
-      return matchesCategory && matchesSearch;
+      return matchesCategory && matchesVerification && matchesSearch;
     })
     .sort((a, b) => {
       const dateA = new Date(a.date || 0).getTime();
@@ -335,21 +350,39 @@ export default function CoachAchievements() {
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
-                  activeCategory === cat
-                    ? "bg-brand-peach text-black shadow-md"
-                    : "bg-[#111317] text-gray-400 hover:text-white border border-white/5"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+          {/* Category & Verification Filter Pills */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+              {CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap cursor-pointer ${
+                    activeCategory === cat
+                      ? "bg-brand-peach text-black shadow-md"
+                      : "bg-[#111317] text-gray-400 hover:text-white border border-white/5"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-1.5 p-1 rounded-xl bg-white/5 border border-white/5 shrink-0 self-start sm:self-auto">
+              {["ALL", "VERIFIED", "UNVERIFIED"].map((vState) => (
+                <button
+                  key={vState}
+                  onClick={() => setVerificationFilter(vState)}
+                  className={`px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase transition-all cursor-pointer ${
+                    verificationFilter === vState
+                      ? "bg-emerald-500 text-black shadow-md"
+                      : "text-gray-400 hover:text-white"
+                  }`}
+                >
+                  {vState === "ALL" ? "All Status" : vState}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -360,10 +393,10 @@ export default function CoachAchievements() {
               <FaTrophy />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">
-              {search || activeCategory !== "ALL" ? "No Matching Achievements" : "No achievements yet"}
+              {search || activeCategory !== "ALL" || verificationFilter !== "ALL" ? "No Matching Achievements" : "No achievements yet"}
             </h2>
             <p className="text-gray-400 max-w-md mx-auto mb-6 text-sm">
-              {search || activeCategory !== "ALL"
+              {search || activeCategory !== "ALL" || verificationFilter !== "ALL"
                 ? "No athlete milestones match your search filters."
                 : "Start recognizing your athletes' accomplishments by adding their first achievement."}
             </p>
@@ -399,10 +432,15 @@ export default function CoachAchievements() {
                       <div className="w-12 h-12 rounded-2xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center text-xl shrink-0">
                         {ach.icon || "🏆"}
                       </div>
-                      <div>
+                      <div className="flex flex-col gap-1">
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-widest bg-yellow-400/10 text-yellow-400 border border-yellow-400/20">
                           {ach.category || "AWARD"}
                         </span>
+                        {ach.isVerified && (
+                          <span className="px-2 py-0.5 rounded-md text-[9px] font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1 w-max">
+                            <FaCheckCircle className="text-[9px]" /> Verified
+                          </span>
+                        )}
                       </div>
                     </div>
 
@@ -441,21 +479,33 @@ export default function CoachAchievements() {
                 {/* Actions */}
                 <div className="flex items-center gap-2 pt-5 mt-5 border-t border-white/5 relative z-10">
                   <button
+                    onClick={() => handleVerifyAchievement(ach.id)}
+                    className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                      ach.isVerified
+                        ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
+                        : "bg-brand-peach/10 border-brand-peach/30 text-brand-peach hover:bg-brand-peach hover:text-black"
+                    }`}
+                    title={ach.isVerified ? "Verified by Coach" : "Click to endorse achievement"}
+                  >
+                    <FaCheckCircle className="text-xs" />
+                    {ach.isVerified ? "Verified" : "Verify"}
+                  </button>
+                  <button
                     onClick={() => {
                       setFormError("");
                       setEditingAchievement(ach);
                     }}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 text-xs font-semibold transition-all cursor-pointer"
+                    className="p-2.5 rounded-xl border border-white/10 text-gray-300 hover:text-white hover:bg-white/5 text-xs font-semibold transition-all cursor-pointer"
+                    title="Edit"
                   >
                     <FaEdit />
-                    Edit
                   </button>
                   <button
                     onClick={() => setDeletingId(ach.id)}
-                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-all cursor-pointer"
+                    className="p-2.5 rounded-xl border border-red-500/20 text-red-400 hover:bg-red-500/10 text-xs font-semibold transition-all cursor-pointer"
+                    title="Delete"
                   >
                     <FaTrash />
-                    Delete
                   </button>
                 </div>
               </div>

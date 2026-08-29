@@ -18,15 +18,21 @@ import {
   FaTrophy,
   FaCalendarAlt,
   FaChartLine,
-  FaMedal
+  FaMedal,
+  FaFileAlt,
+  FaClipboardCheck,
+  FaBullseye,
+  FaCommentDots
 } from "react-icons/fa";
 import PerformanceChart from "../../components/performance/PerformanceChart";
+import CoachEvaluationModal from "../../components/coach/CoachEvaluationModal";
 
 export default function CoachAthleteProfile() {
   const { athleteId } = useParams();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isEvalModalOpen, setIsEvalModalOpen] = useState(false);
   const navigate = useNavigate();
 
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
@@ -97,10 +103,13 @@ export default function CoachAthleteProfile() {
     );
   }
 
+  const evalData = data.coachEvaluation;
+
   const metrics = [
     {
       title: "Speed",
       value: data.speed ?? 0,
+      target: evalData?.targetSpeed ?? null,
       icon: <FaRunning />,
       color: "text-blue-400",
       bar: "bg-blue-400"
@@ -108,6 +117,7 @@ export default function CoachAthleteProfile() {
     {
       title: "Strength",
       value: data.strength ?? 0,
+      target: evalData?.targetStrength ?? null,
       icon: <FaDumbbell />,
       color: "text-brand-peach",
       bar: "bg-brand-peach"
@@ -115,13 +125,15 @@ export default function CoachAthleteProfile() {
     {
       title: "Endurance",
       value: data.endurance ?? 0,
+      target: evalData?.targetEndurance ?? null,
       icon: <FaHeartbeat />,
-      color: "text-red-400",
-      bar: "bg-red-400"
+      color: "text-rose-400",
+      bar: "bg-rose-400"
     },
     {
       title: "Agility",
       value: data.agility ?? 0,
+      target: evalData?.targetAgility ?? null,
       icon: <FaBolt />,
       color: "text-yellow-400",
       bar: "bg-yellow-400"
@@ -140,6 +152,21 @@ export default function CoachAthleteProfile() {
     </div>
   );
 
+  const getReadinessBadge = (status) => {
+    switch (status) {
+      case "READY":
+        return <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full text-xs font-bold uppercase tracking-wider">Ready / Optimal</span>;
+      case "NEEDS_IMPROVEMENT":
+        return <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full text-xs font-bold uppercase tracking-wider">Needs Improvement</span>;
+      case "FATIGUED":
+        return <span className="px-3 py-1 bg-orange-500/10 border border-orange-500/30 text-orange-400 rounded-full text-xs font-bold uppercase tracking-wider">Fatigued / Rest Needed</span>;
+      case "INJURY_RISK":
+        return <span className="px-3 py-1 bg-rose-500/10 border border-rose-500/30 text-rose-400 rounded-full text-xs font-bold uppercase tracking-wider">Injury Risk Warning</span>;
+      default:
+        return <span className="px-3 py-1 bg-gray-500/10 border border-gray-500/30 text-gray-400 rounded-full text-xs font-bold uppercase tracking-wider">Pending Evaluation</span>;
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="max-w-7xl mx-auto space-y-8 pb-16 relative z-10">
@@ -154,7 +181,14 @@ export default function CoachAthleteProfile() {
             Back to Athletes
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setIsEvalModalOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-peach text-black font-bold text-xs uppercase tracking-wider hover:bg-brand-peach/90 transition-all cursor-pointer shadow-lg shadow-brand-peach/20"
+            >
+              <FaClipboardCheck className="text-sm" />
+              Evaluate Performance
+            </button>
             <button
               onClick={() => navigate(`/coach/reports?athleteId=${athleteId}`)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-peach/10 hover:bg-brand-peach/20 border border-brand-peach/30 text-brand-peach text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm"
@@ -162,9 +196,6 @@ export default function CoachAthleteProfile() {
               <FaFileAlt className="text-xs" />
               Generate Athlete Report
             </button>
-            <span className="text-xs font-mono font-bold text-gray-500 uppercase tracking-widest bg-white/5 px-3.5 py-2 rounded-xl border border-white/5 hidden sm:inline-block">
-              Coach Monitoring Mode (Read-Only)
-            </span>
           </div>
         </div>
 
@@ -221,6 +252,78 @@ export default function CoachAthleteProfile() {
         </div>
 
         {/* ========================================================================= */}
+        {/* COACH EVALUATION & READINESS ASSESSMENT CARD                              */}
+        {/* ========================================================================= */}
+        <div className="glass-card rounded-3xl p-8 border border-white/5 shadow-2xl relative overflow-hidden">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-brand-peach/10 text-brand-peach rounded-xl border border-brand-peach/20">
+                  <FaClipboardCheck className="text-lg" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-white">Coach Performance Evaluation</h2>
+                  <p className="text-xs text-gray-400">Assessed by Coach {evalData?.coachName || storedUser.fullName || "Coach"}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              {getReadinessBadge(evalData?.readinessStatus)}
+              <button
+                onClick={() => setIsEvalModalOpen(true)}
+                className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-gray-300 text-xs font-bold border border-white/10 transition-all cursor-pointer"
+              >
+                {evalData ? "Update Evaluation" : "Set Evaluation"}
+              </button>
+            </div>
+          </div>
+
+          {evalData ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2 border-t border-white/5">
+              {/* Feedback Note */}
+              <div className="md:col-span-2 space-y-2">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <FaCommentDots className="text-brand-peach" /> Coach Feedback & Areas of Focus
+                </p>
+                <p className="text-sm text-gray-300 bg-white/[0.03] p-4 rounded-2xl border border-white/5 italic leading-relaxed">
+                  "{evalData.coachFeedback || "No custom evaluation notes entered yet."}"
+                </p>
+              </div>
+
+              {/* Target Targets Summary */}
+              <div className="space-y-2">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                  <FaBullseye className="text-cyan-400" /> Target Benchmarks
+                </p>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex justify-between">
+                    <span className="text-gray-400">Speed Target:</span>
+                    <span className="font-bold text-blue-400">{evalData.targetSpeed ?? "—"}%</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex justify-between">
+                    <span className="text-gray-400">Strength:</span>
+                    <span className="font-bold text-brand-peach">{evalData.targetStrength ?? "—"}%</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex justify-between">
+                    <span className="text-gray-400">Endurance:</span>
+                    <span className="font-bold text-rose-400">{evalData.targetEndurance ?? "—"}%</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white/5 border border-white/5 flex justify-between">
+                    <span className="text-gray-400">Agility:</span>
+                    <span className="font-bold text-yellow-400">{evalData.targetAgility ?? "—"}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-6 border-t border-white/5 text-gray-500 text-xs">
+              No coach evaluation logged yet for this athlete. Click <strong>Evaluate Performance</strong> above to set readiness status and performance targets.
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================================= */}
         {/* PERSONAL, PHYSICAL & BIO SECTION                                          */}
         {/* ========================================================================= */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -272,9 +375,16 @@ export default function CoachAthleteProfile() {
         {/* PERFORMANCE METRICS SECTION                                               */}
         {/* ========================================================================= */}
         <div className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-1.5 h-7 bg-brand-peach rounded-full"></div>
-            <h2 className="text-2xl font-bold text-white tracking-wide">Performance Overview</h2>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-7 bg-brand-peach rounded-full"></div>
+              <h2 className="text-2xl font-bold text-white tracking-wide">Performance Overview</h2>
+            </div>
+            {evalData && (
+              <span className="text-xs text-gray-400 flex items-center gap-1.5">
+                <FaBullseye className="text-brand-peach" /> Target indicators shown on bars
+              </span>
+            )}
           </div>
 
           {/* Overall Performance Card */}
@@ -303,11 +413,11 @@ export default function CoachAthleteProfile() {
             </div>
           </div>
 
-          {/* 4 Metric Breakdown Cards */}
+          {/* 4 Metric Breakdown Cards with Coach Target Benchmarks */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {metrics.map((m) => (
               <div key={m.title} className="glass-card rounded-2xl p-6 border border-white/5 shadow-xl relative overflow-hidden">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-2">
                   <div>
                     <p className="text-xs text-gray-500 uppercase tracking-widest font-bold">{m.title}</p>
                     <p className={`text-3xl font-black mt-1 ${m.color}`}>{m.value}%</p>
@@ -316,11 +426,27 @@ export default function CoachAthleteProfile() {
                     {m.icon}
                   </div>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+
+                {/* Target overlay indicator */}
+                {m.target != null && (
+                  <div className="flex items-center justify-between text-[11px] font-medium text-gray-400 mb-2">
+                    <span>Target:</span>
+                    <span className="font-bold text-white">{m.target}%</span>
+                  </div>
+                )}
+
+                <div className="h-2 bg-white/5 rounded-full overflow-hidden relative">
                   <div
                     className={`h-full ${m.bar} rounded-full transition-all duration-700`}
                     style={{ width: `${Math.min(Math.max(m.value, 0), 100)}%` }}
                   />
+                  {m.target != null && (
+                    <div
+                      className="absolute top-0 bottom-0 w-1 bg-white border-l border-black shadow"
+                      style={{ left: `${Math.min(Math.max(m.target, 0), 100)}%` }}
+                      title={`Coach Target: ${m.target}%`}
+                    />
+                  )}
                 </div>
               </div>
             ))}
@@ -419,6 +545,16 @@ export default function CoachAthleteProfile() {
         </div>
 
       </div>
+
+      {/* Coach Evaluation Modal */}
+      <CoachEvaluationModal
+        isOpen={isEvalModalOpen}
+        onClose={() => setIsEvalModalOpen(false)}
+        athleteId={athleteId}
+        athleteName={data?.fullName}
+        initialEvaluation={data?.coachEvaluation}
+        onSaved={fetchAthleteDetails}
+      />
     </DashboardLayout>
   );
 }

@@ -7,7 +7,8 @@ import {
   FaTimes,
   FaDownload,
   FaCertificate,
-  FaAward
+  FaAward,
+  FaCheckCircle
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -578,13 +579,17 @@ export default function Achievements() {
                     {achievement.icon || "🏆"}
                   </div>
 
-                  <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase bg-brand-peach/10 text-brand-peach px-3 py-1.5 rounded-full border border-brand-peach/20">
-
-                    <FaMedal />
-
-                    {achievement.level || "Achievement"}
-
-                  </span>
+                  <div className="flex flex-col items-end gap-1.5">
+                    <span className="flex items-center gap-2 text-[10px] font-bold tracking-widest uppercase bg-brand-peach/10 text-brand-peach px-3 py-1.5 rounded-full border border-brand-peach/20">
+                      <FaMedal />
+                      {achievement.level || "Achievement"}
+                    </span>
+                    {achievement.isVerified && (
+                      <span className="flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-md border border-emerald-500/20">
+                        <FaCheckCircle className="text-[10px]" /> Verified by Coach
+                      </span>
+                    )}
+                  </div>
 
                 </div>
 

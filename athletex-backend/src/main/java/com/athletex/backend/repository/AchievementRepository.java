@@ -15,6 +15,10 @@ public interface AchievementRepository extends MongoRepository<Achievement, Stri
 
     List<Achievement> findByCoachIdOrderByDateDesc(String coachId);
 
+    List<Achievement> findByAthleteIdInOrderByDateDesc(List<String> athleteIds);
+
+    List<Achievement> findByUserIdInOrderByDateDesc(List<String> userIds);
+
     long countByAthleteId(String athleteId);
 
     long countByUserId(String userId);

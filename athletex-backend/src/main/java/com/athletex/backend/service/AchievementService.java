@@ -166,7 +166,7 @@ public class AchievementService {
     // GET ACHIEVEMENTS FOR COACH
     // =============================
     public List<AchievementResponse> getAchievementsByCoach(String coachId) {
-        List<Achievement> list = achievementRepository.findByCoachIdOrderByDateDesc(coachId);
+        List<Achievement> list = getRawAchievementsForCoach(coachId);
         if (list == null || list.isEmpty()) {
             return Collections.emptyList();
         }
@@ -182,6 +182,48 @@ public class AchievementService {
                     return mapToResponse(a, coachName, athleteName);
                 })
                 .collect(Collectors.toList());
+    }
+
+    private List<Achievement> getRawAchievementsForCoach(String coachId) {
+        List<CoachAthleteAssignment> assignments = assignmentRepository.findByCoachIdAndStatus(coachId, AssignmentStatus.ACTIVE);
+        List<String> assignedAthleteIds = assignments.stream()
+                .map(CoachAthleteAssignment::getAthleteId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        Map<String, Achievement> achievementMap = new LinkedHashMap<>();
+
+        List<Achievement> byCoach = achievementRepository.findByCoachIdOrderByDateDesc(coachId);
+        if (byCoach != null) {
+            for (Achievement a : byCoach) {
+                if (a.getId() != null) achievementMap.put(a.getId(), a);
+            }
+        }
+
+        if (!assignedAthleteIds.isEmpty()) {
+            List<Achievement> byAthletes = achievementRepository.findByAthleteIdInOrderByDateDesc(assignedAthleteIds);
+            if (byAthletes != null) {
+                for (Achievement a : byAthletes) {
+                    if (a.getId() != null) achievementMap.put(a.getId(), a);
+                }
+            }
+
+            List<Achievement> byUsers = achievementRepository.findByUserIdInOrderByDateDesc(assignedAthleteIds);
+            if (byUsers != null) {
+                for (Achievement a : byUsers) {
+                    if (a.getId() != null) achievementMap.put(a.getId(), a);
+                }
+            }
+        }
+
+        List<Achievement> result = new ArrayList<>(achievementMap.values());
+        result.sort((a, b) -> {
+            if (a.getDate() == null && b.getDate() == null) return 0;
+            if (a.getDate() == null) return 1;
+            if (b.getDate() == null) return -1;
+            return b.getDate().compareTo(a.getDate());
+        });
+        return result;
     }
 
     // =============================
@@ -260,7 +302,7 @@ public class AchievementService {
     // GET COACH ACHIEVEMENT STATS
     // =============================
     public AchievementStatsResponse getCoachAchievementStats(String coachId) {
-        List<Achievement> list = achievementRepository.findByCoachIdOrderByDateDesc(coachId);
+        List<Achievement> list = getRawAchievementsForCoach(coachId);
         if (list == null || list.isEmpty()) {
             return AchievementStatsResponse.builder()
                     .totalAchievements(0)
@@ -298,6 +340,56 @@ public class AchievementService {
     }
 
     // =============================
+    // VERIFY / ENDORSE ACHIEVEMENT
+    // =============================
+    public AchievementResponse verifyAchievement(String achievementId, String coachId) {
+        User coach = userRepository.findById(coachId)
+                .orElseThrow(() -> new RuntimeException("Coach not found"));
+        if (coach.getRole() != Role.COACH) {
+            throw new RuntimeException("User is not a coach");
+        }
+
+        Achievement achievement = achievementRepository.findById(achievementId)
+                .orElseThrow(() -> new RuntimeException("Achievement not found"));
+
+        String athleteId = achievement.getAthleteId() != null ? achievement.getAthleteId() : achievement.getUserId();
+        boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(
+                coachId, athleteId, AssignmentStatus.ACTIVE
+        );
+        if (!isAssigned) {
+            throw new SecurityException("Unauthorized: Athlete is not assigned to this coach");
+        }
+
+        boolean currentVerified = Boolean.TRUE.equals(achievement.getIsVerified());
+        achievement.setIsVerified(!currentVerified);
+        if (!currentVerified) {
+            achievement.setVerifiedByCoachId(coachId);
+            achievement.setVerifiedByCoachName(coach.getFullName());
+            achievement.setVerifiedAt(LocalDateTime.now());
+        } else {
+            achievement.setVerifiedByCoachId(null);
+            achievement.setVerifiedByCoachName(null);
+            achievement.setVerifiedAt(null);
+        }
+        achievement.setUpdatedAt(LocalDateTime.now());
+
+        Achievement saved = achievementRepository.save(achievement);
+
+        if (Boolean.TRUE.equals(saved.getIsVerified())) {
+            activityService.createActivity(
+                    athleteId,
+                    "achievement_verified",
+                    "Achievement Verified",
+                    "Coach " + coach.getFullName() + " verified '" + saved.getTitle() + "'",
+                    "✔"
+            );
+        }
+
+        String athleteName = userRepository.findById(athleteId).map(User::getFullName).orElse("Athlete");
+        return mapToResponse(saved, coach.getFullName(), athleteName);
+    }
+
+    // =============================
     // GET ACHIEVEMENT COUNT
     // =============================
     public long getAchievementCount(String userId) {
@@ -321,6 +413,10 @@ public class AchievementService {
                 .level(a.getLevel())
                 .date(a.getDate())
                 .icon(a.getIcon())
+                .isVerified(a.getIsVerified() != null ? a.getIsVerified() : false)
+                .verifiedByCoachId(a.getVerifiedByCoachId())
+                .verifiedByCoachName(a.getVerifiedByCoachName())
+                .verifiedAt(a.getVerifiedAt())
                 .createdAt(a.getCreatedAt())
                 .updatedAt(a.getUpdatedAt())
                 .build();

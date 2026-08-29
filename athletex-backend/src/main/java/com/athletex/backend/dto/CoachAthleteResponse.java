@@ -54,4 +54,7 @@ public class CoachAthleteResponse {
 
     // Performance History
     private List<PerformanceHistory> performanceHistory;
+
+    // Coach Evaluation & Targets
+    private CoachEvaluationResponse coachEvaluation;
 }

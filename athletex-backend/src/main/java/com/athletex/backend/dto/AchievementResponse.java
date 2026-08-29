@@ -25,6 +25,10 @@ public class AchievementResponse {
     private String level;
     private LocalDate date;
     private String icon;
+    private Boolean isVerified;
+    private String verifiedByCoachId;
+    private String verifiedByCoachName;
+    private LocalDateTime verifiedAt;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

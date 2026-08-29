@@ -98,6 +98,27 @@ public class AchievementController {
         }
     }
 
+    // PUT /api/achievements/{id}/verify
+    @PutMapping("/{id}/verify")
+    public ResponseEntity<?> verifyAchievement(
+            @PathVariable String id,
+            @RequestParam String coachId,
+            org.springframework.security.core.Authentication authentication) {
+        String effectiveCoachId = coachId;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            effectiveCoachId = (String) authentication.getPrincipal();
+        }
+
+        try {
+            AchievementResponse response = achievementService.verifyAchievement(id, effectiveCoachId);
+            return ResponseEntity.ok(response);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // GET /api/achievements/athlete/{athleteId}/count
     @GetMapping("/athlete/{athleteId}/count")
     public ResponseEntity<Long> getAthleteAchievementCount(@PathVariable String athleteId) {

@@ -12,7 +12,9 @@ export default function ProtectedRoute({ children, requiredRole }) {
 
   if (requiredRole && user.role !== requiredRole) {
     // Redirect based on actual role if access is denied
-    if (user.role === "COACH") {
+    if (user.role === "ADMIN") {
+      return <Navigate to="/admin/dashboard" replace />;
+    } else if (user.role === "COACH") {
       return <Navigate to="/coach/dashboard" replace />;
     } else {
       return <Navigate to="/dashboard" replace />;

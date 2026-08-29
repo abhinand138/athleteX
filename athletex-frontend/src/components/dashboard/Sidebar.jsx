@@ -1,6 +1,7 @@
 import {
   FaHome,
   FaUser,
+  FaUsers,
   FaChartBar,
   FaTrophy,
   FaCog,
@@ -19,8 +20,32 @@ export default function Sidebar() {
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
   const isCoach = user.role === "COACH";
+  const isAdmin = user.role === "ADMIN";
 
-  const menu = isCoach 
+  const menu = isAdmin
+    ? [
+        {
+          icon: <FaHome />,
+          name: "Admin Console",
+          path: "/admin/dashboard"
+        },
+        {
+          icon: <FaUsers />,
+          name: "User Directory",
+          path: "/admin/users"
+        },
+        {
+          icon: <FaUserFriends />,
+          name: "Rosters",
+          path: "/admin/rosters"
+        },
+        {
+          icon: <FaCog />,
+          name: "Settings",
+          path: "/settings"
+        }
+      ]
+    : isCoach 
     ? [
         {
           icon: <FaHome />,

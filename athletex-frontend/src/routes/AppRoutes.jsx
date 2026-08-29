@@ -19,6 +19,9 @@ import CoachAnalytics from "../pages/coach/CoachAnalytics";
 import CoachReports from "../pages/coach/CoachReports";
 import CoachNotifications from "../pages/coach/CoachNotifications";
 import AthleteNotifications from "../pages/athlete/AthleteNotifications";
+import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminUsers from "../pages/admin/AdminUsers";
+import AdminRosters from "../pages/admin/AdminRosters";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 
 function AppRoutes() {
@@ -48,7 +51,10 @@ function AppRoutes() {
       <Route path="/coach/reports" element={<ProtectedRoute requiredRole="COACH"><CoachReports /></ProtectedRoute>} />
       <Route path="/coach/notifications" element={<ProtectedRoute requiredRole="COACH"><CoachNotifications /></ProtectedRoute>} />
       
-
+      {/* Admin Routes */}
+      <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="ADMIN"><AdminDashboard /></ProtectedRoute>} />
+      <Route path="/admin/users" element={<ProtectedRoute requiredRole="ADMIN"><AdminUsers /></ProtectedRoute>} />
+      <Route path="/admin/rosters" element={<ProtectedRoute requiredRole="ADMIN"><AdminRosters /></ProtectedRoute>} />
     </Routes>
   );
 }

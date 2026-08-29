@@ -47,6 +47,14 @@ public class PerformanceController {
         );
     }
 
+    @PutMapping("/{userId}/verify")
+    public Performance verifyPerformanceByCoach(
+            @PathVariable String userId,
+            @RequestParam String coachId
+    ) {
+        return performanceService.verifyPerformanceByCoach(userId, coachId);
+    }
+
     /*
      * GET PERFORMANCE HISTORY
      */

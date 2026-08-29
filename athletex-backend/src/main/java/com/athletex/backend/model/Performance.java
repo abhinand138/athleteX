@@ -31,5 +31,13 @@ public class Performance {
 
     private Double overallScore;
 
+    private Boolean isCoachVerified;
+
+    private String verifiedByCoachId;
+
+    private String verifiedByCoachName;
+
+    private String lastEvaluatedBy; // "ATHLETE" or "COACH"
+
     private LocalDateTime lastUpdated;
 }

@@ -85,11 +85,12 @@ public class PerformanceService {
         );
 
 
-        // Update timestamp
-        performance.setLastUpdated(
-                LocalDateTime.now()
-        );
+        // Tag as athlete self-reported
+        performance.setLastEvaluatedBy("ATHLETE");
+        performance.setIsCoachVerified(false);
 
+        // Update timestamp
+        performance.setLastUpdated(LocalDateTime.now());
 
         // Save to MongoDB
         Performance savedPerformance = performanceRepository.save(performance);
@@ -110,21 +111,51 @@ public class PerformanceService {
         activityService.createActivity(
                 userId,
                 "performance_update",
-                "Performance Updated",
-                "You updated your performance metrics.",
+                "Self-Reported Performance Updated",
+                "You updated your self-reported ratings.",
                 "🏃"
         );
 
-        // Send notification
+        return savedPerformance;
+    }
+
+    /*
+     * VERIFY / ENDORSE PERFORMANCE BY COACH
+     */
+    public Performance verifyPerformanceByCoach(String athleteId, String coachId) {
+        var coach = userRepository.findById(coachId)
+                .orElseThrow(() -> new RuntimeException("Coach not found"));
+
+        Performance performance = getPerformance(athleteId);
+        performance.setIsCoachVerified(true);
+        performance.setVerifiedByCoachId(coach.getId());
+        performance.setVerifiedByCoachName(coach.getFullName());
+        performance.setLastEvaluatedBy("COACH");
+        performance.setLastUpdated(LocalDateTime.now());
+
+        Performance saved = performanceRepository.save(performance);
+
+        activityService.createActivity(
+                athleteId,
+                "performance_verified",
+                "Ratings Officially Verified",
+                "Coach " + coach.getFullName() + " endorsed your performance metrics.",
+                "✔"
+        );
+
         try {
-            userRepository.findById(userId).ifPresent(athlete ->
-                    notificationService.notifyPerformanceUpdated(savedPerformance, athlete, "Coach")
+            notificationService.sendNotification(
+                    athleteId,
+                    "Ratings Officially Verified! ✔",
+                    "Coach " + coach.getFullName() + " officially verified your performance ratings.",
+                    "VERIFICATION",
+                    "/performance"
             );
         } catch (Exception e) {
             // Non-blocking
         }
 
-        return savedPerformance;
+        return saved;
     }
 
 

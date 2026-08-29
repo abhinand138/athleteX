@@ -33,9 +33,10 @@ export default function Topbar() {
   }, []);
 
   const fetchUnreadCount = async () => {
+    if (!user?.id) return;
     try {
-      const res = await api.get("/notifications/me/unread/count");
-      setUnreadCount(Number(res.data) || 0);
+      const res = await api.get(`/notifications/unread-count?userId=${user.id}`);
+      setUnreadCount(Number(res.data?.unreadCount) || 0);
     } catch (err) {
       console.error("Failed to fetch unread notifications count:", err);
     }
@@ -47,7 +48,7 @@ export default function Topbar() {
     if (nextState) {
       setLoading(true);
       try {
-        const res = await api.get("/notifications/me");
+        const res = await api.get(`/notifications?userId=${user.id}`);
         setRecentNotifications((res.data || []).slice(0, 5));
       } catch (err) {
         console.error("Failed to load notifications:", err);
@@ -60,9 +61,9 @@ export default function Topbar() {
   const handleMarkAsRead = async (id, e) => {
     if (e) e.stopPropagation();
     try {
-      await api.put(`/notifications/${id}/read`);
+      await api.put(`/notifications/${id}/read?userId=${user.id}`);
       setRecentNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
+        prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
       );
       setUnreadCount((c) => Math.max(0, c - 1));
     } catch (err) {
@@ -72,8 +73,8 @@ export default function Topbar() {
 
   const handleMarkAllAsRead = async () => {
     try {
-      await api.put("/notifications/me/read-all");
-      setRecentNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+      await api.put(`/notifications/read-all?userId=${user.id}`);
+      setRecentNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
       setUnreadCount(0);
     } catch (err) {
       console.error("Failed to mark all read:", err);

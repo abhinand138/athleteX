@@ -64,7 +64,13 @@ public class TrainingService {
 
         // Send automatic notification to athlete
         try {
-            notificationService.notifyTrainingAssigned(saved, coach, athlete);
+            notificationService.sendNotification(
+                    request.getAthleteId(),
+                    "New Training Plan Assigned 🏋️",
+                    "Coach " + coach.getFullName() + " assigned a new training plan: '" + saved.getTitle() + "'",
+                    "TRAINING",
+                    "/training"
+            );
         } catch (Exception e) {
             // Non-blocking notification
         }

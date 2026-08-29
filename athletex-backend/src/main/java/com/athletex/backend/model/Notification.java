@@ -19,22 +19,17 @@ public class Notification {
     @Id
     private String id;
 
-    private String recipientId;
-    private String recipientName;
+    private String userId; // Recipient User ID
 
-    private String senderId;
-    private String senderName;
-
-    private NotificationType type;
     private String title;
+
     private String message;
 
-    private String referenceId;
-    private String referenceType; // TRAINING, ACHIEVEMENT, PERFORMANCE, ANNOUNCEMENT, REPORT, SYSTEM
+    private String type; // VERIFICATION, TRAINING, SYSTEM
 
-    @Builder.Default
-    private boolean isRead = false;
+    private Boolean isRead;
 
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private String link; // Optional route link (e.g. /achievements)
+
+    private LocalDateTime createdAt;
 }

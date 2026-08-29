@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import QRCodeSVG from "react-qr-code";
 import {
   FaTimes,
   FaShieldAlt,
@@ -206,17 +207,20 @@ export default function TalentPassportModal({ isOpen, onClose, athlete, performa
               </div>
             )}
 
-            {/* Footer Verification Stamp & Barcode */}
+            {/* Footer Verification Stamp & Scannable QR Code */}
             <div className="mt-5 pt-3 border-t border-white/10 flex items-center justify-between relative z-10 text-[9px] text-gray-500 font-mono">
-              <div className="flex items-center gap-2">
-                <FaQrcode className="text-base text-brand-peach" />
+              <div className="flex items-center gap-3">
+                <div className="p-1 bg-white rounded-lg border border-white/20 shrink-0">
+                  <QRCodeSVG value={`http://localhost:5173/verify/${athlete.id}`} size={54} level="M" />
+                </div>
                 <div>
-                  <p className="text-gray-300 font-bold">AX-ID: {athlete.id?.substring(0, 10).toUpperCase() || "AX2026"}</p>
-                  <p>OFFICIAL DIGITAL RECORD</p>
+                  <p className="text-emerald-400 font-extrabold uppercase tracking-widest text-[10px]">✔ OFFICIAL VERIFIED SEAL</p>
+                  <p className="text-gray-300 font-bold mt-0.5">AX-ID: {athlete.id?.substring(0, 12).toUpperCase() || "AX2026"}</p>
+                  <p className="text-[8px] text-gray-400">SCAN QR TO VERIFY ACCREDITATIONS</p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold">
+                <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold uppercase tracking-wider text-[9px]">
                   SCOUTABLE
                 </span>
               </div>

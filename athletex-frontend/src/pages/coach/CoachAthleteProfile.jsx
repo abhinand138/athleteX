@@ -22,7 +22,8 @@ import {
   FaFileAlt,
   FaClipboardCheck,
   FaBullseye,
-  FaCommentDots
+  FaCommentDots,
+  FaCheckCircle
 } from "react-icons/fa";
 import PerformanceChart from "../../components/performance/PerformanceChart";
 import CoachEvaluationModal from "../../components/coach/CoachEvaluationModal";
@@ -182,6 +183,21 @@ export default function CoachAthleteProfile() {
           </button>
 
           <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={async () => {
+                try {
+                  await api.put(`/performance/${athleteId}/verify?coachId=${coachId}`);
+                  toast.success("Officially endorsed athlete performance ratings! ✔");
+                  fetchAthleteDetails();
+                } catch (err) {
+                  toast.error(err.response?.data || "Failed to endorse ratings.");
+                }
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 font-bold text-xs uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+            >
+              <FaCheckCircle className="text-sm text-emerald-400" />
+              Endorse Ratings as Official
+            </button>
             <button
               onClick={() => setIsEvalModalOpen(true)}
               className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-peach text-black font-bold text-xs uppercase tracking-wider hover:bg-brand-peach/90 transition-all cursor-pointer shadow-lg shadow-brand-peach/20"

@@ -6,6 +6,7 @@ import {
   FaBolt,
   FaSave,
   FaEdit,
+  FaCheckCircle,
 } from "react-icons/fa";
 
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -375,6 +376,17 @@ export default function Performance() {
 
             <div>
 
+              {performance.isCoachVerified ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold uppercase tracking-wider mb-3">
+                  <FaCheckCircle className="text-sm text-emerald-400" />
+                  <span>✔ OFFICIALLY VERIFIED RATING ({performance.verifiedByCoachName || "Coach"})</span>
+                </div>
+              ) : (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">
+                  <span>📝 ATHLETE SELF-REPORTED (Pending Coach Review)</span>
+                </div>
+              )}
+
               <p className="text-sm font-bold text-gray-400 tracking-widest uppercase">
                 Overall Performance
               </p>
@@ -387,7 +399,9 @@ export default function Performance() {
               </h2>
 
               <p className="text-gray-500 mt-2">
-                Current performance score
+                {performance.isCoachVerified 
+                  ? `Endorsed & verified by Coach ${performance.verifiedByCoachName || ""}` 
+                  : "Self-entered metrics — saved for training progress tracking"}
               </p>
 
             </div>

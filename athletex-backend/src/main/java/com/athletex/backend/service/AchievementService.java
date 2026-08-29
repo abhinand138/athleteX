@@ -383,6 +383,17 @@ public class AchievementService {
                     "Coach " + coach.getFullName() + " verified '" + saved.getTitle() + "'",
                     "✔"
             );
+            try {
+                notificationService.sendNotification(
+                        athleteId,
+                        "Achievement Verified! 🎉",
+                        "Coach " + coach.getFullName() + " endorsed and verified your achievement: '" + saved.getTitle() + "'",
+                        "VERIFICATION",
+                        "/achievements"
+                );
+            } catch (Exception e) {
+                // Non-blocking
+            }
         }
 
         String athleteName = userRepository.findById(athleteId).map(User::getFullName).orElse("Athlete");

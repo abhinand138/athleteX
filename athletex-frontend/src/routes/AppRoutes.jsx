@@ -22,6 +22,7 @@ import AthleteNotifications from "../pages/athlete/AthleteNotifications";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminRosters from "../pages/admin/AdminRosters";
+import PublicVerificationPage from "../pages/PublicVerificationPage";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 
 function AppRoutes() {
@@ -30,6 +31,7 @@ function AppRoutes() {
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/verify/:athleteId" element={<PublicVerificationPage />} />
       
       {/* Protected Routes */}
       <Route path="/dashboard" element={<ProtectedRoute requiredRole="ATHLETE"><Dashboard /></ProtectedRoute>} />

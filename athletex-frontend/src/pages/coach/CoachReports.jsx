@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
 import {
@@ -190,7 +191,7 @@ export default function CoachReports() {
         url = `/coach/reports/achievements/${coachId}/csv?range=${range}`;
         filename = "achievement-report.csv";
       } else {
-        alert("CSV export is available for Individual, Team, Training, and Achievement reports.");
+        toast.error("CSV export is available for Individual, Team, Training, and Achievement reports.");
         setExporting(false);
         return;
       }
@@ -203,8 +204,9 @@ export default function CoachReports() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      toast.success("CSV export downloaded successfully!");
     } catch (err) {
-      alert("Failed to download CSV export.");
+      toast.error("Failed to download CSV export.");
     } finally {
       setExporting(false);
     }
@@ -214,9 +216,10 @@ export default function CoachReports() {
     if (!reportData) return;
     try {
       generatePdfReport(activeType, reportData, storedUser?.fullName || "Coach", range);
+      toast.success("PDF document generated successfully!");
     } catch (err) {
       console.error("PDF generation failed:", err);
-      alert("Failed to generate PDF document. Please try again.");
+      toast.error("Failed to generate PDF document. Please try again.");
     }
   };
 

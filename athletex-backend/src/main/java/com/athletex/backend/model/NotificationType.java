@@ -1,0 +1,13 @@
+package com.athletex.backend.model;
+
+public enum NotificationType {
+    TRAINING_ASSIGNED,
+    TRAINING_COMPLETED,
+    TRAINING_CANCELLED,
+    ACHIEVEMENT_UNLOCKED,
+    PERFORMANCE_UPDATED,
+    ATHLETE_ATTENTION,
+    COACH_ANNOUNCEMENT,
+    REPORT_AVAILABLE,
+    SYSTEM
+}

@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
 import {
@@ -83,10 +85,7 @@ export default function CoachAthletes() {
     setAssignNotification(null);
     try {
       await api.post(`/coach/assignments/${coachId}/${athleteId}`);
-      setAssignNotification({
-        type: "success",
-        text: `Successfully assigned ${athleteName || "athlete"} to your roster!`
-      });
+      toast.success(`Successfully assigned ${athleteName || "athlete"} to your roster!`);
       // Remove from available list immediately in state
       setAvailableAthletes((prev) => prev.filter((a) => a.id !== athleteId));
       // Refresh the main assigned athletes list in the background
@@ -94,10 +93,7 @@ export default function CoachAthletes() {
       setAthletes(res.data);
       setFiltered(res.data);
     } catch (err) {
-      setAssignNotification({
-        type: "error",
-        text: err.response?.data || "Failed to assign athlete."
-      });
+      toast.error(err.response?.data || "Failed to assign athlete.");
     } finally {
       setAssigningId(null);
     }
@@ -121,10 +117,11 @@ export default function CoachAthletes() {
   const handleUnassign = async (athleteId) => {
     try {
       await api.delete(`/coach/assignments/${coachId}/${athleteId}`);
+      toast.success("Athlete unassigned from your roster.");
       setConfirmUnassign(null);
       fetchAthletes();
     } catch (err) {
-      alert(err.response?.data || "Failed to unassign athlete.");
+      toast.error(err.response?.data || "Failed to unassign athlete.");
     }
   };
 

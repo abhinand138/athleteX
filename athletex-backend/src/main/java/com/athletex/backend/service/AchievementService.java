@@ -24,6 +24,7 @@ public class AchievementService {
     private final ActivityService activityService;
     private final UserRepository userRepository;
     private final CoachAthleteAssignmentRepository assignmentRepository;
+    private final NotificationService notificationService;
 
     // =============================
     // CREATE ACHIEVEMENT (DTO / COACH)
@@ -31,6 +32,8 @@ public class AchievementService {
     public AchievementResponse createAchievement(AchievementRequest request) {
         String coachName = "Coach";
         String athleteName = "Athlete";
+        User coachObj = null;
+        User athleteObj = null;
 
         if (request.getCoachId() != null && !request.getCoachId().isBlank()) {
             User coach = userRepository.findById(request.getCoachId())
@@ -39,6 +42,7 @@ public class AchievementService {
                 throw new RuntimeException("User is not a coach");
             }
             coachName = coach.getFullName();
+            coachObj = coach;
 
             User athlete = userRepository.findById(request.getAthleteId())
                     .orElseThrow(() -> new RuntimeException("Athlete not found"));
@@ -46,6 +50,7 @@ public class AchievementService {
                 throw new RuntimeException("Target user is not an athlete");
             }
             athleteName = athlete.getFullName();
+            athleteObj = athlete;
 
             boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(
                     request.getCoachId(), request.getAthleteId(), AssignmentStatus.ACTIVE
@@ -54,9 +59,8 @@ public class AchievementService {
                 throw new SecurityException("Athlete is not assigned to this coach");
             }
         } else {
-            athleteName = userRepository.findById(request.getAthleteId())
-                    .map(User::getFullName)
-                    .orElse("Athlete");
+            athleteObj = userRepository.findById(request.getAthleteId()).orElse(null);
+            athleteName = athleteObj != null ? athleteObj.getFullName() : "Athlete";
         }
 
         String icon = (request.getIcon() != null && !request.getIcon().isBlank()) ? request.getIcon() : "🏆";
@@ -84,6 +88,14 @@ public class AchievementService {
                 achievement.getTitle(),
                 icon
         );
+
+        if (athleteObj != null) {
+            try {
+                notificationService.notifyAchievementUnlocked(saved, coachObj, athleteObj);
+            } catch (Exception e) {
+                // Non-blocking
+            }
+        }
 
         return mapToResponse(saved, coachName, athleteName);
     }

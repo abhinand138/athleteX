@@ -20,6 +20,7 @@ public class TrainingService {
     private final TrainingRepository trainingRepository;
     private final UserRepository userRepository;
     private final CoachAthleteAssignmentRepository assignmentRepository;
+    private final NotificationService notificationService;
 
     // ===========================
     // CREATE TRAINING
@@ -60,6 +61,14 @@ public class TrainingService {
                 .build();
 
         Training saved = trainingRepository.save(training);
+
+        // Send automatic notification to athlete
+        try {
+            notificationService.notifyTrainingAssigned(saved, coach, athlete);
+        } catch (Exception e) {
+            // Non-blocking notification
+        }
+
         return mapToResponse(saved, coach.getFullName(), athlete.getFullName());
     }
 
@@ -167,6 +176,13 @@ public class TrainingService {
 
         String coachName = userRepository.findById(training.getCoachId()).map(User::getFullName).orElse("Coach");
         String athleteName = userRepository.findById(training.getAthleteId()).map(User::getFullName).orElse("Athlete");
+
+        try {
+            notificationService.notifyTrainingCancelled(saved, coachId, coachName, athleteName);
+        } catch (Exception e) {
+            // Non-blocking
+        }
+
         return mapToResponse(saved, coachName, athleteName);
     }
 
@@ -174,6 +190,16 @@ public class TrainingService {
     // COMPLETE TRAINING
     // ===========================
     public TrainingResponse completeTraining(String trainingId, String userId) {
+        return completeTraining(trainingId, userId, null, null, null);
+    }
+
+    public TrainingResponse completeTraining(
+            String trainingId,
+            String userId,
+            Integer rpe,
+            Integer actualDurationMinutes,
+            String athleteFeedback
+    ) {
         Training training = trainingRepository.findById(trainingId)
                 .orElseThrow(() -> new RuntimeException("Training session not found"));
 
@@ -182,10 +208,22 @@ public class TrainingService {
         }
 
         training.setStatus(TrainingStatus.COMPLETED);
+        training.setCompletedAt(LocalDateTime.now());
+        if (rpe != null) training.setRpe(rpe);
+        if (actualDurationMinutes != null) training.setActualDurationMinutes(actualDurationMinutes);
+        if (athleteFeedback != null && !athleteFeedback.isBlank()) training.setAthleteFeedback(athleteFeedback.trim());
+
         Training saved = trainingRepository.save(training);
 
         String coachName = userRepository.findById(training.getCoachId()).map(User::getFullName).orElse("Coach");
         String athleteName = userRepository.findById(training.getAthleteId()).map(User::getFullName).orElse("Athlete");
+
+        try {
+            notificationService.notifyTrainingCompleted(saved, userId, coachName, athleteName);
+        } catch (Exception e) {
+            // Non-blocking
+        }
+
         return mapToResponse(saved, coachName, athleteName);
     }
 
@@ -202,6 +240,10 @@ public class TrainingService {
                 .date(t.getDate())
                 .time(t.getTime())
                 .status(t.getStatus())
+                .rpe(t.getRpe())
+                .actualDurationMinutes(t.getActualDurationMinutes())
+                .athleteFeedback(t.getAthleteFeedback())
+                .completedAt(t.getCompletedAt())
                 .createdAt(t.getCreatedAt())
                 .build();
     }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
 import {
@@ -96,6 +97,7 @@ export default function CoachTraining() {
         description: formData.description.trim()
       });
 
+      toast.success("Training session assigned successfully!");
       setShowCreateModal(false);
       setFormData({
         athleteId: "",
@@ -107,7 +109,9 @@ export default function CoachTraining() {
       });
       loadData();
     } catch (err) {
-      setFormError(err.response?.data || "Failed to create training session.");
+      const msg = err.response?.data || "Failed to create training session.";
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -133,10 +137,13 @@ export default function CoachTraining() {
         description: editingTraining.description?.trim() || ""
       });
 
+      toast.success("Training session updated!");
       setEditingTraining(null);
       loadData();
     } catch (err) {
-      setFormError(err.response?.data || "Failed to update training session.");
+      const msg = err.response?.data || "Failed to update training session.";
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -145,10 +152,11 @@ export default function CoachTraining() {
   const handleCancelTraining = async (id) => {
     try {
       await api.delete(`/training/${id}?coachId=${coachId}`);
+      toast.success("Training session cancelled.");
       setCancellingId(null);
       loadData();
     } catch (err) {
-      alert(err.response?.data || "Failed to cancel training session.");
+      toast.error(err.response?.data || "Failed to cancel training session.");
     }
   };
 

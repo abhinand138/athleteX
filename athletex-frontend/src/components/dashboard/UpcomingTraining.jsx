@@ -1,30 +1,23 @@
 import { useState } from "react";
 import { FaCheck, FaCalendarAlt, FaClock } from "react-icons/fa";
-import api from "../../services/api";
+import WorkoutCompletionModal from "./WorkoutCompletionModal";
 
 export default function UpcomingTraining({ sessions = [], onComplete }) {
-  const [completingId, setCompletingId] = useState(null);
+  const [selectedTraining, setSelectedTraining] = useState(null);
   const [localSessions, setLocalSessions] = useState(sessions);
 
   // Sync if prop updates
   const displaySessions = localSessions.length !== sessions.length ? localSessions : sessions;
 
-  const handleMarkComplete = async (e, sessionId) => {
+  const handleOpenCompleteModal = (e, session) => {
     e.stopPropagation();
-    setCompletingId(sessionId);
-    try {
-      const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-      await api.put(`/training/${sessionId}/complete?userId=${storedUser?.id}`);
-      // Remove from upcoming view immediately
-      setLocalSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      if (onComplete) {
-        onComplete();
-      }
-    } catch (err) {
-      console.error("Failed to complete training session:", err);
-      alert(err.response?.data || "Failed to mark training session as complete.");
-    } finally {
-      setCompletingId(null);
+    setSelectedTraining(session);
+  };
+
+  const handleModalCompleted = (completedId) => {
+    setLocalSessions((prev) => prev.filter((s) => s.id !== completedId));
+    if (onComplete) {
+      onComplete();
     }
   };
 
@@ -85,19 +78,12 @@ export default function UpcomingTraining({ sessions = [], onComplete }) {
 
                 {session.id && (
                   <button
-                    onClick={(e) => handleMarkComplete(e, session.id)}
-                    disabled={completingId === session.id}
-                    title="Mark Complete"
-                    className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500 border border-emerald-500/20 hover:border-emerald-500 text-emerald-400 hover:text-white text-xs font-semibold rounded-md transition-all cursor-pointer disabled:opacity-50"
+                    onClick={(e) => handleOpenCompleteModal(e, session)}
+                    title="Mark Complete with RPE & Notes"
+                    className="flex items-center gap-1.5 px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500 border border-emerald-500/20 hover:border-emerald-500 text-emerald-400 hover:text-white text-xs font-semibold rounded-md transition-all cursor-pointer"
                   >
-                    {completingId === session.id ? (
-                      <div className="w-3 h-3 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <>
-                        <FaCheck className="text-[10px]" />
-                        <span>Complete</span>
-                      </>
-                    )}
+                    <FaCheck className="text-[10px]" />
+                    <span>Complete</span>
                   </button>
                 )}
               </div>
@@ -105,6 +91,13 @@ export default function UpcomingTraining({ sessions = [], onComplete }) {
           ))}
         </div>
       )}
+
+      <WorkoutCompletionModal
+        isOpen={Boolean(selectedTraining)}
+        onClose={() => setSelectedTraining(null)}
+        training={selectedTraining}
+        onCompleted={handleModalCompleted}
+      />
     </div>
   );
 }

@@ -96,6 +96,9 @@ export default function Login() {
   if (response.data.message === "Login Successful") {
 
     localStorage.setItem("user", JSON.stringify(response.data));
+    if (response.data.token) {
+      localStorage.setItem("token", response.data.token);
+    }
 
     setMessage({
       type: "success",

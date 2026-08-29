@@ -26,5 +26,9 @@ public class TrainingResponse {
     private LocalDate date;
     private String time;
     private TrainingStatus status;
+    private Integer rpe;
+    private Integer actualDurationMinutes;
+    private String athleteFeedback;
+    private LocalDateTime completedAt;
     private LocalDateTime createdAt;
 }

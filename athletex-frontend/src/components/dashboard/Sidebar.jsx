@@ -8,6 +8,7 @@ import {
   FaUserFriends,
   FaDumbbell,
   FaFileAlt,
+  FaBell,
 } from "react-icons/fa";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -52,6 +53,11 @@ export default function Sidebar() {
           path: "/coach/reports"
         },
         {
+          icon: <FaBell />,
+          name: "Notifications",
+          path: "/coach/notifications"
+        },
+        {
           icon: <FaCog />,
           name: "Settings",
           path: "/settings"
@@ -74,9 +80,19 @@ export default function Sidebar() {
           path: "/performance"
         },
         {
+          icon: <FaDumbbell />,
+          name: "Training",
+          path: "/training"
+        },
+        {
           icon: <FaTrophy />,
           name: "Achievements",
           path: "/achievements"
+        },
+        {
+          icon: <FaBell />,
+          name: "Notifications",
+          path: "/athlete/notifications"
         },
         {
           icon: <FaCog />,
@@ -87,6 +103,7 @@ export default function Sidebar() {
 
   const handleLogout = () => {
     localStorage.removeItem("user");
+    localStorage.removeItem("token");
     navigate("/login");
   };
 

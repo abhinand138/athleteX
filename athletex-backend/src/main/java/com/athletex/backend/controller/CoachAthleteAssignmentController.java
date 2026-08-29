@@ -56,6 +56,18 @@ public class CoachAthleteAssignmentController {
         }
     }
 
+    // GET /api/coach/assignments/athlete/{athleteId}/coach-details
+    @GetMapping("/athlete/{athleteId}/coach-details")
+    public ResponseEntity<?> getCoachDetailsForAthlete(@PathVariable String athleteId) {
+        try {
+            return assignmentService.getCoachDetailsForAthlete(athleteId)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(null);
+        }
+    }
+
     // DELETE /api/coach/assignments/{coachId}/{athleteId}
     @DeleteMapping("/{coachId}/{athleteId}")
     public ResponseEntity<?> unassignAthlete(

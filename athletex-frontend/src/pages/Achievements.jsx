@@ -5,10 +5,14 @@ import {
   FaCalendarAlt,
   FaPlus,
   FaTimes,
+  FaDownload,
+  FaCertificate,
+  FaAward
 } from "react-icons/fa";
-
+import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
+import { generateAchievementCertificate } from "../utils/certificateGenerator";
 
 export default function Achievements() {
   const [achievements, setAchievements] = useState([]);
@@ -604,16 +608,33 @@ export default function Achievements() {
 
                 </div>
 
-                <div className="mt-5 pt-4 border-t border-white/5 flex items-center gap-2 relative z-10">
+                <div className="mt-5 pt-4 border-t border-white/5 flex items-center justify-between gap-2 relative z-10">
+                  <div className="flex items-center gap-2">
+                    <FaCalendarAlt className="text-brand-peach text-xs" />
+                    <span className="text-xs text-gray-500 font-mono">
+                      {achievement.date
+                        ? new Date(achievement.date).toLocaleDateString()
+                        : "Date unavailable"}
+                    </span>
+                  </div>
 
-                  <FaCalendarAlt className="text-brand-peach text-xs" />
-
-                  <span className="text-xs text-gray-500 font-mono">
-                    {achievement.date
-                      ? new Date(achievement.date).toLocaleDateString()
-                      : "Date unavailable"}
-                  </span>
-
+                  <button
+                    onClick={() => {
+                      const user = JSON.parse(localStorage.getItem("user") || "{}");
+                      try {
+                        generateAchievementCertificate(achievement, user?.fullName, achievement.coachName);
+                        toast.success("Certificate generated & downloaded! 📜");
+                      } catch (err) {
+                        toast.error("Failed to generate certificate.");
+                      }
+                    }}
+                    title="Download Official Certificate"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-peach/10 hover:bg-brand-peach border border-brand-peach/30 hover:border-brand-peach text-brand-peach hover:text-black text-xs font-bold transition-all shadow-md cursor-pointer"
+                  >
+                    <FaCertificate className="text-xs" />
+                    <span>Certificate</span>
+                    <FaDownload className="text-[10px]" />
+                  </button>
                 </div>
 
               </div>

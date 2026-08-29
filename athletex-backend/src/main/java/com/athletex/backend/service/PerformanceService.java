@@ -9,6 +9,7 @@ import java.time.LocalDateTime;
 
 import com.athletex.backend.model.PerformanceHistory;
 import com.athletex.backend.repository.PerformanceHistoryRepository;
+import com.athletex.backend.repository.UserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -17,6 +18,8 @@ public class PerformanceService {
     private final PerformanceRepository performanceRepository;
     private final PerformanceHistoryRepository performanceHistoryRepository;
     private final ActivityService activityService;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /*
      * GET PERFORMANCE
@@ -111,6 +114,15 @@ public class PerformanceService {
                 "You updated your performance metrics.",
                 "🏃"
         );
+
+        // Send notification
+        try {
+            userRepository.findById(userId).ifPresent(athlete ->
+                    notificationService.notifyPerformanceUpdated(savedPerformance, athlete, "Coach")
+            );
+        } catch (Exception e) {
+            // Non-blocking
+        }
 
         return savedPerformance;
     }

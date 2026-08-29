@@ -107,6 +107,22 @@ public class CoachAthleteAssignmentService {
         return assignmentRepository.findByAthleteIdAndStatus(athleteId, AssignmentStatus.ACTIVE);
     }
 
+    public Optional<com.athletex.backend.dto.CoachInfoResponse> getCoachDetailsForAthlete(String athleteId) {
+        return assignmentRepository.findByAthleteIdAndStatus(athleteId, AssignmentStatus.ACTIVE)
+                .flatMap(assignment -> userRepository.findById(assignment.getCoachId())
+                        .map(coach -> com.athletex.backend.dto.CoachInfoResponse.builder()
+                                .id(coach.getId())
+                                .fullName(coach.getFullName())
+                                .email(coach.getEmail())
+                                .phone(coach.getPhone())
+                                .sport(coach.getSport())
+                                .city(coach.getCity())
+                                .bio(coach.getBio())
+                                .profileImage(coach.getProfileImage())
+                                .assignedAt(assignment.getAssignedAt())
+                                .build()));
+    }
+
     // ===========================
     // UNASSIGN ATHLETE
     // ===========================

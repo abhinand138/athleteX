@@ -4,8 +4,10 @@ import api from "../services/api";
 import ProfileHeader from "../components/profile/ProfileHeader";
 import PersonalInfoCard from "../components/profile/PersonalInfoCard";
 import BioCard from "../components/profile/BioCard";
+import TalentPassportModal from "../components/profile/TalentPassportModal";
 import { motion } from "framer-motion";
 import { FiTrendingUp, FiCrosshair, FiStar, FiUsers, FiEye, FiTarget } from "react-icons/fi";
+import { FaIdCard } from "react-icons/fa";
 
 const StatCard = ({ title, value, icon: Icon, delay }) => (
   <motion.div
@@ -34,7 +36,8 @@ const StatCard = ({ title, value, icon: Icon, delay }) => (
 
 export default function Profile() {
   const [profile, setProfile] = useState(null);
-  const user = JSON.parse(localStorage.getItem("user"));
+  const [showPassport, setShowPassport] = useState(false);
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   useEffect(() => {
     if (user?.id) {
@@ -70,16 +73,25 @@ export default function Profile() {
         {/* Profile Header */}
         <ProfileHeader profile={profile} />
 
-        {/* Career Overview Static Stats */}
+        {/* Career Overview & Passport Button */}
         <motion.div 
           initial={{ opacity: 0 }} 
           animate={{ opacity: 1 }} 
           transition={{ duration: 0.5, delay: 0.2 }}
           className="pt-6"
         >
-          <div className="flex items-center gap-4 mb-6">
-            <div className="w-1.5 h-8 bg-brand-peach rounded-full"></div>
-            <h2 className="text-2xl font-bold text-white tracking-wide">Career Overview</h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <div className="w-1.5 h-8 bg-brand-peach rounded-full"></div>
+              <h2 className="text-2xl font-bold text-white tracking-wide">Career Overview</h2>
+            </div>
+            <button
+              onClick={() => setShowPassport(!showPassport)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-peach to-orange-500 text-black font-extrabold text-xs uppercase tracking-wider hover:opacity-95 shadow-lg shadow-brand-peach/20 transition-all self-start sm:self-auto"
+            >
+              <FaIdCard className="text-sm" />
+              <span>Digital Talent Passport</span>
+            </button>
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -101,6 +113,20 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Talent Passport Modal */}
+      <TalentPassportModal
+        isOpen={showPassport}
+        onClose={() => setShowPassport(false)}
+        athlete={profile}
+        performance={{
+          overallScore: 88,
+          speed: 85,
+          strength: 82,
+          endurance: 90,
+          agility: 84
+        }}
+      />
     </DashboardLayout>
   );
 }

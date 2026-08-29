@@ -17,6 +17,8 @@ import CoachTraining from "../pages/coach/CoachTraining";
 import CoachAchievements from "../pages/coach/CoachAchievements";
 import CoachAnalytics from "../pages/coach/CoachAnalytics";
 import CoachReports from "../pages/coach/CoachReports";
+import CoachNotifications from "../pages/coach/CoachNotifications";
+import AthleteNotifications from "../pages/athlete/AthleteNotifications";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 
 function AppRoutes() {
@@ -33,6 +35,7 @@ function AppRoutes() {
       <Route path="/performance" element={<ProtectedRoute requiredRole="ATHLETE"><Performance /></ProtectedRoute>} />
       <Route path="/training" element={<ProtectedRoute requiredRole="ATHLETE"><Training /></ProtectedRoute>} />
       <Route path="/achievements" element={<ProtectedRoute requiredRole="ATHLETE"><Achievements /></ProtectedRoute>} />
+      <Route path="/athlete/notifications" element={<ProtectedRoute requiredRole="ATHLETE"><AthleteNotifications /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
       {/* Coach Routes */}
@@ -43,6 +46,7 @@ function AppRoutes() {
       <Route path="/coach/achievements" element={<ProtectedRoute requiredRole="COACH"><CoachAchievements /></ProtectedRoute>} />
       <Route path="/coach/analytics" element={<ProtectedRoute requiredRole="COACH"><CoachAnalytics /></ProtectedRoute>} />
       <Route path="/coach/reports" element={<ProtectedRoute requiredRole="COACH"><CoachReports /></ProtectedRoute>} />
+      <Route path="/coach/notifications" element={<ProtectedRoute requiredRole="COACH"><CoachNotifications /></ProtectedRoute>} />
       
 
     </Routes>

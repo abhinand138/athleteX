@@ -84,9 +84,23 @@ public class TrainingController {
     @PutMapping("/{trainingId}/complete")
     public ResponseEntity<?> completeTraining(
             @PathVariable String trainingId,
-            @RequestParam(required = false) String userId) {
+            @RequestParam(required = false) String userId,
+            @RequestBody(required = false) com.athletex.backend.dto.TrainingCompletionRequest completionRequest,
+            org.springframework.security.core.Authentication authentication) {
+        
+        String effectiveUserId = userId;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            effectiveUserId = (String) authentication.getPrincipal();
+        } else if (completionRequest != null && completionRequest.getUserId() != null) {
+            effectiveUserId = completionRequest.getUserId();
+        }
+
+        Integer rpe = completionRequest != null ? completionRequest.getRpe() : null;
+        Integer duration = completionRequest != null ? completionRequest.getActualDurationMinutes() : null;
+        String feedback = completionRequest != null ? completionRequest.getAthleteFeedback() : null;
+
         try {
-            TrainingResponse response = trainingService.completeTraining(trainingId, userId);
+            TrainingResponse response = trainingService.completeTraining(trainingId, effectiveUserId, rpe, duration, feedback);
             return ResponseEntity.ok(response);
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());

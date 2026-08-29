@@ -35,5 +35,13 @@ public class Training {
     @Builder.Default
     private TrainingStatus status = TrainingStatus.SCHEDULED;
 
+    private Integer rpe; // Rating of Perceived Exertion (1-10)
+
+    private Integer actualDurationMinutes;
+
+    private String athleteFeedback;
+
+    private LocalDateTime completedAt;
+
     private LocalDateTime createdAt;
 }

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
 import {
@@ -112,6 +113,7 @@ export default function CoachAchievements() {
         description: formData.description.trim()
       });
 
+      toast.success("Achievement awarded successfully! 🏆");
       setShowAddModal(false);
       setFormData({
         athleteId: "",
@@ -122,11 +124,11 @@ export default function CoachAchievements() {
         icon: "🏆",
         description: ""
       });
-      setNotification({ type: "success", text: "Achievement created successfully!" });
-      setTimeout(() => setNotification(null), 4000);
       loadAllData();
     } catch (err) {
-      setFormError(err.response?.data || "Failed to save achievement.");
+      const msg = err.response?.data || "Failed to save achievement.";
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -152,12 +154,13 @@ export default function CoachAchievements() {
         description: editingAchievement.description?.trim() || ""
       });
 
+      toast.success("Achievement updated successfully!");
       setEditingAchievement(null);
-      setNotification({ type: "success", text: "Achievement updated successfully!" });
-      setTimeout(() => setNotification(null), 4000);
       loadAllData();
     } catch (err) {
-      setFormError(err.response?.data || "Failed to update achievement.");
+      const msg = err.response?.data || "Failed to update achievement.";
+      setFormError(msg);
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -167,11 +170,10 @@ export default function CoachAchievements() {
     try {
       await api.delete(`/achievements/${id}?coachId=${coachId}`);
       setDeletingId(null);
-      setNotification({ type: "success", text: "Achievement deleted successfully!" });
-      setTimeout(() => setNotification(null), 4000);
+      toast.success("Achievement deleted.");
       loadAllData();
     } catch (err) {
-      alert(err.response?.data || "Failed to delete achievement.");
+      toast.error(err.response?.data || "Failed to delete achievement.");
     }
   };
 

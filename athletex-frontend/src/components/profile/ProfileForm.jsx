@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../../services/api";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 import { FiUser, FiPhone, FiTarget, FiActivity, FiCalendar, FiMaximize2, FiMapPin, FiMap, FiGlobe, FiCheck } from "react-icons/fi";
 import { FaWeightHanging } from "react-icons/fa";
 import { BiImageAdd } from "react-icons/bi";
@@ -60,12 +61,13 @@ export default function ProfileForm() {
     try {
       await api.put(`/users/profile/${user.id}`, formData);
       setSuccess(true);
+      toast.success("Profile updated successfully!");
       setTimeout(() => {
         navigate("/profile");
-      }, 1500);
+      }, 1200);
     } catch (err) {
       console.log(err);
-      alert("Update Failed");
+      toast.error(err.response?.data?.message || "Failed to update profile.");
       setIsSubmitting(false);
     }
   };

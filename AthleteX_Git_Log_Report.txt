@@ -1,0 +1,97 @@
+============================================================
+COMMIT 66a9879
+AUTHOR: abhinand
+DATE: 30 July 2026
+MESSAGE: Initial commit Basic UI Setup
+============================================================
+
+============================================================
+COMMIT 9e1892d
+AUTHOR: abhinand
+DATE: 31 July 2026
+MESSAGE: improved Dashboard UI
+============================================================
+
+============================================================
+COMMIT 03c0d3c
+AUTHOR: abhinand
+DATE: 03 August 2026
+MESSAGE: Improved Dashboard
+============================================================
+
+============================================================
+COMMIT b797a0a
+AUTHOR: abhinand
+DATE: 09 August 2026
+MESSAGE: connect frontend to backend
+============================================================
+
+============================================================
+COMMIT 7fc2904
+AUTHOR: abhinand
+DATE: 11 August 2026
+MESSAGE: complete athlete profile module
+============================================================
+
+============================================================
+COMMIT eab84ce
+AUTHOR: abhinand
+DATE: 11 August 2026
+MESSAGE: Complete Profile CRUD and UI polish
+============================================================
+
+============================================================
+COMMIT bb6e253
+AUTHOR: abhinand
+DATE: 15 August 2026
+MESSAGE: Dashboard becomes Dynamic
+============================================================
+
+============================================================
+COMMIT e23d697
+AUTHOR: abhinand
+DATE: 17 August 2026
+MESSAGE: Basic Coach DashBoard Implemented
+============================================================
+
+============================================================
+COMMIT a76da89
+AUTHOR: abhinand
+DATE: 18 August 2026
+MESSAGE: implement coach analytics and performance insights
+============================================================
+
+============================================================
+COMMIT c2ffce2
+AUTHOR: abhinand
+DATE: 19 August 2026
+MESSAGE: complete Coach Stage 8 - Reports and Performance Export
+============================================================
+
+============================================================
+COMMIT 8f60291
+AUTHOR: abhinand
+DATE: 29 August 2026
+MESSAGE: improved authentication
+============================================================
+
+============================================================
+COMMIT 66188e9
+AUTHOR: abhinand
+DATE: 29 August 2026
+MESSAGE: Coach Module Modification
+============================================================
+
+============================================================
+COMMIT b856660
+AUTHOR: abhinand
+DATE: 29 August 2026
+MESSAGE: Implemented admin module
+============================================================
+
+============================================================
+COMMIT f3345d9
+AUTHOR: abhinand
+DATE: 30 August 2026
+MESSAGE: modified performance module
+============================================================

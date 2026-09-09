@@ -18,6 +18,8 @@ import CoachAchievements from "../pages/coach/CoachAchievements";
 import CoachAnalytics from "../pages/coach/CoachAnalytics";
 import CoachReports from "../pages/coach/CoachReports";
 import CoachNotifications from "../pages/coach/CoachNotifications";
+import CoachProfile from "../pages/coach/CoachProfile";
+import CoachEditProfile from "../pages/coach/CoachEditProfile";
 import AthleteNotifications from "../pages/athlete/AthleteNotifications";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
@@ -45,6 +47,9 @@ function AppRoutes() {
 
       {/* Coach Routes */}
       <Route path="/coach/dashboard" element={<ProtectedRoute requiredRole="COACH"><CoachDashboard /></ProtectedRoute>} />
+      <Route path="/coach/profile" element={<ProtectedRoute requiredRole="COACH"><CoachProfile /></ProtectedRoute>} />
+      <Route path="/coach/profile/edit" element={<ProtectedRoute requiredRole="COACH"><CoachEditProfile /></ProtectedRoute>} />
+      <Route path="/coach/edit-profile" element={<ProtectedRoute requiredRole="COACH"><CoachEditProfile /></ProtectedRoute>} />
       <Route path="/coach/athletes" element={<ProtectedRoute requiredRole="COACH"><CoachAthletes /></ProtectedRoute>} />
       <Route path="/coach/athletes/:athleteId" element={<ProtectedRoute requiredRole="COACH"><CoachAthleteProfile /></ProtectedRoute>} />
       <Route path="/coach/training" element={<ProtectedRoute requiredRole="COACH"><CoachTraining /></ProtectedRoute>} />

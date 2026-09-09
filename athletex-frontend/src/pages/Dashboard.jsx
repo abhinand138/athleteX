@@ -18,6 +18,8 @@ import {
   FaEye,
   FaDumbbell,
   FaIdCard,
+  FaBolt,
+  FaArrowRight,
 } from "react-icons/fa";
 
 import api from "../services/api";
@@ -27,6 +29,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showPassportModal, setShowPassportModal] = useState(false);
+  const [fitnessProfile, setFitnessProfile] = useState(null);
 
   const fetchDashboard = async () => {
     try {
@@ -53,6 +56,13 @@ export default function Dashboard() {
       console.log("Dashboard data:", response.data);
 
       setDashboard(response.data);
+
+      try {
+        const fitRes = await api.get(`/performance/${user.id}/fitness-profile`);
+        setFitnessProfile(fitRes.data);
+      } catch (e) {
+        // Non-blocking
+      }
 
     } catch (error) {
       console.error("Dashboard API Error:", error);
@@ -135,6 +145,54 @@ export default function Dashboard() {
             <span>Talent Passport</span>
           </button>
         </div>
+
+        {/* ============================= */}
+        {/* BANISTER MATCH FORM & CONDITIONING BANNER */}
+        {/* ============================= */}
+        {fitnessProfile && (
+          <div className="glass-card rounded-2xl p-4 sm:p-5 border border-white/5 bg-gradient-to-r from-black/50 via-brand-peach/5 to-black/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-brand-peach/10 border border-brand-peach/30 flex items-center justify-center text-brand-peach text-xl shrink-0">
+                <FaBolt />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                    Match Readiness & Conditioning
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand-peach/20 text-brand-peach font-bold">
+                    {fitnessProfile.fitnessTier?.replace('_', ' ')}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-base font-extrabold text-white">
+                    {fitnessProfile.formBadge}
+                  </span>
+                  <span className="text-xs text-gray-400 font-mono">
+                    (Form: {fitnessProfile.formScore > 0 ? `+${fitnessProfile.formScore}` : fitnessProfile.formScore})
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-6 self-stretch sm:self-auto justify-between sm:justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-white/5">
+              <div className="text-left sm:text-right">
+                <span className="text-[10px] text-gray-400 block uppercase font-medium">5-Pillar Score</span>
+                <span className="text-lg font-black text-brand-peach">
+                  {fitnessProfile.overallFitnessScore}{" "}
+                  <span className="text-xs text-gray-500 font-normal">/ 100</span>
+                </span>
+              </div>
+              <a
+                href="/performance"
+                className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-white transition flex items-center gap-1.5"
+              >
+                <span>View Radar Profile</span>
+                <FaArrowRight className="text-[10px] text-brand-peach" />
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* ============================= */}
         {/* MY COACH & READINESS ROW */}

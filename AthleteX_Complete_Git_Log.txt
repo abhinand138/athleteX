@@ -1,0 +1,474 @@
+commit 66a9879bf9a6c1c6b6a3f26fa89deea0745e5b39
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Thu Jul 30 06:22:06 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Thu Jul 30 06:22:06 2026 +0530
+
+    Initial commit Basic UI Setup
+
+ athletex-backend/.gitattributes                    |    2 +
+ athletex-backend/.gitignore                        |   33 +
+ .../.mvn/wrapper/maven-wrapper.properties          |    3 +
+ athletex-backend/mvnw                              |  295 ++
+ athletex-backend/mvnw.cmd                          |  189 ++
+ athletex-backend/pom.xml                           |  101 +
+ .../backend/AthletexBackendApplication.java        |   13 +
+ .../athletex/backend/config/SecurityConfig.java    |   24 +
+ .../backend/controller/AuthController.java         |   27 +
+ .../com/athletex/backend/dto/LoginRequest.java     |   15 +
+ .../com/athletex/backend/dto/RegisterRequest.java  |   24 +
+ .../main/java/com/athletex/backend/model/Role.java |    7 +
+ .../main/java/com/athletex/backend/model/User.java |   33 +
+ .../backend/repository/UserRepository.java         |   13 +
+ .../com/athletex/backend/service/AuthService.java  |   50 +
+ .../src/main/resources/application.properties      |    5 +
+ .../backend/AthletexBackendApplicationTests.java   |   13 +
+ athletex-frontend/.gitignore                       |   24 +
+ athletex-frontend/README.md                        |   16 +
+ athletex-frontend/eslint.config.js                 |   21 +
+ athletex-frontend/index.html                       |   16 +
+ athletex-frontend/package-lock.json                | 3357 ++++++++++++++++++++
+ athletex-frontend/package.json                     |   33 +
+ athletex-frontend/public/favicon.svg               |    1 +
+ athletex-frontend/public/icons.svg                 |   24 +
+ athletex-frontend/src/App.css                      |  184 ++
+ athletex-frontend/src/App.jsx                      |    7 +
+ athletex-frontend/src/assets/hero.png              |  Bin 0 -> 13057 bytes
+ athletex-frontend/src/assets/react.svg             |    1 +
+ athletex-frontend/src/assets/vite.svg              |    1 +
+ .../src/components/home/AnalyticsFeatures.jsx      |  229 ++
+ athletex-frontend/src/components/home/CtaArena.jsx |   84 +
+ .../src/components/home/FeatureCard.jsx            |   26 +
+ athletex-frontend/src/components/home/Features.jsx |   71 +
+ athletex-frontend/src/components/home/Hero.jsx     |   91 +
+ .../src/components/home/PathToPro.jsx              |   71 +
+ .../src/components/home/RisingStars.jsx            |  127 +
+ .../src/components/home/Statistics.jsx             |   36 +
+ athletex-frontend/src/components/layout/Footer.jsx |  103 +
+ athletex-frontend/src/components/layout/Navbar.jsx |   68 +
+ athletex-frontend/src/index.css                    |   45 +
+ athletex-frontend/src/main.jsx                     |   13 +
+ athletex-frontend/src/pages/Dashboard.jsx          |    7 +
+ athletex-frontend/src/pages/Landing.jsx            |   23 +
+ athletex-frontend/src/pages/Login.jsx              |  195 ++
+ athletex-frontend/src/pages/Register.jsx           |  246 ++
+ athletex-frontend/src/routes/AppRoutes.jsx         |   19 +
+ athletex-frontend/src/services/api.js              |    7 +
+ athletex-frontend/vite.config.js                   |   11 +
+ 49 files changed, 6004 insertions(+)
+
+commit 9e1892df15e130c1730e057d70bad9b0a498d249
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Fri Jul 31 23:32:35 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Fri Jul 31 23:32:35 2026 +0530
+
+    improved Dashboard UI
+
+ .../src/components/dashboard/QuickActions.jsx      | 23 +++++++
+ .../src/components/dashboard/RecentActivity.jsx    | 15 +++++
+ .../src/components/dashboard/Sidebar.jsx           | 77 ++++++++++++++++++++++
+ .../src/components/dashboard/StatCard.jsx          | 10 +++
+ .../src/components/dashboard/Topbar.jsx            | 35 ++++++++++
+ athletex-frontend/src/layouts/DashboardLayout.jsx  | 22 +++++++
+ athletex-frontend/src/pages/Dashboard.jsx          | 45 ++++++++++++-
+ 7 files changed, 224 insertions(+), 3 deletions(-)
+
+commit 03c0d3ccb737159955f330649eaa7516d2b1b360
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Mon Aug 3 21:55:32 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Mon Aug 3 21:55:32 2026 +0530
+
+    Improved Dashboard
+
+ athletex-frontend/index.html                       |   2 +-
+ athletex-frontend/public/screen.png                | Bin 0 -> 661448 bytes
+ athletex-frontend/src/assets/images/profile.jpg    | Bin 0 -> 74784 bytes
+ .../components/dashboard/AthleteProfileCard.jsx    |  34 +++++++++++++++
+ .../src/components/dashboard/StatCard.jsx          |  38 ++++++++++++++---
+ .../src/components/dashboard/UpcomingTraining.jsx  |  35 +++++++++++++++
+ athletex-frontend/src/pages/Dashboard.jsx          |  47 +++++++++++++++++----
+ 7 files changed, 140 insertions(+), 16 deletions(-)
+
+commit b797a0a9c44793d4fdcf62aa6aeae1f376124e28
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Sun Aug 9 23:24:11 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Sun Aug 9 23:24:11 2026 +0530
+
+    connect frontend to backend
+
+ .../backend/controller/AuthController.java         |  5 +-
+ .../backend/controller/UserController.java         | 29 ++++++++++
+ .../com/athletex/backend/dto/LoginResponse.java    | 18 ++++++
+ .../com/athletex/backend/dto/ProfileResponse.java  | 44 +++++++++++++++
+ .../athletex/backend/dto/UpdateProfileRequest.java | 37 ++++++++++++
+ .../main/java/com/athletex/backend/model/User.java | 26 +++++++++
+ .../com/athletex/backend/service/AuthService.java  | 17 ++++--
+ .../com/athletex/backend/service/UserService.java  | 66 ++++++++++++++++++++++
+ .../components/dashboard/AthleteProfileCard.jsx    | 55 +++++++++++-------
+ .../src/components/dashboard/QuickActions.jsx      | 18 +++---
+ .../src/components/dashboard/RecentActivity.jsx    | 29 ++++++++--
+ .../src/components/dashboard/Sidebar.jsx           | 56 +++++++++++++-----
+ .../src/components/dashboard/StatCard.jsx          | 13 +++--
+ .../src/components/dashboard/Topbar.jsx            | 19 ++++---
+ .../src/components/dashboard/UpcomingTraining.jsx  | 49 ++++++++--------
+ .../src/components/profile/BioCard.jsx             | 23 ++++++++
+ .../src/components/profile/PersonalInfoCard.jsx    | 61 ++++++++++++++++++++
+ .../src/components/profile/ProfileHeader.jsx       | 45 +++++++++++++++
+ athletex-frontend/src/layouts/DashboardLayout.jsx  | 10 +++-
+ athletex-frontend/src/pages/Dashboard.jsx          | 59 ++++++++-----------
+ athletex-frontend/src/pages/Login.jsx              | 47 +++++++++------
+ athletex-frontend/src/pages/Profile.jsx            | 47 +++++++++++++++
+ athletex-frontend/src/routes/AppRoutes.jsx         |  2 +
+ 23 files changed, 628 insertions(+), 147 deletions(-)
+
+commit 7fc29047c557a6fab275d7793aa0383e068e9e12
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Tue Aug 11 21:49:52 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Tue Aug 11 21:49:52 2026 +0530
+
+    complete athlete profile module
+
+ .../src/components/profile/ProfileForm.jsx         | 128 +++++++++++++++++++++
+ athletex-frontend/src/pages/EditProfile.jsx        |  18 +++
+ athletex-frontend/src/pages/Profile.jsx            |  73 +++++++++++-
+ athletex-frontend/src/routes/AppRoutes.jsx         |   2 +
+ 4 files changed, 216 insertions(+), 5 deletions(-)
+
+commit eab84cec0ee514ae82751aad7effb6fa215204e5
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Tue Aug 11 22:26:15 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Tue Aug 11 22:26:15 2026 +0530
+
+    Complete Profile CRUD and UI polish
+
+ .../src/components/profile/BioCard.jsx             |  49 +++--
+ .../src/components/profile/PersonalInfoCard.jsx    | 109 +++++------
+ .../src/components/profile/ProfileForm.jsx         | 202 ++++++++++++---------
+ .../src/components/profile/ProfileHeader.jsx       | 101 +++++++----
+ athletex-frontend/src/pages/Login.jsx              |  66 ++++++-
+ athletex-frontend/src/pages/Profile.jsx            | 128 +++++++------
+ 6 files changed, 393 insertions(+), 262 deletions(-)
+
+commit bb6e253e097da270e71151967045165593e7e90d
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Sat Aug 15 23:48:59 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Sat Aug 15 23:48:59 2026 +0530
+
+    Dashboard becomes Dynamic
+
+ .vscode/settings.json                              |   3 +
+ .../backend/controller/DashboardController.java    |  21 +++
+ .../com/athletex/backend/dto/ActivityItem.java     |  15 ++
+ .../athletex/backend/dto/DashboardResponse.java    |  57 ++++++++
+ .../com/athletex/backend/dto/TrainingItem.java     |  15 ++
+ .../athletex/backend/service/DashboardService.java |  96 +++++++++++++
+ .../components/dashboard/AthleteProfileCard.jsx    |  30 +++-
+ .../src/components/dashboard/QuickActions.jsx      |  35 ++++-
+ .../src/components/dashboard/RecentActivity.jsx    |  63 ++++++---
+ .../src/components/dashboard/UpcomingTraining.jsx  |  61 +++++---
+ athletex-frontend/src/pages/Dashboard.jsx          | 156 +++++++++++++++++++--
+ athletex-frontend/src/pages/Performance.jsx        |   7 +
+ athletex-frontend/src/pages/Training.jsx           |   7 +
+ athletex-frontend/src/routes/AppRoutes.jsx         |   4 +
+ 14 files changed, 507 insertions(+), 63 deletions(-)
+
+commit e23d69709f45dc030df1109e46c006593ef629bc
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Mon Aug 17 11:58:16 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Mon Aug 17 11:58:16 2026 +0530
+
+    Basic Coach DashBoard Implemented
+
+ .../athletex/backend/config/SecurityConfig.java    |   7 +
+ .../backend/controller/AchievementController.java  |  54 ++
+ .../backend/controller/ActivityController.java     |  22 +
+ .../controller/CoachDashboardController.java       |  26 +
+ .../backend/controller/PerformanceController.java  |  59 ++
+ .../backend/controller/ScoutViewController.java    |  58 ++
+ .../backend/controller/UserController.java         |   9 +
+ .../backend/dto/CoachDashboardResponse.java        |  25 +
+ .../com/athletex/backend/model/Achievement.java    |  35 ++
+ .../java/com/athletex/backend/model/Activity.java  |  31 +
+ .../com/athletex/backend/model/Performance.java    |  35 ++
+ .../athletex/backend/model/PerformanceHistory.java |  33 ++
+ .../java/com/athletex/backend/model/ScoutView.java |  27 +
+ .../backend/repository/AchievementRepository.java  |  14 +
+ .../backend/repository/ActivityRepository.java     |  12 +
+ .../repository/PerformanceHistoryRepository.java   |  12 +
+ .../backend/repository/PerformanceRepository.java  |  11 +
+ .../backend/repository/ScoutViewRepository.java    |  21 +
+ .../backend/service/AchievementService.java        |  63 ++
+ .../athletex/backend/service/ActivityService.java  |  33 ++
+ .../com/athletex/backend/service/AuthService.java  |  30 +-
+ .../backend/service/CoachDashboardService.java     |  33 ++
+ .../athletex/backend/service/DashboardService.java | 184 ++++--
+ .../backend/service/PerformanceService.java        | 145 +++++
+ .../athletex/backend/service/ScoutViewService.java |  51 ++
+ .../com/athletex/backend/service/UserService.java  |  45 ++
+ athletex-frontend/package-lock.json                | 403 ++++++++++++-
+ athletex-frontend/package.json                     |   1 +
+ .../src/components/common/ProtectedRoute.jsx       |  24 +
+ .../src/components/dashboard/Sidebar.jsx           |  70 ++-
+ .../components/performance/PerformanceChart.jsx    |  83 +++
+ athletex-frontend/src/pages/Achievements.jsx       | 631 ++++++++++++++++++++
+ athletex-frontend/src/pages/Dashboard.jsx          |  10 +-
+ athletex-frontend/src/pages/Login.jsx              |   6 +-
+ athletex-frontend/src/pages/Performance.jsx        | 640 ++++++++++++++++++++-
+ athletex-frontend/src/pages/Settings.jsx           | 253 ++++++++
+ .../src/pages/coach/CoachDashboard.jsx             | 155 +++++
+ athletex-frontend/src/routes/AppRoutes.jsx         |  23 +-
+ 38 files changed, 3290 insertions(+), 84 deletions(-)
+
+commit a76da89a4c0fa908c7876a6782c74d4606257d41
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Tue Aug 18 23:39:09 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Tue Aug 18 23:39:09 2026 +0530
+
+    implement coach analytics and performance insights
+
+ .../backend/controller/AchievementController.java  | 121 ++-
+ .../controller/CoachAnalyticsController.java       |  48 ++
+ .../CoachAthleteAssignmentController.java          |  93 +++
+ .../CoachAthleteMonitoringController.java          |  31 +
+ .../backend/controller/TrainingController.java     |  97 +++
+ .../athletex/backend/dto/AchievementRequest.java   |  37 +
+ .../athletex/backend/dto/AchievementResponse.java  |  30 +
+ .../backend/dto/AchievementStatsResponse.java      |  18 +
+ .../athletex/backend/dto/AthleteCardResponse.java  |  29 +
+ .../athletex/backend/dto/CoachAthleteResponse.java |  57 ++
+ .../com/athletex/backend/dto/TrainingItem.java     |  14 +
+ .../com/athletex/backend/dto/TrainingRequest.java  |  37 +
+ .../com/athletex/backend/dto/TrainingResponse.java |  30 +
+ .../dto/analytics/AchievementAnalyticsDto.java     |  24 +
+ .../dto/analytics/AchievementCategoryCountDto.java |  16 +
+ .../backend/dto/analytics/AthleteAttentionDto.java |  22 +
+ .../dto/analytics/AthleteComparisonDto.java        |  25 +
+ .../backend/dto/analytics/CategoryAnalysisDto.java |  18 +
+ .../dto/analytics/CoachAnalyticsResponse.java      |  25 +
+ .../dto/analytics/CoachAnalyticsSummary.java       |  20 +
+ .../backend/dto/analytics/MonthlyTrainingDto.java  |  18 +
+ .../dto/analytics/PerformanceTrendPoint.java       |  22 +
+ .../backend/dto/analytics/RecentActivityDto.java   |  24 +
+ .../dto/analytics/RosterAthleteOptionDto.java      |  17 +
+ .../backend/dto/analytics/TopAthleteDto.java       |  23 +
+ .../dto/analytics/TrainingAnalyticsDto.java        |  22 +
+ .../com/athletex/backend/model/Achievement.java    |  11 +-
+ .../backend/model/AchievementCategory.java         |  10 +
+ .../athletex/backend/model/AssignmentStatus.java   |   6 +
+ .../backend/model/CoachAthleteAssignment.java      |  28 +
+ .../java/com/athletex/backend/model/Training.java  |  39 +
+ .../com/athletex/backend/model/TrainingStatus.java |   7 +
+ .../backend/repository/AchievementRepository.java  |  13 +-
+ .../CoachAthleteAssignmentRepository.java          |  19 +
+ .../backend/repository/TrainingRepository.java     |  26 +
+ .../backend/service/AchievementService.java        | 307 +++++++-
+ .../backend/service/CoachAnalyticsService.java     | 495 ++++++++++++
+ .../service/CoachAthleteAssignmentService.java     | 191 +++++
+ .../service/CoachAthleteMonitoringService.java     | 101 +++
+ .../backend/service/CoachDashboardService.java     |  35 +-
+ .../athletex/backend/service/DashboardService.java | 140 +---
+ .../athletex/backend/service/TrainingService.java  | 208 ++++++
+ .../src/components/dashboard/Sidebar.jsx           |  22 +
+ .../src/components/dashboard/UpcomingTraining.jsx  | 115 ++-
+ athletex-frontend/src/pages/Achievements.jsx       |   4 +-
+ athletex-frontend/src/pages/Dashboard.jsx          |  67 +-
+ .../src/pages/coach/CoachAchievements.jsx          | 830 +++++++++++++++++++++
+ .../src/pages/coach/CoachAnalytics.jsx             | 820 ++++++++++++++++++++
+ .../src/pages/coach/CoachAthleteProfile.jsx        | 414 ++++++++++
+ .../src/pages/coach/CoachAthletes.jsx              | 491 ++++++++++++
+ .../src/pages/coach/CoachDashboard.jsx             | 125 ++--
+ .../src/pages/coach/CoachTraining.jsx              | 742 ++++++++++++++++++
+ athletex-frontend/src/routes/AppRoutes.jsx         |  10 +
+ 53 files changed, 5906 insertions(+), 288 deletions(-)
+
+commit c2ffce26c1d7c5a4b7d3668737248037af053599
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Wed Aug 19 09:22:30 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Wed Aug 19 09:22:30 2026 +0530
+
+    complete Coach Stage 8 - Reports and Performance Export
+
+ .../backend/controller/CoachReportController.java  | 159 ++++
+ .../dto/reports/AchievementLeaderboardDto.java     |  21 +
+ .../backend/dto/reports/AchievementReportDto.java  |  29 +
+ .../dto/reports/AthleteTrainingStatDto.java        |  22 +
+ .../dto/reports/IndividualAthleteReportDto.java    |  69 ++
+ .../backend/dto/reports/TeamReportDto.java         |  22 +
+ .../dto/reports/TrainingCategoryStatDto.java       |  17 +
+ .../backend/dto/reports/TrainingReportDto.java     |  26 +
+ .../backend/service/CoachReportService.java        | 550 +++++++++++++
+ athletex-frontend/package-lock.json                | 249 ++++++
+ athletex-frontend/package.json                     |   2 +
+ .../src/components/dashboard/Sidebar.jsx           |   8 +-
+ .../src/components/dashboard/Topbar.jsx            |   2 +-
+ athletex-frontend/src/index.css                    |  37 +
+ athletex-frontend/src/layouts/DashboardLayout.jsx  |  10 +-
+ .../src/pages/coach/CoachAthleteProfile.jsx        |  20 +-
+ .../src/pages/coach/CoachDashboard.jsx             |  51 +-
+ athletex-frontend/src/pages/coach/CoachReports.jsx | 857 +++++++++++++++++++++
+ athletex-frontend/src/routes/AppRoutes.jsx         |   2 +
+ athletex-frontend/src/utils/pdfGenerator.js        | 452 +++++++++++
+ 20 files changed, 2578 insertions(+), 27 deletions(-)
+
+commit 8f602910b2870ab24c3e13281c98bc396deb5918
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Sat Aug 29 09:07:18 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Sat Aug 29 09:07:18 2026 +0530
+
+    improved authentication
+
+ athletex-backend/pom.xml                           |  26 +
+ .../com/athletex/backend/config/OpenApiConfig.java |  37 ++
+ .../athletex/backend/config/SecurityConfig.java    |  44 +-
+ .../CoachAthleteAssignmentController.java          |  12 +
+ .../backend/controller/GoalController.java         |  97 ++++
+ .../backend/controller/NotificationController.java | 219 +++++++++
+ .../backend/controller/TrainingController.java     |  18 +-
+ .../backend/controller/WellnessController.java     |  59 +++
+ .../athletex/backend/dto/CoachInfoResponse.java    |  25 +
+ .../java/com/athletex/backend/dto/GoalRequest.java |  24 +
+ .../com/athletex/backend/dto/LoginResponse.java    |  19 +
+ .../backend/dto/TrainingCompletionRequest.java     |  21 +
+ .../com/athletex/backend/dto/TrainingResponse.java |   4 +
+ .../backend/dto/WellnessCheckinRequest.java        |  19 +
+ .../dto/notification/AnnouncementRequest.java      |  21 +
+ .../backend/exception/GlobalExceptionHandler.java  |  70 +++
+ .../main/java/com/athletex/backend/model/Goal.java |  39 ++
+ .../com/athletex/backend/model/Notification.java   |  40 ++
+ .../athletex/backend/model/NotificationType.java   |  13 +
+ .../java/com/athletex/backend/model/Training.java  |   8 +
+ .../athletex/backend/model/WellnessCheckin.java    |  36 ++
+ .../backend/repository/GoalRepository.java         |  15 +
+ .../backend/repository/NotificationRepository.java |  19 +
+ .../backend/repository/WellnessRepository.java     |  17 +
+ .../backend/security/JwtAuthenticationFilter.java  |  63 +++
+ .../com/athletex/backend/security/JwtUtil.java     |  72 +++
+ .../backend/service/AchievementService.java        |  18 +-
+ .../com/athletex/backend/service/AuthService.java  |  82 ++--
+ .../service/CoachAthleteAssignmentService.java     |  16 +
+ .../com/athletex/backend/service/GoalService.java  |  95 ++++
+ .../backend/service/NotificationService.java       | 291 +++++++++++
+ .../backend/service/PerformanceService.java        |  12 +
+ .../athletex/backend/service/TrainingService.java  |  42 ++
+ .../athletex/backend/service/WellnessService.java  |  66 +++
+ athletex-frontend/package-lock.json                |  28 +-
+ athletex-frontend/package.json                     |   1 +
+ athletex-frontend/src/App.jsx                      |  44 +-
+ .../components/dashboard/DailyReadinessWidget.jsx  | 234 +++++++++
+ .../components/dashboard/GoalsTrackerWidget.jsx    | 460 +++++++++++++++++
+ .../src/components/dashboard/MyCoachCard.jsx       | 124 +++++
+ .../components/dashboard/NotificationWidget.jsx    | 132 +++++
+ .../src/components/dashboard/Sidebar.jsx           |  17 +
+ .../src/components/dashboard/Topbar.jsx            | 250 +++++++++-
+ .../src/components/dashboard/UpcomingTraining.jsx  |  51 +-
+ .../dashboard/WorkoutCompletionModal.jsx           | 182 +++++++
+ .../src/components/profile/ProfileForm.jsx         |   6 +-
+ .../src/components/profile/TalentPassportModal.jsx | 229 +++++++++
+ athletex-frontend/src/pages/Achievements.jsx       |  41 +-
+ athletex-frontend/src/pages/Dashboard.jsx          | 107 ++--
+ athletex-frontend/src/pages/Login.jsx              |   3 +
+ athletex-frontend/src/pages/Profile.jsx            |  36 +-
+ athletex-frontend/src/pages/Settings.jsx           |   1 +
+ athletex-frontend/src/pages/Training.jsx           | 334 ++++++++++++-
+ .../src/pages/athlete/AthleteNotifications.jsx     | 328 +++++++++++++
+ .../src/pages/coach/CoachAchievements.jsx          |  20 +-
+ .../src/pages/coach/CoachAthletes.jsx              |  15 +-
+ .../src/pages/coach/CoachNotifications.jsx         | 544 +++++++++++++++++++++
+ athletex-frontend/src/pages/coach/CoachReports.jsx |   9 +-
+ .../src/pages/coach/CoachTraining.jsx              |  14 +-
+ athletex-frontend/src/routes/AppRoutes.jsx         |   4 +
+ athletex-frontend/src/services/api.js              |  42 ++
+ .../src/utils/certificateGenerator.js              | 165 +++++++
+ 62 files changed, 4895 insertions(+), 185 deletions(-)
+
+commit 66188e9b198aa68523c6aa5e492434fc86b0b26e
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Sat Aug 29 20:08:10 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Sat Aug 29 20:08:10 2026 +0530
+
+    Coach Module Modification
+
+ athletex-backend/pom.xml                           |   2 +-
+ .../backend/controller/AchievementController.java  |  21 ++
+ .../CoachAthleteMonitoringController.java          |  40 ++++
+ .../athletex/backend/dto/AchievementResponse.java  |   4 +
+ .../athletex/backend/dto/CoachAthleteResponse.java |   3 +
+ .../backend/dto/CoachEvaluationRequest.java        |  31 +++
+ .../backend/dto/CoachEvaluationResponse.java       |  28 +++
+ .../com/athletex/backend/model/Achievement.java    |   8 +
+ .../athletex/backend/model/CoachEvaluation.java    |  41 ++++
+ .../backend/repository/AchievementRepository.java  |   4 +
+ .../repository/CoachEvaluationRepository.java      |  18 ++
+ .../backend/service/AchievementService.java        | 100 ++++++++-
+ .../service/CoachAthleteMonitoringService.java     |  24 +-
+ .../backend/service/CoachEvaluationService.java    | 114 ++++++++++
+ .../src/components/coach/CoachEvaluationModal.jsx  | 250 +++++++++++++++++++++
+ athletex-frontend/src/pages/Achievements.jsx       |  21 +-
+ .../src/pages/coach/CoachAchievements.jsx          |  96 ++++++--
+ .../src/pages/coach/CoachAthleteProfile.jsx        | 162 +++++++++++--
+ 18 files changed, 919 insertions(+), 48 deletions(-)
+
+commit b856660ebaf9edfb62473b864c1c8124e3b53339
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Sat Aug 29 20:35:17 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Sat Aug 29 20:35:17 2026 +0530
+
+    Implemented admin module
+
+ .../backend/AthletexBackendApplication.java        |  29 ++
+ .../backend/controller/AdminUserController.java    |  62 ++++
+ .../athletex/backend/dto/AdminStatsResponse.java   |  21 ++
+ .../athletex/backend/dto/UserAdminResponse.java    |  26 ++
+ .../CoachAthleteAssignmentRepository.java          |   2 +
+ .../athletex/backend/service/AdminUserService.java | 125 ++++++++
+ .../src/components/common/ProtectedRoute.jsx       |   4 +-
+ .../src/components/dashboard/Sidebar.jsx           |  27 +-
+ .../src/pages/admin/AdminDashboard.jsx             | 314 +++++++++++++++++++
+ athletex-frontend/src/pages/admin/AdminRosters.jsx | 158 ++++++++++
+ athletex-frontend/src/pages/admin/AdminUsers.jsx   | 341 +++++++++++++++++++++
+ athletex-frontend/src/routes/AppRoutes.jsx         |   8 +-
+ 12 files changed, 1114 insertions(+), 3 deletions(-)
+
+commit f3345d927a0cc1b2c5f7951dd1b8bb85a7c4d9be
+Author:     abhinand <abhinandma007@gmail.com>
+AuthorDate: Sun Aug 30 00:24:32 2026 +0530
+Commit:     abhinand <abhinandma007@gmail.com>
+CommitDate: Sun Aug 30 00:24:32 2026 +0530
+
+    modified performance module
+
+ .../backend/controller/NotificationController.java | 205 +--------------
+ .../backend/controller/PerformanceController.java  |   8 +
+ .../controller/PublicVerificationController.java   |  25 ++
+ .../backend/dto/PublicVerificationResponse.java    |  46 ++++
+ .../com/athletex/backend/model/Notification.java   |  19 +-
+ .../com/athletex/backend/model/Performance.java    |   8 +
+ .../backend/repository/NotificationRepository.java |   8 +-
+ .../backend/service/AchievementService.java        |  11 +
+ .../backend/service/NotificationService.java       | 283 +++------------------
+ .../backend/service/PerformanceService.java        |  51 +++-
+ .../backend/service/PublicVerificationService.java |  98 +++++++
+ .../athletex/backend/service/TrainingService.java  |   8 +-
+ athletex-frontend/package-lock.json                |  59 ++++-
+ athletex-frontend/package.json                     |   1 +
+ .../src/components/common/NotificationBell.jsx     | 199 +++++++++++++++
+ .../src/components/dashboard/Topbar.jsx            |  15 +-
+ .../components/profile/AthletePassportModal.jsx    | 160 ++++++++++++
+ .../src/components/profile/TalentPassportModal.jsx |  16 +-
+ athletex-frontend/src/pages/Performance.jsx        |  16 +-
+ .../src/pages/PublicVerificationPage.jsx           | 198 ++++++++++++++
+ .../src/pages/coach/CoachAthleteProfile.jsx        |  18 +-
+ athletex-frontend/src/routes/AppRoutes.jsx         |   2 +
+ 22 files changed, 968 insertions(+), 486 deletions(-)

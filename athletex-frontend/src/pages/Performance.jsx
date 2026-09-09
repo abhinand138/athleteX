@@ -12,6 +12,8 @@ import {
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 import PerformanceChart from "../components/performance/PerformanceChart";
+import FitnessRadarChart from "../components/performance/FitnessRadarChart";
+import FitnessFreshnessWidget from "../components/performance/FitnessFreshnessWidget";
 
 export default function Performance() {
   const [performance, setPerformance] = useState(null);
@@ -32,11 +34,22 @@ export default function Performance() {
 
   const [isEditing, setIsEditing] = useState(false);
 
+  const [fitnessProfile, setFitnessProfile] = useState(null);
+
   /*
    * =============================
-   * FETCH PERFORMANCE
+   * FETCH PERFORMANCE & FITNESS PROFILE
    * =============================
    */
+
+  const fetchFitnessData = async (userId) => {
+    try {
+      const fitRes = await api.get(`/performance/${userId}/fitness-profile`);
+      setFitnessProfile(fitRes.data);
+    } catch (err) {
+      console.error("Failed to load fitness profile:", err);
+    }
+  };
 
   useEffect(() => {
     const fetchPerformance = async () => {
@@ -76,6 +89,9 @@ export default function Performance() {
           `/performance/${user.id}/history`
         );
         setHistory(historyResponse.data);
+
+        // Fetch Banister & Radar profile
+        await fetchFitnessData(user.id);
 
       } catch (error) {
         console.error("Performance API Error:", error);
@@ -174,6 +190,8 @@ export default function Performance() {
         `/performance/${user.id}/history`
       );
       setHistory(historyResponse.data);
+
+      await fetchFitnessData(user.id);
 
       setIsEditing(false);
 
@@ -560,18 +578,43 @@ export default function Performance() {
 
 
         {/* ============================= */}
-        {/* PERFORMANCE HISTORY CHART */}
+        {/* BANISTER FITNESS & FRESHNESS MODEL */}
         {/* ============================= */}
+        {fitnessProfile && (
+          <FitnessFreshnessWidget fitnessProfile={fitnessProfile} />
+        )}
 
-        <div className="glass-card rounded-2xl p-8 shadow-xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full pointer-events-none" />
-          
-          <h2 className="text-sm font-bold text-gray-400 tracking-widest uppercase mb-4 relative z-10">
-            Performance Progression
-          </h2>
-          
-          <div className="relative z-10">
-            <PerformanceChart historyData={history} />
+        {/* ============================= */}
+        {/* CHARTS: RADAR & PROGRESSION */}
+        {/* ============================= */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* 5-Pillar Athletic Radar */}
+          {fitnessProfile?.radarData && (
+            <FitnessRadarChart
+              radarData={fitnessProfile.radarData}
+              overallScore={fitnessProfile.overallFitnessScore}
+            />
+          )}
+
+          {/* Performance History Chart */}
+          <div className="glass-card rounded-2xl p-6 border border-white/5 shadow-xl relative overflow-hidden flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/5 blur-[80px] rounded-full pointer-events-none" />
+            
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="text-lg font-bold text-white tracking-wide">
+                  Score Progression
+                </h3>
+                <span className="text-xs text-gray-400 font-mono">Historical Curve</span>
+              </div>
+              <p className="text-xs text-gray-400">
+                Composite evaluation score tracked across rating updates.
+              </p>
+            </div>
+            
+            <div className="relative z-10">
+              <PerformanceChart historyData={history} />
+            </div>
           </div>
         </div>
 

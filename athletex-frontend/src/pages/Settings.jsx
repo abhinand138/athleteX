@@ -115,7 +115,7 @@ export default function Settings() {
                 </div>
                 
                 <button 
-                  onClick={() => navigate("/profile/edit")}
+                  onClick={() => navigate(user?.role === "COACH" ? "/coach/profile/edit" : "/profile/edit")}
                   className="w-full mt-4 py-2 px-4 rounded-xl border border-white/10 text-gray-300 font-medium hover:bg-white/5 transition-colors"
                 >
                   Edit Profile Information

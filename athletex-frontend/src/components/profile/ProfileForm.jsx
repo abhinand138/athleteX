@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { FiUser, FiPhone, FiTarget, FiActivity, FiCalendar, FiMaximize2, FiMapPin, FiMap, FiGlobe, FiCheck } from "react-icons/fi";
 import { FaWeightHanging } from "react-icons/fa";
 import { BiImageAdd } from "react-icons/bi";
+import { uploadProfilePhotoFromDevice } from "../../utils/profilePhotoUpload";
 
 const InputField = ({ label, name, value, onChange, icon: Icon, type = "text", placeholder }) => (
   <div className="relative group">
@@ -113,7 +114,42 @@ export default function ProfileForm() {
         <InputField label="Country" name="country" value={formData.country} onChange={handleChange} icon={FiGlobe} placeholder="USA" />
         
         <SectionTitle title="Media & Biography" />
-        <InputField label="Profile Image URL" name="profileImage" value={formData.profileImage} onChange={handleChange} icon={BiImageAdd} placeholder="https://example.com/image.jpg" />
+        <div className="col-span-full space-y-2">
+          <input
+            type="file"
+            id="athlete-profile-file-input"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file && user?.id) {
+                uploadProfilePhotoFromDevice(file, user.id, (newImg) => {
+                  setFormData((prev) => ({ ...prev, profileImage: newImg }));
+                });
+              }
+            }}
+          />
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-3">
+            <div className="flex-1">
+              <InputField
+                label="Profile Image URL or Uploaded Image"
+                name="profileImage"
+                value={formData.profileImage}
+                onChange={handleChange}
+                icon={BiImageAdd}
+                placeholder="https://example.com/image.jpg or click upload"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => document.getElementById("athlete-profile-file-input")?.click()}
+              className="px-4 py-4 rounded-2xl bg-white/5 hover:bg-brand-peach hover:text-black border border-white/10 text-xs font-bold text-gray-200 transition-all flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+            >
+              <BiImageAdd size={18} />
+              <span>Upload from Device</span>
+            </button>
+          </div>
+        </div>
         
         <div className="col-span-full relative group mt-2">
           <label className="absolute -top-2.5 left-4 px-1 bg-[#161A20] text-xs font-semibold text-gray-400 group-focus-within:text-brand-peach transition-colors z-10">

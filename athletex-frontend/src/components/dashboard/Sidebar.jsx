@@ -53,6 +53,11 @@ export default function Sidebar() {
           path: "/coach/dashboard"
         },
         {
+          icon: <FaUser />,
+          name: "Profile",
+          path: "/coach/profile"
+        },
+        {
           icon: <FaUserFriends />,
           name: "Athletes",
           path: "/coach/athletes"

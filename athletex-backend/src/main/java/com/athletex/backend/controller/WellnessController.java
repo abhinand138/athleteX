@@ -22,7 +22,7 @@ public class WellnessController {
     // POST /api/wellness
     @PostMapping
     public ResponseEntity<?> submitCheckin(
-            @RequestBody WellnessCheckinRequest request,
+            @jakarta.validation.Valid @RequestBody WellnessCheckinRequest request,
             Authentication authentication) {
         String userId = request.getUserId();
         if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {

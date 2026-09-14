@@ -7,24 +7,65 @@ import { FiUser, FiPhone, FiTarget, FiActivity, FiCalendar, FiMaximize2, FiMapPi
 import { FaWeightHanging } from "react-icons/fa";
 import { BiImageAdd } from "react-icons/bi";
 import { uploadProfilePhotoFromDevice } from "../../utils/profilePhotoUpload";
+import { getErrorMessage } from "../../utils/errorHandler";
+import {
+  INDIAN_STATES,
+  INDIAN_UNION_TERRITORIES,
+  INDIAN_STATES_AND_UTS,
+  COUNTRIES,
+  MAJOR_INDIAN_CITIES_BY_STATE
+} from "../../utils/locationData";
+import {
+  GENDER_OPTIONS,
+  SPORTS_LIST,
+  POSITIONS_BY_SPORT
+} from "../../utils/sportsData";
 
-const InputField = ({ label, name, value, onChange, icon: Icon, type = "text", placeholder }) => (
+const InputField = ({ label, name, value, onChange, icon: Icon, type = "text", placeholder, step, min, max, list }) => (
   <div className="relative group">
     <label className="absolute -top-2.5 left-4 px-1 bg-[#161A20] text-xs font-semibold text-gray-400 group-focus-within:text-brand-peach transition-colors z-10">
       {label}
     </label>
     <div className="relative flex items-center">
-      <div className="absolute left-4 text-gray-500 group-focus-within:text-brand-peach transition-colors">
+      <div className="absolute left-4 text-gray-500 group-focus-within:text-brand-peach transition-colors pointer-events-none">
         <Icon size={18} />
       </div>
       <input
         type={type}
         name={name}
-        value={value}
+        value={value ?? ""}
         onChange={onChange}
         placeholder={placeholder}
+        step={step}
+        min={min}
+        max={max}
+        list={list}
         className="w-full bg-transparent border border-white/10 rounded-2xl py-4 pl-12 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-brand-peach/50 focus:ring-1 focus:ring-brand-peach/50 transition-all"
       />
+    </div>
+  </div>
+);
+
+const SelectField = ({ label, name, value, onChange, icon: Icon, children }) => (
+  <div className="relative group">
+    <label className="absolute -top-2.5 left-4 px-1 bg-[#161A20] text-xs font-semibold text-gray-400 group-focus-within:text-brand-peach transition-colors z-10">
+      {label}
+    </label>
+    <div className="relative flex items-center">
+      <div className="absolute left-4 text-gray-500 group-focus-within:text-brand-peach transition-colors pointer-events-none">
+        <Icon size={18} />
+      </div>
+      <select
+        name={name}
+        value={value ?? ""}
+        onChange={onChange}
+        className="w-full bg-[#161A20] border border-white/10 rounded-2xl py-4 pl-12 pr-10 text-white focus:outline-none focus:border-brand-peach/50 focus:ring-1 focus:ring-brand-peach/50 transition-all appearance-none cursor-pointer text-sm"
+      >
+        {children}
+      </select>
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
+        ▼
+      </div>
     </div>
   </div>
 );
@@ -34,9 +75,25 @@ export default function ProfileForm() {
   const user = JSON.parse(localStorage.getItem("user"));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [customStateMode, setCustomStateMode] = useState(false);
+  const [customCityMode, setCustomCityMode] = useState(false);
+  const [customSportMode, setCustomSportMode] = useState(false);
+  const [customPositionMode, setCustomPositionMode] = useState(false);
 
   const [formData, setFormData] = useState({
-    fullName: "", phone: "", sport: "", position: "", age: "", gender: "", height: "", weight: "", city: "", state: "", country: "", bio: "", profileImage: ""
+    fullName: "",
+    phone: "",
+    sport: "",
+    position: "",
+    age: "",
+    gender: "",
+    height: "",
+    weight: "",
+    city: "",
+    state: "",
+    country: "India",
+    bio: "",
+    profileImage: ""
   });
 
   useEffect(() => {
@@ -46,7 +103,32 @@ export default function ProfileForm() {
   const loadProfile = async () => {
     try {
       const response = await api.get(`/users/profile/${user.id}`);
-      setFormData(response.data);
+      const data = response.data || {};
+      const countryVal = data.country && data.country.trim() ? data.country : "India";
+      setFormData({
+        ...data,
+        country: countryVal
+      });
+
+      if (data.state && countryVal === "India" && !INDIAN_STATES_AND_UTS.includes(data.state)) {
+        setCustomStateMode(true);
+      } else if (countryVal !== "India") {
+        setCustomStateMode(true);
+      }
+
+      const citiesForState = MAJOR_INDIAN_CITIES_BY_STATE[data.state] || [];
+      if (data.city && citiesForState.length > 0 && !citiesForState.includes(data.city)) {
+        setCustomCityMode(true);
+      }
+
+      if (data.sport && !SPORTS_LIST.includes(data.sport)) {
+        setCustomSportMode(true);
+      }
+
+      const positionsForSport = POSITIONS_BY_SPORT[data.sport] || [];
+      if (data.position && positionsForSport.length > 0 && !positionsForSport.includes(data.position)) {
+        setCustomPositionMode(true);
+      }
     } catch (err) {
       console.log(err);
     }
@@ -59,8 +141,24 @@ export default function ProfileForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
+
     try {
-      await api.put(`/users/profile/${user.id}`, formData);
+      const payload = {
+        ...formData,
+        fullName: formData.fullName ? formData.fullName.trim() : "",
+        phone: formData.phone ? formData.phone.trim() : "",
+        sport: formData.sport ? formData.sport.trim() : "",
+        position: formData.position ? formData.position.trim() : "",
+        age: formData.age !== "" && formData.age !== null && formData.age !== undefined ? parseInt(formData.age, 10) : null,
+        height: formData.height !== "" && formData.height !== null && formData.height !== undefined ? parseFloat(formData.height) : null,
+        weight: formData.weight !== "" && formData.weight !== null && formData.weight !== undefined ? parseFloat(formData.weight) : null,
+        city: formData.city ? formData.city.trim() : "",
+        state: formData.state ? formData.state.trim() : "",
+        country: formData.country ? formData.country.trim() : "India",
+        bio: formData.bio ? formData.bio.trim() : "",
+      };
+
+      await api.put(`/users/profile/${user.id}`, payload);
       setSuccess(true);
       toast.success("Profile updated successfully!");
       setTimeout(() => {
@@ -68,7 +166,7 @@ export default function ProfileForm() {
       }, 1200);
     } catch (err) {
       console.log(err);
-      toast.error(err.response?.data?.message || "Failed to update profile.");
+      toast.error(getErrorMessage(err, "Failed to update profile."));
       setIsSubmitting(false);
     }
   };
@@ -80,6 +178,8 @@ export default function ProfileForm() {
       <div className="h-px bg-white/10 flex-1"></div>
     </div>
   );
+
+  const availablePositions = POSITIONS_BY_SPORT[formData.sport] || [];
 
   return (
     <motion.form
@@ -97,21 +197,285 @@ export default function ProfileForm() {
         <SectionTitle title="Personal Information" />
         <InputField label="Full Name" name="fullName" value={formData.fullName} onChange={handleChange} icon={FiUser} placeholder="John Doe" />
         <InputField label="Phone Number" name="phone" value={formData.phone} onChange={handleChange} icon={FiPhone} placeholder="+1 234 567 890" />
-        <InputField label="Gender" name="gender" value={formData.gender} onChange={handleChange} icon={FiUser} placeholder="Male / Female / Other" />
-        <InputField label="Age" name="age" type="number" value={formData.age} onChange={handleChange} icon={FiCalendar} placeholder="22" />
+        
+        {/* Gender Dropdown */}
+        <SelectField
+          label="Gender"
+          name="gender"
+          value={formData.gender || ""}
+          onChange={handleChange}
+          icon={FiUser}
+        >
+          <option value="" className="bg-[#161A20] text-gray-400">-- Select Gender --</option>
+          {GENDER_OPTIONS.map((g) => (
+            <option key={g} value={g} className="bg-[#161A20] text-white">
+              {g}
+            </option>
+          ))}
+        </SelectField>
+
+        <InputField label="Age" name="age" type="number" min="5" max="120" value={formData.age} onChange={handleChange} icon={FiCalendar} placeholder="22" />
         
         <SectionTitle title="Sports Information" />
-        <InputField label="Sport" name="sport" value={formData.sport} onChange={handleChange} icon={FiTarget} placeholder="Soccer" />
-        <InputField label="Position" name="position" value={formData.position} onChange={handleChange} icon={FiActivity} placeholder="Striker" />
+        
+        {/* Sport Dropdown with Custom Option */}
+        {!customSportMode ? (
+          <div className="flex flex-col">
+            <SelectField
+              label="Sport / Discipline"
+              name="sport"
+              value={formData.sport || ""}
+              onChange={(e) => {
+                const selected = e.target.value;
+                if (selected === "__CUSTOM_SPORT__") {
+                  setCustomSportMode(true);
+                  setCustomPositionMode(true);
+                  setFormData(prev => ({ ...prev, sport: "", position: "" }));
+                } else {
+                  setFormData(prev => ({ ...prev, sport: selected, position: "" }));
+                  setCustomPositionMode(false);
+                }
+              }}
+              icon={FiTarget}
+            >
+              <option value="" className="bg-[#161A20] text-gray-400">-- Select Sport --</option>
+              {SPORTS_LIST.map((sp) => (
+                <option key={sp} value={sp} className="bg-[#161A20] text-white">
+                  {sp}
+                </option>
+              ))}
+              <option value="__CUSTOM_SPORT__" className="bg-[#161A20] text-brand-peach font-semibold">
+                + Other / Enter Custom Sport
+              </option>
+            </SelectField>
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            <InputField
+              label="Sport / Discipline"
+              name="sport"
+              value={formData.sport}
+              onChange={handleChange}
+              icon={FiTarget}
+              placeholder="Enter custom sport"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setCustomSportMode(false);
+                setFormData(prev => ({ ...prev, sport: "", position: "" }));
+              }}
+              className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 ml-4 cursor-pointer"
+            >
+              ← Select from Sports list
+            </button>
+          </div>
+        )}
+
+        {/* Position Dropdown (dynamically adapts to selected sport) */}
+        {!customPositionMode && availablePositions.length > 0 ? (
+          <div className="flex flex-col">
+            <SelectField
+              label="Position / Role"
+              name="position"
+              value={formData.position || ""}
+              onChange={(e) => {
+                const selected = e.target.value;
+                if (selected === "__CUSTOM_POSITION__") {
+                  setCustomPositionMode(true);
+                  setFormData(prev => ({ ...prev, position: "" }));
+                } else {
+                  setFormData(prev => ({ ...prev, position: selected }));
+                }
+              }}
+              icon={FiActivity}
+            >
+              <option value="" className="bg-[#161A20] text-gray-400">-- Select Position in {formData.sport} --</option>
+              {availablePositions.map((pos) => (
+                <option key={pos} value={pos} className="bg-[#161A20] text-white">
+                  {pos}
+                </option>
+              ))}
+              <option value="__CUSTOM_POSITION__" className="bg-[#161A20] text-brand-peach font-semibold">
+                + Other / Enter Custom Position
+              </option>
+            </SelectField>
+          </div>
+        ) : (
+          <div className="flex flex-col">
+            <InputField
+              label="Position / Role"
+              name="position"
+              value={formData.position}
+              onChange={handleChange}
+              icon={FiActivity}
+              placeholder={formData.sport ? "Enter position / role" : "Select Sport first or enter position"}
+            />
+            {availablePositions.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCustomPositionMode(false);
+                  setFormData(prev => ({ ...prev, position: "" }));
+                }}
+                className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 ml-4 cursor-pointer"
+              >
+                ← Choose from Position dropdown
+              </button>
+            )}
+          </div>
+        )}
         
         <SectionTitle title="Physical Information" />
-        <InputField label="Height" name="height" value={formData.height} onChange={handleChange} icon={FiMaximize2} placeholder="6'1&quot; or 185cm" />
-        <InputField label="Weight" name="weight" value={formData.weight} onChange={handleChange} icon={FaWeightHanging} placeholder="175 lbs or 80kg" />
+        <InputField label="Height (cm)" name="height" type="number" step="any" min="0" value={formData.height} onChange={handleChange} icon={FiMaximize2} placeholder="185" />
+        <InputField label="Weight (kg)" name="weight" type="number" step="any" min="0" value={formData.weight} onChange={handleChange} icon={FaWeightHanging} placeholder="75" />
         
         <SectionTitle title="Location" />
-        <InputField label="City" name="city" value={formData.city} onChange={handleChange} icon={FiMapPin} placeholder="Los Angeles" />
-        <InputField label="State / Province" name="state" value={formData.state} onChange={handleChange} icon={FiMap} placeholder="California" />
-        <InputField label="Country" name="country" value={formData.country} onChange={handleChange} icon={FiGlobe} placeholder="USA" />
+        <div className="col-span-full grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Country */}
+          <SelectField
+            label="Country"
+            name="country"
+            value={formData.country || "India"}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData(prev => ({ ...prev, country: val }));
+              if (val === "India") {
+                setCustomStateMode(false);
+                setCustomCityMode(false);
+              } else {
+                setCustomStateMode(true);
+                setCustomCityMode(true);
+              }
+            }}
+            icon={FiGlobe}
+          >
+            {COUNTRIES.map((c) => (
+              <option key={c} value={c} className="bg-[#161A20] text-white">
+                {c}
+              </option>
+            ))}
+          </SelectField>
+
+          {/* State / Province (Dropdown for India, free input for custom / international) */}
+          {!customStateMode && (formData.country === "India" || !formData.country) ? (
+            <div className="flex flex-col">
+              <SelectField
+                label="State / UT"
+                name="state"
+                value={formData.state || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "__CUSTOM__") {
+                    setCustomStateMode(true);
+                    setCustomCityMode(true);
+                    setFormData(prev => ({ ...prev, state: "", city: "" }));
+                  } else {
+                    setFormData(prev => ({ ...prev, state: val, city: "" }));
+                    setCustomCityMode(false);
+                  }
+                }}
+                icon={FiMap}
+              >
+                <option value="" className="bg-[#161A20] text-gray-400">-- Select State / UT --</option>
+                <optgroup label="28 States" className="bg-[#161A20] text-brand-peach font-bold">
+                  {INDIAN_STATES.map((st) => (
+                    <option key={st} value={st} className="bg-[#161A20] text-white font-normal">
+                      {st}
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="8 Union Territories" className="bg-[#161A20] text-cyan-400 font-bold">
+                  {INDIAN_UNION_TERRITORIES.map((ut) => (
+                    <option key={ut} value={ut} className="bg-[#161A20] text-white font-normal">
+                      {ut}
+                    </option>
+                  ))}
+                </optgroup>
+                <option value="__CUSTOM__" className="bg-[#161A20] text-brand-peach font-semibold">
+                  + Other / Enter Custom State
+                </option>
+              </SelectField>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <InputField
+                label="State / Province"
+                name="state"
+                value={formData.state}
+                onChange={handleChange}
+                icon={FiMap}
+                placeholder="Enter state or province"
+              />
+              {(formData.country === "India" || !formData.country) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomStateMode(false);
+                    setFormData(prev => ({ ...prev, state: "" }));
+                  }}
+                  className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 ml-4 cursor-pointer"
+                >
+                  ← Select from Indian States dropdown
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* City (Dropdown based on selected state, with option for custom entry) */}
+          {!customCityMode && (MAJOR_INDIAN_CITIES_BY_STATE[formData.state]?.length > 0) ? (
+            <div className="flex flex-col">
+              <SelectField
+                label="City"
+                name="city"
+                value={formData.city || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "__CUSTOM_CITY__") {
+                    setCustomCityMode(true);
+                    setFormData(prev => ({ ...prev, city: "" }));
+                  } else {
+                    setFormData(prev => ({ ...prev, city: val }));
+                  }
+                }}
+                icon={FiMapPin}
+              >
+                <option value="" className="bg-[#161A20] text-gray-400">-- Select City in {formData.state} --</option>
+                {MAJOR_INDIAN_CITIES_BY_STATE[formData.state].map((c) => (
+                  <option key={c} value={c} className="bg-[#161A20] text-white">
+                    {c}
+                  </option>
+                ))}
+                <option value="__CUSTOM_CITY__" className="bg-[#161A20] text-brand-peach font-semibold">
+                  + Other / Enter Custom City
+                </option>
+              </SelectField>
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              <InputField
+                label="City"
+                name="city"
+                value={formData.city}
+                onChange={handleChange}
+                icon={FiMapPin}
+                placeholder={formData.state ? "Enter city or town name" : "Select State first or enter city"}
+              />
+              {MAJOR_INDIAN_CITIES_BY_STATE[formData.state]?.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomCityMode(false);
+                    setFormData(prev => ({ ...prev, city: "" }));
+                  }}
+                  className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 ml-4 cursor-pointer"
+                >
+                  ← Choose from City dropdown
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         
         <SectionTitle title="Media & Biography" />
         <div className="col-span-full space-y-2">

@@ -1,11 +1,12 @@
 package com.athletex.backend.controller;
 
 import com.athletex.backend.dto.ProfileResponse;
+import com.athletex.backend.dto.UpdatePasswordRequest;
 import com.athletex.backend.dto.UpdateProfileRequest;
 import com.athletex.backend.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/users")
@@ -23,7 +24,7 @@ public class UserController {
     @PutMapping("/profile/{id}")
     public String updateProfile(
             @PathVariable String id,
-            @RequestBody UpdateProfileRequest request) {
+            @Valid @RequestBody UpdateProfileRequest request) {
 
         return userService.updateProfile(id, request);
     }
@@ -31,7 +32,7 @@ public class UserController {
     @PutMapping("/password/{id}")
     public String updatePassword(
             @PathVariable String id,
-            @RequestBody Map<String, String> request) {
+            @Valid @RequestBody UpdatePasswordRequest request) {
 
         return userService.updatePassword(id, request);
     }

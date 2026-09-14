@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FiCreditCard, FiAtSign, FiPhone, FiLock, FiUsers, FiChevronRight } from "react-icons/fi";
 import api from "../services/api";
+import { getErrorMessage } from "../utils/errorHandler";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -25,12 +26,26 @@ export default function Register() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
     setMessage({ type: "", text: "" });
 
+    // Client-side password length check
+    if (formData.password.trim().length < 6) {
+      setMessage({ type: "error", text: "Password must be at least 6 characters." });
+      return;
+    }
+
+    setIsLoading(true);
+
     try {
-      const response = await api.post("/auth/register", formData);
-      setMessage({ type: "success", text: response.data || "Registration Successful! Redirecting..." });
+      const payload = {
+        ...formData,
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+      };
+
+      const response = await api.post("/auth/register", payload);
+      setMessage({ type: "success", text: typeof response.data === "string" ? response.data : "Registration Successful! Redirecting..." });
       
       setFormData({
         fullName: "",
@@ -47,7 +62,7 @@ export default function Register() {
     } catch (error) {
       setMessage({ 
         type: "error", 
-        text: error.response?.data || "Registration Failed. Please check your credentials." 
+        text: getErrorMessage(error, "Registration Failed. Please check your credentials.")
       });
       console.error(error);
     } finally {

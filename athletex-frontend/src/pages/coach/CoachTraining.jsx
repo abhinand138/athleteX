@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
+import { getErrorMessage } from "../../utils/errorHandler";
 import {
   FaDumbbell,
   FaPlus,
@@ -70,7 +71,7 @@ export default function CoachTraining() {
       setTrainings(trainingsRes.data || []);
       setAssignedAthletes(athletesRes.data || []);
     } catch (err) {
-      setError(err.response?.data || "Failed to load training management data.");
+      setError(getErrorMessage(err, "Failed to load training management data."));
     } finally {
       setLoading(false);
     }
@@ -109,7 +110,7 @@ export default function CoachTraining() {
       });
       loadData();
     } catch (err) {
-      const msg = err.response?.data || "Failed to create training session.";
+      const msg = getErrorMessage(err, "Failed to create training session.");
       setFormError(msg);
       toast.error(msg);
     } finally {
@@ -141,7 +142,7 @@ export default function CoachTraining() {
       setEditingTraining(null);
       loadData();
     } catch (err) {
-      const msg = err.response?.data || "Failed to update training session.";
+      const msg = getErrorMessage(err, "Failed to update training session.");
       setFormError(msg);
       toast.error(msg);
     } finally {
@@ -156,7 +157,7 @@ export default function CoachTraining() {
       setCancellingId(null);
       loadData();
     } catch (err) {
-      toast.error(err.response?.data || "Failed to cancel training session.");
+      toast.error(getErrorMessage(err, "Failed to cancel training session."));
     }
   };
 

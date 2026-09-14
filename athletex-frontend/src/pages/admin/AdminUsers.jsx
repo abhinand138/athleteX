@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
+import { getErrorMessage } from "../../utils/errorHandler";
 import {
   FaUsers,
   FaSearch,
@@ -47,7 +48,7 @@ export default function AdminUsers() {
       const res = await api.get(url);
       setUsers(res.data || []);
     } catch (err) {
-      setError(err.response?.data || "Failed to load user list.");
+      setError(getErrorMessage(err, "Failed to load user list."));
     } finally {
       setLoading(false);
     }
@@ -67,7 +68,7 @@ export default function AdminUsers() {
       setEditingUser(null);
       fetchUsers();
     } catch (err) {
-      toast.error(err.response?.data || "Failed to update user role.");
+      toast.error(getErrorMessage(err, "Failed to update user role."));
     } finally {
       setUpdating(false);
     }

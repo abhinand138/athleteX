@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
+import { getErrorMessage } from "../../utils/errorHandler";
 import {
   FaTrophy,
   FaMedal,
@@ -97,7 +98,7 @@ export default function CoachAchievements() {
       setStats(statsRes.data || { totalAchievements: 0, thisMonth: 0, records: 0, awards: 0 });
       setAssignedAthletes(athletesRes.data || []);
     } catch (err) {
-      setError(err.response?.data || "Failed to load achievements data.");
+      setError(getErrorMessage(err, "Failed to load achievements data."));
     } finally {
       setLoading(false);
     }
@@ -137,7 +138,7 @@ export default function CoachAchievements() {
       });
       loadAllData();
     } catch (err) {
-      const msg = err.response?.data || "Failed to save achievement.";
+      const msg = getErrorMessage(err, "Failed to save achievement.");
       setFormError(msg);
       toast.error(msg);
     } finally {
@@ -169,7 +170,7 @@ export default function CoachAchievements() {
       setEditingAchievement(null);
       loadAllData();
     } catch (err) {
-      const msg = err.response?.data || "Failed to update achievement.";
+      const msg = getErrorMessage(err, "Failed to update achievement.");
       setFormError(msg);
       toast.error(msg);
     } finally {
@@ -184,7 +185,7 @@ export default function CoachAchievements() {
       toast.success("Achievement deleted.");
       loadAllData();
     } catch (err) {
-      toast.error(err.response?.data || "Failed to delete achievement.");
+      toast.error(getErrorMessage(err, "Failed to delete achievement."));
     }
   };
 

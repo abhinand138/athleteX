@@ -14,6 +14,7 @@ import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 import { generateAchievementCertificate } from "../utils/certificateGenerator";
+import { getErrorMessage } from "../utils/errorHandler";
 
 export default function Achievements() {
   const [achievements, setAchievements] = useState([]);
@@ -65,11 +66,7 @@ export default function Achievements() {
     } catch (error) {
       console.error("Achievements API Error:", error);
 
-      setError(
-        error.response?.data?.message ||
-        "Unable to load achievements."
-      );
-
+      setError(getErrorMessage(error, "Unable to load achievements."));
     } finally {
       setLoading(false);
     }
@@ -152,11 +149,7 @@ export default function Achievements() {
         error
       );
 
-      setError(
-        error.response?.data?.message ||
-        "Unable to create achievement."
-      );
-
+      setError(getErrorMessage(error, "Unable to create achievement."));
     } finally {
       setSaving(false);
     }

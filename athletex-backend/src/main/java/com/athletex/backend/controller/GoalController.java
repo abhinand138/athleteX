@@ -31,7 +31,7 @@ public class GoalController {
     // POST /api/goals
     @PostMapping
     public ResponseEntity<?> createGoal(
-            @RequestBody GoalRequest request,
+            @jakarta.validation.Valid @RequestBody GoalRequest request,
             Authentication authentication) {
         String effectiveUserId = resolveUserId(authentication, request.getUserId());
         if (effectiveUserId == null) {
@@ -50,7 +50,7 @@ public class GoalController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateGoal(
             @PathVariable String id,
-            @RequestBody GoalRequest request,
+            @jakarta.validation.Valid @RequestBody GoalRequest request,
             Authentication authentication) {
         String effectiveUserId = resolveUserId(authentication, request.getUserId());
         if (effectiveUserId == null) {

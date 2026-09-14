@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../../services/api";
+import { getErrorMessage } from "../../utils/errorHandler";
 
 export default function GoalsTrackerWidget({ athleteId }) {
   const [goals, setGoals] = useState([]);
@@ -48,8 +49,8 @@ export default function GoalsTrackerWidget({ athleteId }) {
 
   const handleCreateGoal = async (e) => {
     e.preventDefault();
-    if (!title.trim() || !targetValue) {
-      toast.error("Please enter a goal title and target value.");
+    if (!title.trim() || !targetValue || Number(targetValue) <= 0) {
+      toast.error("Please enter a goal title and positive target value.");
       return;
     }
 
@@ -73,7 +74,7 @@ export default function GoalsTrackerWidget({ athleteId }) {
       setTargetDate("");
       toast.success("Target goal created! 🎯");
     } catch (err) {
-      toast.error(err.response?.data || "Failed to create goal.");
+      toast.error(getErrorMessage(err, "Failed to create goal."));
     } finally {
       setSubmitting(false);
     }
@@ -95,7 +96,7 @@ export default function GoalsTrackerWidget({ athleteId }) {
         toast.success("Goal marked as in-progress.");
       }
     } catch (err) {
-      toast.error("Failed to update goal.");
+      toast.error(getErrorMessage(err, "Failed to update goal."));
     }
   };
 
@@ -106,7 +107,7 @@ export default function GoalsTrackerWidget({ athleteId }) {
       setGoals((prev) => prev.filter((g) => g.id !== id));
       toast.success("Goal deleted.");
     } catch (err) {
-      toast.error("Failed to delete goal.");
+      toast.error(getErrorMessage(err, "Failed to delete goal."));
     }
   };
 
@@ -131,7 +132,7 @@ export default function GoalsTrackerWidget({ athleteId }) {
         toast.success("Progress updated!");
       }
     } catch (err) {
-      toast.error("Failed to update progress.");
+      toast.error(getErrorMessage(err, "Failed to update progress."));
     }
   };
 

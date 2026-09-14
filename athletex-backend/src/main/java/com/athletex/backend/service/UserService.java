@@ -77,12 +77,16 @@ public class UserService {
     }
 
     // Update Password
-    public String updatePassword(String id, Map<String, String> request) {
+    public String updatePassword(String id, com.athletex.backend.dto.UpdatePasswordRequest request) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        String currentPassword = request.get("currentPassword");
-        String newPassword = request.get("newPassword");
+        String currentPassword = request.getCurrentPassword();
+        String newPassword = request.getNewPassword();
+
+        if (newPassword == null || newPassword.trim().length() < 6) {
+            throw new IllegalArgumentException("New password must be at least 6 characters");
+        }
 
         boolean passwordMatches = false;
         if (user.getPassword().startsWith("$2a$") || user.getPassword().startsWith("$2b$") || user.getPassword().startsWith("$2y$")) {
@@ -92,7 +96,7 @@ public class UserService {
         }
 
         if (!passwordMatches) {
-            throw new RuntimeException("Invalid current password");
+            throw new IllegalArgumentException("Invalid current password");
         }
 
         user.setPassword(passwordEncoder.encode(newPassword));

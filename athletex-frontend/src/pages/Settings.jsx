@@ -3,6 +3,7 @@ import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
 import { FiLock, FiLogOut, FiBell, FiShield, FiUser } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
+import { getErrorMessage } from "../utils/errorHandler";
 
 export default function Settings() {
   const [profile, setProfile] = useState(null);
@@ -32,6 +33,11 @@ export default function Settings() {
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
+    if (newPassword.trim().length < 6) {
+      setStatus({ type: "error", message: "New password must be at least 6 characters." });
+      return;
+    }
+
     if (newPassword !== confirmPassword) {
       setStatus({ type: "error", message: "New passwords do not match." });
       return;
@@ -52,7 +58,7 @@ export default function Settings() {
     } catch (error) {
       setStatus({ 
         type: "error", 
-        message: error.response?.data?.message || "Failed to update password." 
+        message: getErrorMessage(error, "Failed to update password.")
       });
     } finally {
       setLoading(false);

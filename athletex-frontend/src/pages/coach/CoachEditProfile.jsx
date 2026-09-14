@@ -12,19 +12,33 @@ import {
   FiAward,
   FiCheck,
   FiArrowLeft,
-  FiCamera
+  FiCamera,
+  FiMap
 } from "react-icons/fi";
 import { FaDumbbell, FaCalendarAlt } from "react-icons/fa";
 import { uploadProfilePhotoFromDevice } from "../../utils/profilePhotoUpload";
+import {
+  INDIAN_STATES,
+  INDIAN_UNION_TERRITORIES,
+  INDIAN_STATES_AND_UTS,
+  COUNTRIES,
+  MAJOR_INDIAN_CITIES_BY_STATE
+} from "../../utils/locationData";
+import {
+  GENDER_OPTIONS,
+  SPORTS_LIST,
+  COACH_DESIGNATIONS
+} from "../../utils/sportsData";
+import { getErrorMessage } from "../../utils/errorHandler";
 
-const InputField = ({ label, name, value, onChange, icon: Icon, type = "text", placeholder, required = false }) => (
+const InputField = ({ label, name, value, onChange, icon: Icon, type = "text", placeholder, required = false, list }) => (
   <div className="relative group">
     <label className="block text-xs font-semibold text-gray-400 mb-2 group-focus-within:text-brand-peach transition-colors">
       {label} {required && <span className="text-rose-400">*</span>}
     </label>
     <div className="relative flex items-center">
       {Icon && (
-        <div className="absolute left-4 text-gray-500 group-focus-within:text-brand-peach transition-colors">
+        <div className="absolute left-4 text-gray-500 group-focus-within:text-brand-peach transition-colors pointer-events-none">
           <Icon size={17} />
         </div>
       )}
@@ -35,10 +49,39 @@ const InputField = ({ label, name, value, onChange, icon: Icon, type = "text", p
         onChange={onChange}
         placeholder={placeholder}
         required={required}
+        list={list}
         className={`w-full bg-[#111317]/90 border border-white/10 rounded-2xl py-3.5 ${
           Icon ? "pl-11" : "pl-4"
         } pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-brand-peach/50 focus:ring-1 focus:ring-brand-peach/50 transition-all text-sm`}
       />
+    </div>
+  </div>
+);
+
+const SelectField = ({ label, name, value, onChange, icon: Icon, children }) => (
+  <div className="relative group">
+    <label className="block text-xs font-semibold text-gray-400 mb-2 group-focus-within:text-brand-peach transition-colors">
+      {label}
+    </label>
+    <div className="relative flex items-center">
+      {Icon && (
+        <div className="absolute left-4 text-gray-500 group-focus-within:text-brand-peach transition-colors pointer-events-none">
+          <Icon size={17} />
+        </div>
+      )}
+      <select
+        name={name}
+        value={value || ""}
+        onChange={onChange}
+        className={`w-full bg-[#111317] border border-white/10 rounded-2xl py-3.5 ${
+          Icon ? "pl-11" : "pl-4"
+        } pr-10 text-white focus:outline-none focus:border-brand-peach/50 focus:ring-1 focus:ring-brand-peach/50 transition-all text-sm appearance-none cursor-pointer`}
+      >
+        {children}
+      </select>
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
+        ▼
+      </div>
     </div>
   </div>
 );
@@ -50,6 +93,10 @@ export default function CoachEditProfile() {
 
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customStateMode, setCustomStateMode] = useState(false);
+  const [customCityMode, setCustomCityMode] = useState(false);
+  const [customSportMode, setCustomSportMode] = useState(false);
+  const [customPositionMode, setCustomPositionMode] = useState(false);
 
   const [formData, setFormData] = useState({
     fullName: "",
@@ -60,7 +107,7 @@ export default function CoachEditProfile() {
     gender: "",
     city: "",
     state: "",
-    country: "",
+    country: "India",
     bio: "",
     profileImage: ""
   });
@@ -79,6 +126,7 @@ export default function CoachEditProfile() {
       setLoading(true);
       const res = await api.get(`/users/profile/${coachId}`);
       if (res.data) {
+        const countryVal = res.data.country && res.data.country.trim() ? res.data.country : "India";
         setFormData({
           fullName: res.data.fullName || "",
           phone: res.data.phone || "",
@@ -88,14 +136,33 @@ export default function CoachEditProfile() {
           gender: res.data.gender || "",
           city: res.data.city || "",
           state: res.data.state || "",
-          country: res.data.country || "",
+          country: countryVal,
           bio: res.data.bio || "",
           profileImage: res.data.profileImage || ""
         });
+
+        if (res.data.state && countryVal === "India" && !INDIAN_STATES_AND_UTS.includes(res.data.state)) {
+          setCustomStateMode(true);
+        } else if (countryVal !== "India") {
+          setCustomStateMode(true);
+        }
+
+        const citiesForState = MAJOR_INDIAN_CITIES_BY_STATE[res.data.state] || [];
+        if (res.data.city && citiesForState.length > 0 && !citiesForState.includes(res.data.city)) {
+          setCustomCityMode(true);
+        }
+
+        if (res.data.sport && !SPORTS_LIST.includes(res.data.sport)) {
+          setCustomSportMode(true);
+        }
+
+        if (res.data.position && !COACH_DESIGNATIONS.includes(res.data.position)) {
+          setCustomPositionMode(true);
+        }
       }
     } catch (err) {
       console.error("Failed to load coach profile:", err);
-      toast.error("Failed to load profile details.");
+      toast.error(getErrorMessage(err, "Failed to load profile details."));
     } finally {
       setLoading(false);
     }
@@ -141,7 +208,7 @@ export default function CoachEditProfile() {
       }, 1000);
     } catch (err) {
       console.error("Failed to update coach profile:", err);
-      toast.error(err.response?.data?.message || "Failed to update profile.");
+      toast.error(getErrorMessage(err, "Failed to update profile."));
       setIsSubmitting(false);
     }
   };
@@ -173,49 +240,15 @@ export default function CoachEditProfile() {
           </span>
         </div>
 
-        {/* Header Banner */}
-        <div className="glass-card rounded-3xl p-6 sm:p-8 border border-white/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-brand-peach/10 blur-[100px] rounded-full pointer-events-none -z-10" />
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-            <div className="relative group">
-              <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-brand-peach/20 to-orange-500/20 border-2 border-brand-peach/40 flex items-center justify-center overflow-hidden text-brand-peach text-2xl font-black shadow-lg">
-                {formData.profileImage ? (
-                  <img
-                    src={formData.profileImage}
-                    alt={formData.fullName}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.target.style.display = "none";
-                    }}
-                  />
-                ) : (
-                  formData.fullName?.charAt(0) || "C"
-                )}
-              </div>
-            </div>
-            <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-brand-peach/10 border border-brand-peach/20 text-brand-peach text-[11px] font-bold uppercase tracking-wider mb-1.5">
-                Official Coach Persona
-              </div>
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Edit Coach Profile
-              </h1>
-              <p className="text-gray-400 text-xs sm:text-sm mt-1">
-                Manage your professional credentials, sport discipline, contact details, and philosophy.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Edit Form */}
+        {/* Form Card */}
         <motion.form
           initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
           onSubmit={handleSubmit}
-          className="glass-card rounded-3xl p-6 sm:p-10 border border-white/5 shadow-2xl relative space-y-8"
+          className="glass-card bg-[#161A20]/80 backdrop-blur-xl rounded-3xl border border-white/5 p-6 sm:p-10 shadow-2xl relative space-y-8"
         >
-          {/* Section: Personal & Contact */}
+          {/* Section: Core Info */}
           <div>
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
               <FiUser className="text-brand-peach" />
@@ -239,54 +272,158 @@ export default function CoachEditProfile() {
                 value={formData.phone}
                 onChange={handleChange}
                 icon={FiPhone}
-                placeholder="+91 9876543210"
-                required
+                placeholder="+1 234 567 890"
               />
               <InputField
-                label="Gender"
-                name="gender"
-                value={formData.gender}
-                onChange={handleChange}
-                icon={FiUser}
-                placeholder="Male / Female / Other"
-              />
-              <InputField
-                label="Years of Experience / Age"
+                label="Years of Experience"
                 name="age"
                 type="number"
                 value={formData.age}
                 onChange={handleChange}
                 icon={FaCalendarAlt}
-                placeholder="e.g. 10 (years of coaching)"
+                placeholder="e.g. 8"
               />
+              <div className="relative group">
+                <label className="block text-xs font-semibold text-gray-400 mb-2 group-focus-within:text-brand-peach transition-colors">
+                  Gender
+                </label>
+                <div className="relative flex items-center">
+                  <div className="absolute left-4 text-gray-500 group-focus-within:text-brand-peach transition-colors pointer-events-none">
+                    <FiUser size={17} />
+                  </div>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    className="w-full bg-[#111317]/90 border border-white/10 rounded-2xl py-3.5 pl-11 pr-10 text-white focus:outline-none focus:border-brand-peach/50 focus:ring-1 focus:ring-brand-peach/50 transition-all text-sm appearance-none cursor-pointer"
+                  >
+                    <option value="" className="bg-[#111317]">Select Gender</option>
+                    {GENDER_OPTIONS.map((g) => (
+                      <option key={g} value={g} className="bg-[#111317]">
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">
+                    ▼
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Section: Professional Coaching Details */}
+          {/* Section: Coaching Details */}
           <div>
             <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
-              <FiAward className="text-brand-peach" />
+              <FaDumbbell className="text-brand-peach" />
               <h2 className="text-sm font-bold text-white uppercase tracking-wider">
                 Coaching Credentials & Sport
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <InputField
-                label="Primary Sport / Discipline"
-                name="sport"
-                value={formData.sport}
-                onChange={handleChange}
-                icon={FaDumbbell}
-                placeholder="e.g. Football, Track & Field, Swimming"
-              />
-              <InputField
-                label="Coaching Title / Designation"
-                name="position"
-                value={formData.position}
-                onChange={handleChange}
-                icon={FiAward}
-                placeholder="e.g. Head Coach, Strength & Conditioning Specialist"
-              />
+              {/* Primary Sport Dropdown with Custom Option */}
+              {!customSportMode ? (
+                <div className="flex flex-col">
+                  <SelectField
+                    label="Primary Sport / Discipline"
+                    name="sport"
+                    value={formData.sport || ""}
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      if (selected === "__CUSTOM_SPORT__") {
+                        setCustomSportMode(true);
+                        setFormData(prev => ({ ...prev, sport: "" }));
+                      } else {
+                        setFormData(prev => ({ ...prev, sport: selected }));
+                      }
+                    }}
+                    icon={FaDumbbell}
+                  >
+                    <option value="" className="bg-[#111317] text-gray-400">-- Select Sport --</option>
+                    {SPORTS_LIST.map((sp) => (
+                      <option key={sp} value={sp} className="bg-[#111317] text-white">
+                        {sp}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM_SPORT__" className="bg-[#111317] text-brand-peach font-semibold">
+                      + Other / Enter Custom Sport
+                    </option>
+                  </SelectField>
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <InputField
+                    label="Primary Sport / Discipline"
+                    name="sport"
+                    value={formData.sport}
+                    onChange={handleChange}
+                    icon={FaDumbbell}
+                    placeholder="Enter custom sport"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomSportMode(false);
+                      setFormData(prev => ({ ...prev, sport: "" }));
+                    }}
+                    className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 ml-4 cursor-pointer"
+                  >
+                    ← Select from Sports list
+                  </button>
+                </div>
+              )}
+
+              {/* Coaching Designation Dropdown with Custom Option */}
+              {!customPositionMode ? (
+                <div className="flex flex-col">
+                  <SelectField
+                    label="Coaching Title / Designation"
+                    name="position"
+                    value={formData.position || ""}
+                    onChange={(e) => {
+                      const selected = e.target.value;
+                      if (selected === "__CUSTOM_POSITION__") {
+                        setCustomPositionMode(true);
+                        setFormData(prev => ({ ...prev, position: "" }));
+                      } else {
+                        setFormData(prev => ({ ...prev, position: selected }));
+                      }
+                    }}
+                    icon={FiAward}
+                  >
+                    <option value="" className="bg-[#111317] text-gray-400">-- Select Title / Designation --</option>
+                    {COACH_DESIGNATIONS.map((title) => (
+                      <option key={title} value={title} className="bg-[#111317] text-white">
+                        {title}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM_POSITION__" className="bg-[#111317] text-brand-peach font-semibold">
+                      + Other / Enter Custom Designation
+                    </option>
+                  </SelectField>
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <InputField
+                    label="Coaching Title / Designation"
+                    name="position"
+                    value={formData.position}
+                    onChange={handleChange}
+                    icon={FiAward}
+                    placeholder="e.g. Head Coach, Tactical Analyst"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCustomPositionMode(false);
+                      setFormData(prev => ({ ...prev, position: "" }));
+                    }}
+                    className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 ml-4 cursor-pointer"
+                  >
+                    ← Select from Designation list
+                  </button>
+                </div>
+              )}
               <div className="sm:col-span-2 space-y-2">
                 <input
                   type="file"
@@ -335,30 +472,149 @@ export default function CoachEditProfile() {
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <InputField
-                label="City"
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                icon={FiMapPin}
-                placeholder="e.g. Kochi"
-              />
-              <InputField
-                label="State / Province"
-                name="state"
-                value={formData.state}
-                onChange={handleChange}
-                icon={FiMapPin}
-                placeholder="e.g. Kerala"
-              />
-              <InputField
+              {/* Country */}
+              <SelectField
                 label="Country"
                 name="country"
-                value={formData.country}
-                onChange={handleChange}
+                value={formData.country || "India"}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setFormData(prev => ({ ...prev, country: val }));
+                  if (val === "India") {
+                    setCustomStateMode(false);
+                    setCustomCityMode(false);
+                  } else {
+                    setCustomStateMode(true);
+                    setCustomCityMode(true);
+                  }
+                }}
                 icon={FiGlobe}
-                placeholder="e.g. India"
-              />
+              >
+                {COUNTRIES.map((c) => (
+                  <option key={c} value={c} className="bg-[#111317] text-white">
+                    {c}
+                  </option>
+                ))}
+              </SelectField>
+
+              {/* State / Province */}
+              {!customStateMode && (formData.country === "India" || !formData.country) ? (
+                <div className="flex flex-col">
+                  <SelectField
+                    label="State / UT"
+                    name="state"
+                    value={formData.state || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "__CUSTOM__") {
+                        setCustomStateMode(true);
+                        setCustomCityMode(true);
+                        setFormData(prev => ({ ...prev, state: "", city: "" }));
+                      } else {
+                        setFormData(prev => ({ ...prev, state: val, city: "" }));
+                        setCustomCityMode(false);
+                      }
+                    }}
+                    icon={FiMap}
+                  >
+                    <option value="" className="bg-[#111317] text-gray-400">-- Select State / UT --</option>
+                    <optgroup label="28 States" className="bg-[#111317] text-brand-peach font-bold">
+                      {INDIAN_STATES.map((st) => (
+                        <option key={st} value={st} className="bg-[#111317] text-white font-normal">
+                          {st}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="8 Union Territories" className="bg-[#111317] text-cyan-400 font-bold">
+                      {INDIAN_UNION_TERRITORIES.map((ut) => (
+                        <option key={ut} value={ut} className="bg-[#111317] text-white font-normal">
+                          {ut}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <option value="__CUSTOM__" className="bg-[#111317] text-brand-peach font-semibold">
+                      + Other / Enter Custom State
+                    </option>
+                  </SelectField>
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <InputField
+                    label="State / Province"
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    icon={FiMap}
+                    placeholder="Enter state or province"
+                  />
+                  {(formData.country === "India" || !formData.country) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomStateMode(false);
+                        setFormData(prev => ({ ...prev, state: "" }));
+                      }}
+                      className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 cursor-pointer"
+                    >
+                      ← Select from Indian States dropdown
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* City (Dropdown based on selected state, with option for custom entry) */}
+              {!customCityMode && (MAJOR_INDIAN_CITIES_BY_STATE[formData.state]?.length > 0) ? (
+                <div className="flex flex-col">
+                  <SelectField
+                    label="City"
+                    name="city"
+                    value={formData.city || ""}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "__CUSTOM_CITY__") {
+                        setCustomCityMode(true);
+                        setFormData(prev => ({ ...prev, city: "" }));
+                      } else {
+                        setFormData(prev => ({ ...prev, city: val }));
+                      }
+                    }}
+                    icon={FiMapPin}
+                  >
+                    <option value="" className="bg-[#111317] text-gray-400">-- Select City in {formData.state} --</option>
+                    {MAJOR_INDIAN_CITIES_BY_STATE[formData.state].map((c) => (
+                      <option key={c} value={c} className="bg-[#111317] text-white">
+                        {c}
+                      </option>
+                    ))}
+                    <option value="__CUSTOM_CITY__" className="bg-[#111317] text-brand-peach font-semibold">
+                      + Other / Enter Custom City
+                    </option>
+                  </SelectField>
+                </div>
+              ) : (
+                <div className="flex flex-col">
+                  <InputField
+                    label="City"
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    icon={FiMapPin}
+                    placeholder={formData.state ? "Enter city or town name" : "Select State first or enter city"}
+                  />
+                  {MAJOR_INDIAN_CITIES_BY_STATE[formData.state]?.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCustomCityMode(false);
+                        setFormData(prev => ({ ...prev, city: "" }));
+                      }}
+                      className="text-[10px] text-brand-peach hover:underline text-left mt-1.5 cursor-pointer"
+                    >
+                      ← Choose from City dropdown
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

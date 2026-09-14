@@ -1,5 +1,6 @@
 package com.athletex.backend.controller;
 
+import com.athletex.backend.dto.RecurringTrainingRequest;
 import com.athletex.backend.dto.TrainingRequest;
 import com.athletex.backend.dto.TrainingResponse;
 import com.athletex.backend.service.TrainingService;
@@ -10,6 +11,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/training")
@@ -30,6 +32,26 @@ public class TrainingController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+
+    // POST /api/training/recurring (Automation: Batch schedule multi-week microcycles)
+    @PostMapping("/recurring")
+    public ResponseEntity<?> createRecurringTraining(@Valid @RequestBody RecurringTrainingRequest request) {
+        try {
+            List<TrainingResponse> responses = trainingService.createRecurringTraining(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // POST /api/training/auto-mark-missed (Automation: Manual / Triggered check)
+    @PostMapping("/auto-mark-missed")
+    public ResponseEntity<?> autoMarkMissed() {
+        int marked = trainingService.autoMarkMissedTrainings();
+        return ResponseEntity.ok(Map.of("message", "Automated missed session check completed", "updatedCount", marked));
     }
 
     // GET /api/training/coach/{coachId}

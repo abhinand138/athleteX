@@ -37,7 +37,10 @@ export default function CoachTraining() {
     category: "Speed",
     date: "",
     time: "",
-    description: ""
+    description: "",
+    isRecurring: false,
+    repeatWeeks: 4,
+    repeatDays: []
   });
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -88,17 +91,34 @@ export default function CoachTraining() {
 
     setSubmitting(true);
     try {
-      await api.post("/training", {
-        coachId,
-        athleteId: formData.athleteId,
-        title: formData.title.trim(),
-        category: formData.category,
-        date: formData.date,
-        time: formData.time,
-        description: formData.description.trim()
-      });
+      if (formData.isRecurring) {
+        const payload = {
+          coachId,
+          athleteId: formData.athleteId,
+          title: formData.title.trim(),
+          category: formData.category,
+          startDate: formData.date,
+          time: formData.time,
+          description: formData.description.trim(),
+          repeatWeeks: parseInt(formData.repeatWeeks, 10) || 1,
+          repeatDays: formData.repeatDays.length > 0 ? formData.repeatDays : null
+        };
+        const res = await api.post("/training/recurring", payload);
+        const count = Array.isArray(res.data) ? res.data.length : formData.repeatWeeks;
+        toast.success(`Automated routine created! (${count} sessions scheduled)`);
+      } else {
+        await api.post("/training", {
+          coachId,
+          athleteId: formData.athleteId,
+          title: formData.title.trim(),
+          category: formData.category,
+          date: formData.date,
+          time: formData.time,
+          description: formData.description.trim()
+        });
+        toast.success("Training session assigned successfully!");
+      }
 
-      toast.success("Training session assigned successfully!");
       setShowCreateModal(false);
       setFormData({
         athleteId: "",
@@ -106,7 +126,10 @@ export default function CoachTraining() {
         category: "Speed",
         date: "",
         time: "",
-        description: ""
+        description: "",
+        isRecurring: false,
+        repeatWeeks: 4,
+        repeatDays: []
       });
       loadData();
     } catch (err) {
@@ -235,45 +258,55 @@ export default function CoachTraining() {
         </div>
 
         {/* Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <div
             onClick={() => setActiveTab("ALL")}
-            className={`glass-card rounded-2xl p-5 border transition-all cursor-pointer ${
+            className={`glass-card rounded-2xl p-4 sm:p-5 border transition-all cursor-pointer ${
               activeTab === "ALL" ? "border-brand-peach shadow-[0_0_15px_rgba(255,123,84,0.2)]" : "border-white/5 hover:border-white/10"
             }`}
           >
-            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Sessions</span>
-            <p className="text-3xl font-black text-white mt-1">{trainings.length}</p>
+            <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Total</span>
+            <p className="text-2xl sm:text-3xl font-black text-white mt-1">{trainings.length}</p>
           </div>
 
           <div
             onClick={() => setActiveTab("SCHEDULED")}
-            className={`glass-card rounded-2xl p-5 border transition-all cursor-pointer ${
+            className={`glass-card rounded-2xl p-4 sm:p-5 border transition-all cursor-pointer ${
               activeTab === "SCHEDULED" ? "border-blue-400 shadow-[0_0_15px_rgba(96,165,250,0.2)]" : "border-white/5 hover:border-white/10"
             }`}
           >
             <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">Scheduled</span>
-            <p className="text-3xl font-black text-white mt-1">{countByStatus("SCHEDULED")}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white mt-1">{countByStatus("SCHEDULED")}</p>
           </div>
 
           <div
             onClick={() => setActiveTab("COMPLETED")}
-            className={`glass-card rounded-2xl p-5 border transition-all cursor-pointer ${
+            className={`glass-card rounded-2xl p-4 sm:p-5 border transition-all cursor-pointer ${
               activeTab === "COMPLETED" ? "border-emerald-400 shadow-[0_0_15px_rgba(52,211,153,0.2)]" : "border-white/5 hover:border-white/10"
             }`}
           >
             <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">Completed</span>
-            <p className="text-3xl font-black text-white mt-1">{countByStatus("COMPLETED")}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white mt-1">{countByStatus("COMPLETED")}</p>
+          </div>
+
+          <div
+            onClick={() => setActiveTab("MISSED")}
+            className={`glass-card rounded-2xl p-4 sm:p-5 border transition-all cursor-pointer ${
+              activeTab === "MISSED" ? "border-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.2)]" : "border-white/5 hover:border-white/10"
+            }`}
+          >
+            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Missed</span>
+            <p className="text-2xl sm:text-3xl font-black text-white mt-1">{countByStatus("MISSED")}</p>
           </div>
 
           <div
             onClick={() => setActiveTab("CANCELLED")}
-            className={`glass-card rounded-2xl p-5 border transition-all cursor-pointer ${
+            className={`glass-card rounded-2xl p-4 sm:p-5 border transition-all cursor-pointer ${
               activeTab === "CANCELLED" ? "border-red-400 shadow-[0_0_15px_rgba(248,113,113,0.2)]" : "border-white/5 hover:border-white/10"
             }`}
           >
             <span className="text-xs font-bold text-red-400 uppercase tracking-wider">Cancelled</span>
-            <p className="text-3xl font-black text-white mt-1">{countByStatus("CANCELLED")}</p>
+            <p className="text-2xl sm:text-3xl font-black text-white mt-1">{countByStatus("CANCELLED")}</p>
           </div>
         </div>
 
@@ -290,12 +323,12 @@ export default function CoachTraining() {
             />
           </div>
 
-          <div className="flex items-center gap-2 bg-[#111317] p-1.5 rounded-2xl border border-white/5 self-start">
-            {["ALL", "SCHEDULED", "COMPLETED", "CANCELLED"].map((tab) => (
+          <div className="flex items-center gap-1 sm:gap-2 bg-[#111317] p-1.5 rounded-2xl border border-white/5 self-start overflow-x-auto max-w-full">
+            {["ALL", "SCHEDULED", "COMPLETED", "MISSED", "CANCELLED"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shrink-0 ${
                   activeTab === tab
                     ? "bg-brand-peach text-black shadow-md"
                     : "text-gray-400 hover:text-white"
@@ -363,6 +396,12 @@ export default function CoachTraining() {
                       <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5">
                         <FaCheckCircle className="text-[10px]" />
                         Completed
+                      </span>
+                    )}
+                    {t.status === "MISSED" && (
+                      <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20 flex items-center gap-1.5">
+                        <FaExclamationCircle className="text-[10px]" />
+                        Missed
                       </span>
                     )}
                     {t.status === "CANCELLED" && (
@@ -433,11 +472,11 @@ export default function CoachTraining() {
         {/* CREATE TRAINING MODAL                                                     */}
         {/* ========================================================================= */}
         {showCreateModal && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-            <div className="glass-card bg-[#111317]/95 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn overflow-y-auto">
+            <div className="glass-card bg-[#111317]/95 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] flex flex-col my-auto overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-brand-peach/10 blur-[90px] rounded-full pointer-events-none" />
 
-              <div className="flex items-center justify-between pb-4 border-b border-white/10 relative z-10">
+              <div className="flex items-center justify-between pb-4 border-b border-white/10 relative z-10 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-brand-peach/10 text-brand-peach rounded-2xl border border-brand-peach/20">
                     <FaDumbbell className="text-xl" />
@@ -456,13 +495,13 @@ export default function CoachTraining() {
               </div>
 
               {formError && (
-                <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2 shrink-0">
                   <FaExclamationCircle className="shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleCreateSubmit} className="mt-5 space-y-4 relative z-10">
+              <form onSubmit={handleCreateSubmit} className="mt-5 space-y-4 relative z-10 flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
                 {/* Select Assigned Athlete */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -551,6 +590,106 @@ export default function CoachTraining() {
                   </div>
                 </div>
 
+                {/* Automation & Recurrence Routine Generator */}
+                <div className="p-4 rounded-2xl bg-[#181b22] border border-brand-peach/20 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-base">⚡</span>
+                      <div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Automate Recurrence</h4>
+                        <p className="text-[11px] text-gray-400">Generate multi-week routine instances automatically</p>
+                      </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={formData.isRecurring}
+                        onChange={(e) => setFormData({ ...formData, isRecurring: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-10 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-peach"></div>
+                    </label>
+                  </div>
+
+                  {formData.isRecurring && (
+                    <div className="space-y-3 pt-3 border-t border-white/5 animate-fadeIn">
+                      {/* Repeat Weeks */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-300 mb-1.5">
+                          Repeat Duration
+                        </label>
+                        <div className="grid grid-cols-4 gap-2">
+                          {[2, 4, 6, 8].map((w) => (
+                            <button
+                              key={w}
+                              type="button"
+                              onClick={() => setFormData({ ...formData, repeatWeeks: w })}
+                              className={`py-1.5 px-2 rounded-xl text-xs font-bold transition-all ${
+                                formData.repeatWeeks === w
+                                  ? "bg-brand-peach text-black shadow-md shadow-brand-peach/20"
+                                  : "bg-white/5 text-gray-300 hover:bg-white/10 border border-white/5"
+                              }`}
+                            >
+                              {w} Weeks
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Day-of-Week Pills */}
+                      <div>
+                        <label className="block text-[11px] font-semibold text-gray-300 mb-1.5">
+                          Weekly Training Days
+                        </label>
+                        <div className="grid grid-cols-7 gap-1">
+                          {[
+                            { id: "MONDAY", label: "Mon" },
+                            { id: "TUESDAY", label: "Tue" },
+                            { id: "WEDNESDAY", label: "Wed" },
+                            { id: "THURSDAY", label: "Thu" },
+                            { id: "FRIDAY", label: "Fri" },
+                            { id: "SATURDAY", label: "Sat" },
+                            { id: "SUNDAY", label: "Sun" }
+                          ].map((d) => {
+                            const isSelected = formData.repeatDays.includes(d.id);
+                            return (
+                              <button
+                                key={d.id}
+                                type="button"
+                                onClick={() => {
+                                  const newDays = isSelected
+                                    ? formData.repeatDays.filter((x) => x !== d.id)
+                                    : [...formData.repeatDays, d.id];
+                                  setFormData({ ...formData, repeatDays: newDays });
+                                }}
+                                className={`py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                  isSelected
+                                    ? "bg-brand-peach text-black shadow-sm"
+                                    : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5"
+                                }`}
+                              >
+                                {d.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Dynamic Preview */}
+                      <div className="p-2.5 rounded-xl bg-black/40 border border-brand-peach/20 text-[11px] text-brand-peach">
+                        ✨ Automatically schedules{" "}
+                        <span className="font-bold underline">
+                          {formData.repeatDays.length > 0
+                            ? formData.repeatDays.length * formData.repeatWeeks
+                            : formData.repeatWeeks}{" "}
+                          sessions
+                        </span>{" "}
+                        over {formData.repeatWeeks} weeks starting from {formData.date || "selected date"}.
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Description */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -566,7 +705,7 @@ export default function CoachTraining() {
                 </div>
 
                 {/* Submit Buttons */}
-                <div className="flex gap-3 pt-2">
+                <div className="flex gap-3 pt-3 mt-2 border-t border-white/10 shrink-0 sticky bottom-0 bg-[#111317] py-2 z-20">
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
@@ -591,11 +730,11 @@ export default function CoachTraining() {
         {/* EDIT TRAINING MODAL                                                       */}
         {/* ========================================================================= */}
         {editingTraining && (
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-            <div className="glass-card bg-[#111317]/95 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn overflow-y-auto">
+            <div className="glass-card bg-[#111317]/95 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative max-h-[90vh] flex flex-col my-auto overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-blue-500/10 blur-[90px] rounded-full pointer-events-none" />
 
-              <div className="flex items-center justify-between pb-4 border-b border-white/10 relative z-10">
+              <div className="flex items-center justify-between pb-4 border-b border-white/10 relative z-10 shrink-0">
                 <div className="flex items-center gap-3">
                   <div className="p-3 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20">
                     <FaEdit className="text-xl" />
@@ -614,13 +753,13 @@ export default function CoachTraining() {
               </div>
 
               {formError && (
-                <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2">
+                <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs flex items-center gap-2 shrink-0">
                   <FaExclamationCircle className="shrink-0" />
                   <span>{formError}</span>
                 </div>
               )}
 
-              <form onSubmit={handleEditSubmit} className="mt-5 space-y-4 relative z-10">
+              <form onSubmit={handleEditSubmit} className="mt-5 space-y-4 relative z-10 flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
                 {/* Title */}
                 <div>
                   <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
@@ -695,7 +834,8 @@ export default function CoachTraining() {
                   />
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                {/* Submit Buttons */}
+                <div className="flex gap-3 pt-3 mt-2 border-t border-white/10 shrink-0 sticky bottom-0 bg-[#111317] py-2 z-20">
                   <button
                     type="button"
                     onClick={() => setEditingTraining(null)}

@@ -55,6 +55,7 @@ export default function Training() {
   const totalCount = trainings.length;
   const completedCount = trainings.filter((t) => t.status === "COMPLETED").length;
   const scheduledCount = trainings.filter((t) => t.status === "SCHEDULED").length;
+  const missedCount = trainings.filter((t) => t.status === "MISSED").length;
   const completedSessions = trainings.filter((t) => t.status === "COMPLETED" && t.rpe);
   const avgRpe =
     completedSessions.length > 0
@@ -131,7 +132,11 @@ export default function Training() {
                 <FaCheckCircle className="text-lg" />
               </div>
             </div>
-            <p className="text-xs text-gray-500 mt-3">{totalCount > 0 ? `${Math.round((completedCount / totalCount) * 100)}% completion rate` : "0% completion rate"}</p>
+            <p className="text-xs text-gray-500 mt-3">
+              {(completedCount + missedCount) > 0
+                ? `${Math.round((completedCount / (completedCount + missedCount)) * 100)}% adherence rate`
+                : `${totalCount > 0 ? "100%" : "0%"} adherence rate`}
+            </p>
           </div>
 
           <div className="glass-card rounded-2xl p-5 border border-white/5 relative overflow-hidden">
@@ -169,18 +174,24 @@ export default function Training() {
         <div className="glass-card rounded-2xl p-4 md:p-6 border border-white/5 space-y-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Status Tabs */}
-            <div className="flex items-center gap-2 p-1 rounded-xl bg-white/5 border border-white/5 max-w-fit">
-              {["SCHEDULED", "COMPLETED", "ALL"].map((tab) => (
+            <div className="flex items-center gap-1.5 sm:gap-2 p-1 rounded-xl bg-white/5 border border-white/5 max-w-fit overflow-x-auto">
+              {["SCHEDULED", "COMPLETED", "MISSED", "ALL"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold transition-all ${
+                  className={`px-3 sm:px-4 py-2 rounded-lg text-xs font-bold transition-all shrink-0 ${
                     activeTab === tab
                       ? "bg-brand-peach text-black shadow-lg shadow-brand-peach/20"
                       : "text-gray-400 hover:text-white"
                   }`}
                 >
-                  {tab === "SCHEDULED" ? "Upcoming" : tab === "COMPLETED" ? "Completed" : "All Sessions"}
+                  {tab === "SCHEDULED"
+                    ? "Upcoming"
+                    : tab === "COMPLETED"
+                    ? "Completed"
+                    : tab === "MISSED"
+                    ? `Missed (${missedCount})`
+                    : "All Sessions"}
                 </button>
               ))}
             </div>
@@ -232,6 +243,7 @@ export default function Training() {
               {filteredTrainings.map((t) => {
                 const isCompleted = t.status === "COMPLETED";
                 const isCancelled = t.status === "CANCELLED";
+                const isMissed = t.status === "MISSED";
 
                 return (
                   <motion.div
@@ -241,6 +253,8 @@ export default function Training() {
                     className={`rounded-2xl p-5 border transition-all ${
                       isCompleted
                         ? "bg-emerald-500/[0.03] border-emerald-500/20"
+                        : isMissed
+                        ? "bg-amber-500/[0.02] border-amber-500/30"
                         : isCancelled
                         ? "bg-white/[0.02] border-white/5 opacity-60"
                         : "bg-white/[0.03] border-white/10 hover:border-brand-peach/40 shadow-lg shadow-black/20"
@@ -256,6 +270,8 @@ export default function Training() {
                             className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md ${
                               isCompleted
                                 ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                : isMissed
+                                ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
                                 : isCancelled
                                 ? "bg-rose-500/10 text-rose-400 border border-rose-500/20"
                                 : "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20"
@@ -270,10 +286,14 @@ export default function Training() {
                       {!isCompleted && !isCancelled && (
                         <button
                           onClick={() => setSelectedTraining(t)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-black text-xs font-bold hover:bg-emerald-400 transition-all shadow-md shadow-emerald-500/20"
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-black text-xs font-bold transition-all shadow-md ${
+                            isMissed
+                              ? "bg-amber-400 hover:bg-amber-300 shadow-amber-500/20"
+                              : "bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/20"
+                          }`}
                         >
                           <FaCheck className="text-[10px]" />
-                          <span>Complete</span>
+                          <span>{isMissed ? "Log Late" : "Complete"}</span>
                         </button>
                       )}
                     </div>

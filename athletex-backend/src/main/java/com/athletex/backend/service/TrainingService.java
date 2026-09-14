@@ -1,5 +1,6 @@
 package com.athletex.backend.service;
 
+import com.athletex.backend.dto.RecurringTrainingRequest;
 import com.athletex.backend.dto.TrainingRequest;
 import com.athletex.backend.dto.TrainingResponse;
 import com.athletex.backend.model.*;
@@ -7,8 +8,11 @@ import com.athletex.backend.repository.CoachAthleteAssignmentRepository;
 import com.athletex.backend.repository.TrainingRepository;
 import com.athletex.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -79,9 +83,130 @@ public class TrainingService {
     }
 
     // ===========================
+    // CREATE RECURRING TRAINING SESSIONS (AUTOMATION)
+    // ===========================
+    public List<TrainingResponse> createRecurringTraining(RecurringTrainingRequest request) {
+        // 1. Verify Coach
+        User coach = userRepository.findById(request.getCoachId())
+                .orElseThrow(() -> new RuntimeException("Coach not found"));
+        if (coach.getRole() != Role.COACH) {
+            throw new RuntimeException("User is not a coach");
+        }
+
+        // 2. Verify Athlete
+        User athlete = userRepository.findById(request.getAthleteId())
+                .orElseThrow(() -> new RuntimeException("Athlete not found"));
+        if (athlete.getRole() != Role.ATHLETE) {
+            throw new RuntimeException("Target user is not an athlete");
+        }
+
+        // 3. Verify Active Assignment
+        boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(
+                request.getCoachId(), request.getAthleteId(), AssignmentStatus.ACTIVE
+        );
+        if (!isAssigned) {
+            throw new SecurityException("Athlete is not assigned to this coach");
+        }
+
+        int weeks = (request.getRepeatWeeks() != null && request.getRepeatWeeks() > 0)
+                ? request.getRepeatWeeks() : 1;
+
+        LocalDate startDate = request.getStartDate();
+        Set<LocalDate> sessionDates = new TreeSet<>();
+
+        if (request.getRepeatDays() != null && !request.getRepeatDays().isEmpty()) {
+            Set<DayOfWeek> targetDays = new HashSet<>();
+            for (String dayStr : request.getRepeatDays()) {
+                try {
+                    targetDays.add(DayOfWeek.valueOf(dayStr.trim().toUpperCase()));
+                } catch (IllegalArgumentException ignored) {}
+            }
+
+            if (targetDays.isEmpty()) {
+                targetDays.add(startDate.getDayOfWeek());
+            }
+
+            LocalDate weekStart = startDate.with(DayOfWeek.MONDAY);
+            for (int w = 0; w < weeks; w++) {
+                LocalDate currentWeek = weekStart.plusWeeks(w);
+                for (DayOfWeek dow : targetDays) {
+                    LocalDate candidateDate = currentWeek.with(dow);
+                    if (!candidateDate.isBefore(startDate)) {
+                        sessionDates.add(candidateDate);
+                    }
+                }
+            }
+        } else {
+            for (int w = 0; w < weeks; w++) {
+                sessionDates.add(startDate.plusWeeks(w));
+            }
+        }
+
+        if (sessionDates.isEmpty()) {
+            sessionDates.add(startDate);
+        }
+
+        List<Training> trainingsToSave = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (LocalDate d : sessionDates) {
+            Training training = Training.builder()
+                    .coachId(request.getCoachId())
+                    .athleteId(request.getAthleteId())
+                    .title(request.getTitle())
+                    .description(request.getDescription())
+                    .category(request.getCategory())
+                    .date(d)
+                    .time(request.getTime())
+                    .status(TrainingStatus.SCHEDULED)
+                    .createdAt(now)
+                    .build();
+            trainingsToSave.add(training);
+        }
+
+        List<Training> savedList = trainingRepository.saveAll(trainingsToSave);
+
+        try {
+            notificationService.sendNotification(
+                    request.getAthleteId(),
+                    "New Automated Training Routine 🚀",
+                    "Coach " + coach.getFullName() + " scheduled a " + weeks + "-week " + request.getCategory() + " routine: '" + request.getTitle() + "' (" + savedList.size() + " sessions scheduled)",
+                    "TRAINING",
+                    "/training"
+            );
+        } catch (Exception e) {
+            // Non-blocking notification
+        }
+
+        return savedList.stream()
+                .map(t -> mapToResponse(t, coach.getFullName(), athlete.getFullName()))
+                .collect(Collectors.toList());
+    }
+
+    // ===========================
+    // AUTOMATED MISSED SESSION DETECTION
+    // Runs at the top of every hour and is also synchronized on query fetches
+    // ===========================
+    @Scheduled(cron = "0 0 * * * *")
+    public int autoMarkMissedTrainings() {
+        LocalDate today = LocalDate.now();
+        List<Training> pastScheduled = trainingRepository.findByStatusAndDateBefore(TrainingStatus.SCHEDULED, today);
+        if (pastScheduled == null || pastScheduled.isEmpty()) {
+            return 0;
+        }
+
+        for (Training t : pastScheduled) {
+            t.setStatus(TrainingStatus.MISSED);
+        }
+        trainingRepository.saveAll(pastScheduled);
+        return pastScheduled.size();
+    }
+
+    // ===========================
     // GET COACH TRAININGS
     // ===========================
     public List<TrainingResponse> getCoachTraining(String coachId) {
+        autoMarkMissedTrainings();
         List<Training> trainings = trainingRepository.findByCoachIdOrderByDateDescTimeDesc(coachId);
         if (trainings == null || trainings.isEmpty()) {
             return Collections.emptyList();
@@ -103,6 +228,7 @@ public class TrainingService {
     // GET ATHLETE TRAININGS
     // ===========================
     public List<TrainingResponse> getAthleteTraining(String athleteId) {
+        autoMarkMissedTrainings();
         List<Training> trainings = trainingRepository.findByAthleteIdOrderByDateDescTimeDesc(athleteId);
         if (trainings == null || trainings.isEmpty()) {
             return Collections.emptyList();
@@ -124,6 +250,7 @@ public class TrainingService {
     // GET ATHLETE UPCOMING TRAININGS
     // ===========================
     public List<TrainingResponse> getAthleteUpcomingTraining(String athleteId) {
+        autoMarkMissedTrainings();
         List<Training> trainings = trainingRepository.findByAthleteIdAndStatusOrderByDateAscTimeAsc(
                 athleteId, TrainingStatus.SCHEDULED
         );

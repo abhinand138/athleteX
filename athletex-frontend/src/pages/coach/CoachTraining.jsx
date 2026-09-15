@@ -16,7 +16,8 @@ import {
   FaCheckCircle,
   FaTimesCircle,
   FaHourglassHalf,
-  FaExclamationCircle
+  FaExclamationCircle,
+  FaUsers
 } from "react-icons/fa";
 
 const CATEGORIES = ["Speed", "Strength", "Endurance", "Agility", "Recovery", "General"];
@@ -32,7 +33,9 @@ export default function CoachTraining() {
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [formData, setFormData] = useState({
+    assignmentMode: "SINGLE", // "SINGLE" or "SQUAD"
     athleteId: "",
+    selectedAthleteIds: [],
     title: "",
     category: "Speed",
     date: "",
@@ -42,6 +45,7 @@ export default function CoachTraining() {
     repeatWeeks: 4,
     repeatDays: []
   });
+  const [squadSearch, setSquadSearch] = useState("");
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -84,14 +88,38 @@ export default function CoachTraining() {
     e.preventDefault();
     setFormError("");
 
-    if (!formData.athleteId) return setFormError("Please select an assigned athlete.");
+    if (formData.assignmentMode === "SQUAD") {
+      if (!formData.selectedAthleteIds || formData.selectedAthleteIds.length === 0) {
+        return setFormError("Please select at least one athlete for squad training.");
+      }
+    } else {
+      if (!formData.athleteId) {
+        return setFormError("Please select an assigned athlete.");
+      }
+    }
+
     if (!formData.title.trim()) return setFormError("Title is required.");
     if (!formData.date) return setFormError("Date is required.");
     if (!formData.time) return setFormError("Time is required.");
 
     setSubmitting(true);
     try {
-      if (formData.isRecurring) {
+      if (formData.assignmentMode === "SQUAD") {
+        const payload = {
+          coachId,
+          athleteIds: formData.selectedAthleteIds,
+          title: formData.title.trim(),
+          category: formData.category,
+          startDate: formData.date,
+          time: formData.time,
+          description: formData.description.trim(),
+          repeatWeeks: formData.isRecurring ? (parseInt(formData.repeatWeeks, 10) || 1) : 1,
+          repeatDays: formData.isRecurring && formData.repeatDays.length > 0 ? formData.repeatDays : null
+        };
+        const res = await api.post("/training/bulk", payload);
+        const sessionCount = Array.isArray(res.data) ? res.data.length : formData.selectedAthleteIds.length;
+        toast.success(`Squad training scheduled! (${sessionCount} sessions for ${formData.selectedAthleteIds.length} athletes)`);
+      } else if (formData.isRecurring) {
         const payload = {
           coachId,
           athleteId: formData.athleteId,
@@ -121,7 +149,9 @@ export default function CoachTraining() {
 
       setShowCreateModal(false);
       setFormData({
+        assignmentMode: "SINGLE",
         athleteId: "",
+        selectedAthleteIds: [],
         title: "",
         category: "Speed",
         date: "",
@@ -131,6 +161,7 @@ export default function CoachTraining() {
         repeatWeeks: 4,
         repeatDays: []
       });
+      setSquadSearch("");
       loadData();
     } catch (err) {
       const msg = getErrorMessage(err, "Failed to create training session.");
@@ -198,6 +229,20 @@ export default function CoachTraining() {
   });
 
   const countByStatus = (status) => trainings.filter((t) => t.status === status).length;
+
+  const sportsListInRoster = Array.from(
+    new Set(assignedAthletes.map((a) => a.sport).filter(Boolean))
+  );
+
+  const filteredRosterAthletes = assignedAthletes.filter((a) => {
+    if (!squadSearch.trim()) return true;
+    const q = squadSearch.toLowerCase();
+    return (
+      a.fullName?.toLowerCase().includes(q) ||
+      a.sport?.toLowerCase().includes(q) ||
+      a.position?.toLowerCase().includes(q)
+    );
+  });
 
   if (loading) {
     return (
@@ -502,31 +547,199 @@ export default function CoachTraining() {
               )}
 
               <form onSubmit={handleCreateSubmit} className="mt-5 space-y-4 relative z-10 flex-1 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-white/10">
-                {/* Select Assigned Athlete */}
+                {/* Assignment Mode Selector */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
-                    Assign To Athlete *
+                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    Assignment Mode *
                   </label>
-                  {assignedAthletes.length === 0 ? (
-                    <p className="text-xs text-red-400">
-                      You have no athletes assigned to your roster yet. Please assign athletes from the "My Athletes" page first.
-                    </p>
-                  ) : (
-                    <select
-                      value={formData.athleteId}
-                      onChange={(e) => setFormData({ ...formData, athleteId: e.target.value })}
-                      className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand-peach/50 transition-colors"
-                      required
+                  <div className="grid grid-cols-2 gap-2 p-1 bg-[#181b22] border border-white/10 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, assignmentMode: "SINGLE" })}
+                      className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        formData.assignmentMode === "SINGLE"
+                          ? "bg-brand-peach text-black shadow-md shadow-brand-peach/20"
+                          : "text-gray-400 hover:text-white"
+                      }`}
                     >
-                      <option value="">-- Choose Athlete --</option>
-                      {assignedAthletes.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.fullName} ({a.sport || "Athlete"})
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                      <FaUser className="text-xs" />
+                      <span>Single Athlete</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, assignmentMode: "SQUAD" })}
+                      className={`flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                        formData.assignmentMode === "SQUAD"
+                          ? "bg-brand-peach text-black shadow-md shadow-brand-peach/20"
+                          : "text-gray-400 hover:text-white"
+                      }`}
+                    >
+                      <FaUsers className="text-xs" />
+                      <span>Squad / Bulk ({formData.selectedAthleteIds.length})</span>
+                    </button>
+                  </div>
                 </div>
+
+                {/* Target Athlete(s) Selection */}
+                {formData.assignmentMode === "SINGLE" ? (
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Assign To Athlete *
+                    </label>
+                    {assignedAthletes.length === 0 ? (
+                      <p className="text-xs text-red-400">
+                        You have no athletes assigned to your roster yet. Please assign athletes from the "My Athletes" page first.
+                      </p>
+                    ) : (
+                      <select
+                        value={formData.athleteId}
+                        onChange={(e) => setFormData({ ...formData, athleteId: e.target.value })}
+                        className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand-peach/50 transition-colors"
+                        required={formData.assignmentMode === "SINGLE"}
+                      >
+                        <option value="">-- Choose Athlete --</option>
+                        {assignedAthletes.map((a) => (
+                          <option key={a.id} value={a.id}>
+                            {a.fullName} ({a.sport || "Athlete"}{a.position ? ` • ${a.position}` : ""})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3 p-3.5 rounded-2xl bg-[#181b22] border border-brand-peach/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold uppercase tracking-wider text-white">Squad Selection</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-peach/10 text-brand-peach border border-brand-peach/20">
+                          {formData.selectedAthleteIds.length} Selected
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (formData.selectedAthleteIds.length === assignedAthletes.length) {
+                              setFormData({ ...formData, selectedAthleteIds: [] });
+                            } else {
+                              setFormData({ ...formData, selectedAthleteIds: assignedAthletes.map((a) => a.id) });
+                            }
+                          }}
+                          className="text-[11px] font-bold text-brand-peach hover:underline cursor-pointer"
+                        >
+                          {formData.selectedAthleteIds.length === assignedAthletes.length
+                            ? "Deselect All"
+                            : `Select All (${assignedAthletes.length})`}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Filter by Sport Pills */}
+                    {sportsListInRoster.length > 0 && (
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+                        <span className="text-[10px] font-semibold text-gray-400 shrink-0">Filter:</span>
+                        {sportsListInRoster.map((sp) => {
+                          const athletesInSport = assignedAthletes.filter((a) => a.sport === sp);
+                          const allInSportSelected =
+                            athletesInSport.length > 0 &&
+                            athletesInSport.every((a) => formData.selectedAthleteIds.includes(a.id));
+                          return (
+                            <button
+                              key={sp}
+                              type="button"
+                              onClick={() => {
+                                const sportIds = athletesInSport.map((a) => a.id);
+                                if (allInSportSelected) {
+                                  setFormData({
+                                    ...formData,
+                                    selectedAthleteIds: formData.selectedAthleteIds.filter((id) => !sportIds.includes(id))
+                                  });
+                                } else {
+                                  const merged = Array.from(new Set([...formData.selectedAthleteIds, ...sportIds]));
+                                  setFormData({ ...formData, selectedAthleteIds: merged });
+                                }
+                              }}
+                              className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all shrink-0 cursor-pointer ${
+                                allInSportSelected
+                                  ? "bg-brand-peach text-black"
+                                  : "bg-white/5 text-gray-300 hover:bg-white/10 border border-white/5"
+                              }`}
+                            >
+                              {sp} ({athletesInSport.length})
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Search inside Squad */}
+                    <div className="relative">
+                      <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs" />
+                      <input
+                        type="text"
+                        placeholder="Search athletes by name or position..."
+                        value={squadSearch}
+                        onChange={(e) => setSquadSearch(e.target.value)}
+                        className="w-full bg-[#111317] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-brand-peach/50 transition-colors"
+                      />
+                    </div>
+
+                    {/* Athlete Cards List */}
+                    <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1 scrollbar-thin scrollbar-thumb-white/10">
+                      {assignedAthletes.length === 0 ? (
+                        <p className="text-xs text-gray-500 text-center py-4">No roster athletes found.</p>
+                      ) : filteredRosterAthletes.length === 0 ? (
+                        <p className="text-xs text-gray-500 text-center py-4">No athletes match search.</p>
+                      ) : (
+                        filteredRosterAthletes.map((a) => {
+                          const isSelected = formData.selectedAthleteIds.includes(a.id);
+                          return (
+                            <div
+                              key={a.id}
+                              onClick={() => {
+                                const newSelected = isSelected
+                                  ? formData.selectedAthleteIds.filter((id) => id !== a.id)
+                                  : [...formData.selectedAthleteIds, a.id];
+                                setFormData({ ...formData, selectedAthleteIds: newSelected });
+                              }}
+                              className={`flex items-center justify-between p-2 rounded-xl border transition-all cursor-pointer ${
+                                isSelected
+                                  ? "bg-brand-peach/10 border-brand-peach/40 text-white"
+                                  : "bg-white/[0.02] border-white/5 text-gray-300 hover:bg-white/5"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  className="rounded text-brand-peach focus:ring-brand-peach/50 pointer-events-none"
+                                />
+                                <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center font-bold text-[10px] shrink-0 overflow-hidden border border-white/10">
+                                  {a.profileImage ? (
+                                    <img src={a.profileImage} alt="" className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span>{a.fullName?.charAt(0) || "A"}</span>
+                                  )}
+                                </div>
+                                <div className="truncate">
+                                  <p className="text-xs font-bold leading-tight truncate text-white">{a.fullName}</p>
+                                  <p className="text-[10px] text-gray-400 truncate">
+                                    {a.sport || "Athlete"}{a.position ? ` • ${a.position}` : ""}
+                                  </p>
+                                </div>
+                              </div>
+                              {isSelected && (
+                                <span className="text-[10px] font-bold text-brand-peach shrink-0 ml-2">Selected</span>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Training Title */}
                 <div>
@@ -679,11 +892,13 @@ export default function CoachTraining() {
                       <div className="p-2.5 rounded-xl bg-black/40 border border-brand-peach/20 text-[11px] text-brand-peach">
                         ✨ Automatically schedules{" "}
                         <span className="font-bold underline">
-                          {formData.repeatDays.length > 0
-                            ? formData.repeatDays.length * formData.repeatWeeks
-                            : formData.repeatWeeks}{" "}
+                          {(formData.repeatDays.length > 0 ? formData.repeatDays.length * formData.repeatWeeks : formData.repeatWeeks) *
+                            (formData.assignmentMode === "SQUAD" ? Math.max(1, formData.selectedAthleteIds.length) : 1)}{" "}
                           sessions
                         </span>{" "}
+                        {formData.assignmentMode === "SQUAD" && formData.selectedAthleteIds.length > 0 && (
+                          <span>across {formData.selectedAthleteIds.length} squad athletes </span>
+                        )}
                         over {formData.repeatWeeks} weeks starting from {formData.date || "selected date"}.
                       </div>
                     </div>
@@ -715,10 +930,18 @@ export default function CoachTraining() {
                   </button>
                   <button
                     type="submit"
-                    disabled={submitting || assignedAthletes.length === 0}
+                    disabled={
+                      submitting ||
+                      assignedAthletes.length === 0 ||
+                      (formData.assignmentMode === "SQUAD" && formData.selectedAthleteIds.length === 0)
+                    }
                     className="flex-1 py-3 rounded-xl bg-gradient-to-r from-brand-peach to-orange-500 text-black font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-lg"
                   >
-                    {submitting ? "Scheduling..." : "Schedule Training"}
+                    {submitting
+                      ? "Scheduling..."
+                      : formData.assignmentMode === "SQUAD"
+                      ? `Schedule Squad (${formData.selectedAthleteIds.length})`
+                      : "Schedule Training"}
                   </button>
                 </div>
               </form>

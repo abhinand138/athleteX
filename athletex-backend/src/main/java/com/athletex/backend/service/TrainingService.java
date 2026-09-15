@@ -1,5 +1,6 @@
 package com.athletex.backend.service;
 
+import com.athletex.backend.dto.BulkTrainingRequest;
 import com.athletex.backend.dto.RecurringTrainingRequest;
 import com.athletex.backend.dto.TrainingRequest;
 import com.athletex.backend.dto.TrainingResponse;
@@ -180,6 +181,127 @@ public class TrainingService {
 
         return savedList.stream()
                 .map(t -> mapToResponse(t, coach.getFullName(), athlete.getFullName()))
+                .collect(Collectors.toList());
+    }
+
+    // ===========================
+    // CREATE BULK SQUAD TRAINING SESSIONS (AUTOMATION)
+    // ===========================
+    public List<TrainingResponse> createBulkTraining(BulkTrainingRequest request) {
+        // 1. Verify Coach
+        User coach = userRepository.findById(request.getCoachId())
+                .orElseThrow(() -> new RuntimeException("Coach not found"));
+        if (coach.getRole() != Role.COACH) {
+            throw new RuntimeException("User is not a coach");
+        }
+
+        // 2. Validate Target Athletes
+        if (request.getAthleteIds() == null || request.getAthleteIds().isEmpty()) {
+            throw new IllegalArgumentException("At least one athlete must be selected");
+        }
+
+        Set<String> uniqueAthleteIds = new LinkedHashSet<>(request.getAthleteIds());
+        Map<String, User> verifiedAthletes = new HashMap<>();
+
+        for (String athleteId : uniqueAthleteIds) {
+            User athlete = userRepository.findById(athleteId).orElse(null);
+            if (athlete == null || athlete.getRole() != Role.ATHLETE) {
+                continue;
+            }
+            boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(
+                    request.getCoachId(), athleteId, AssignmentStatus.ACTIVE
+            );
+            if (isAssigned) {
+                verifiedAthletes.put(athleteId, athlete);
+            }
+        }
+
+        if (verifiedAthletes.isEmpty()) {
+            throw new SecurityException("No assigned athletes were found for this coach among the selected targets");
+        }
+
+        // 3. Compute Session Dates
+        int weeks = (request.getRepeatWeeks() != null && request.getRepeatWeeks() > 0)
+                ? request.getRepeatWeeks() : 1;
+
+        LocalDate startDate = request.getStartDate();
+        Set<LocalDate> sessionDates = new TreeSet<>();
+
+        if (request.getRepeatDays() != null && !request.getRepeatDays().isEmpty()) {
+            Set<DayOfWeek> targetDays = new HashSet<>();
+            for (String dayStr : request.getRepeatDays()) {
+                try {
+                    targetDays.add(DayOfWeek.valueOf(dayStr.trim().toUpperCase()));
+                } catch (IllegalArgumentException ignored) {}
+            }
+
+            if (targetDays.isEmpty()) {
+                targetDays.add(startDate.getDayOfWeek());
+            }
+
+            LocalDate weekStart = startDate.with(DayOfWeek.MONDAY);
+            for (int w = 0; w < weeks; w++) {
+                LocalDate currentWeek = weekStart.plusWeeks(w);
+                for (DayOfWeek dow : targetDays) {
+                    LocalDate candidateDate = currentWeek.with(dow);
+                    if (!candidateDate.isBefore(startDate)) {
+                        sessionDates.add(candidateDate);
+                    }
+                }
+            }
+        } else {
+            for (int w = 0; w < weeks; w++) {
+                sessionDates.add(startDate.plusWeeks(w));
+            }
+        }
+
+        if (sessionDates.isEmpty()) {
+            sessionDates.add(startDate);
+        }
+
+        // 4. Generate & Save Training Records for each Athlete x Date
+        List<Training> trainingsToSave = new ArrayList<>();
+        LocalDateTime now = LocalDateTime.now();
+
+        for (String athleteId : verifiedAthletes.keySet()) {
+            for (LocalDate d : sessionDates) {
+                Training training = Training.builder()
+                        .coachId(request.getCoachId())
+                        .athleteId(athleteId)
+                        .title(request.getTitle())
+                        .description(request.getDescription())
+                        .category(request.getCategory())
+                        .date(d)
+                        .time(request.getTime())
+                        .status(TrainingStatus.SCHEDULED)
+                        .createdAt(now)
+                        .build();
+                trainingsToSave.add(training);
+            }
+        }
+
+        List<Training> savedList = trainingRepository.saveAll(trainingsToSave);
+
+        // 5. Send Non-blocking Notifications to each athlete
+        for (Map.Entry<String, User> entry : verifiedAthletes.entrySet()) {
+            try {
+                notificationService.sendNotification(
+                        entry.getKey(),
+                        "Squad Training Program Assigned 👥",
+                        "Coach " + coach.getFullName() + " scheduled a " + request.getCategory() + " session: '" + request.getTitle() + "' (" + sessionDates.size() + " session(s))",
+                        "TRAINING",
+                        "/training"
+                );
+            } catch (Exception ignored) {
+            }
+        }
+
+        return savedList.stream()
+                .map(t -> {
+                    User a = verifiedAthletes.get(t.getAthleteId());
+                    String aName = a != null ? a.getFullName() : "Athlete";
+                    return mapToResponse(t, coach.getFullName(), aName);
+                })
                 .collect(Collectors.toList());
     }
 

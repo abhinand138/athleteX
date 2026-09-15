@@ -1,5 +1,6 @@
 package com.athletex.backend.controller;
 
+import com.athletex.backend.dto.BulkTrainingRequest;
 import com.athletex.backend.dto.RecurringTrainingRequest;
 import com.athletex.backend.dto.TrainingRequest;
 import com.athletex.backend.dto.TrainingResponse;
@@ -39,6 +40,19 @@ public class TrainingController {
     public ResponseEntity<?> createRecurringTraining(@Valid @RequestBody RecurringTrainingRequest request) {
         try {
             List<TrainingResponse> responses = trainingService.createRecurringTraining(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // POST /api/training/bulk (Automation: Squad & Multi-Athlete Bulk Assignment)
+    @PostMapping("/bulk")
+    public ResponseEntity<?> createBulkTraining(@Valid @RequestBody BulkTrainingRequest request) {
+        try {
+            List<TrainingResponse> responses = trainingService.createBulkTraining(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(responses);
         } catch (SecurityException e) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());

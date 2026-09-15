@@ -18,6 +18,7 @@ public class AuthService {
     private final ActivityService activityService;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final EmailService emailService;
 
     public String register(RegisterRequest request) {
 
@@ -25,17 +26,50 @@ public class AuthService {
             return "Email already exists";
         }
 
+        // Server-side password validation
+        String password = request.getPassword();
+        if (password.length() < 8 || 
+            !password.matches(".*[A-Z].*") || 
+            !password.matches(".*[0-9].*") || 
+            !password.matches(".*[@$!%*?&].*")) {
+            throw new RuntimeException("Password does not meet complexity requirements.");
+        }
+
+        String otp = emailService.generateOtp();
+
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
+                .otp(otp)
+                .isVerified(false)
                 .build();
 
         userRepository.save(user);
 
-        return "Registration Successful";
+        emailService.sendOtpEmail(user.getEmail(), otp);
+
+        return "Registration Successful. Please check your email for the OTP.";
+    }
+
+    public String verifyOtp(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.isVerified()) {
+            return "User is already verified.";
+        }
+
+        if (otp.equals(user.getOtp())) {
+            user.setVerified(true);
+            user.setOtp(null);
+            userRepository.save(user);
+            return "Verification Successful";
+        } else {
+            throw new RuntimeException("Invalid OTP");
+        }
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -45,6 +79,10 @@ public class AuthService {
 
         if (user == null) {
             throw new RuntimeException("User not found");
+        }
+
+        if (!user.isVerified()) {
+            throw new RuntimeException("Account not verified. Please verify your email first.");
         }
 
         boolean passwordMatches = false;

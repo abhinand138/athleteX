@@ -23,6 +23,11 @@ public class AuthController {
 
    @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
-    return authService.login(request);
-}
+        return authService.login(request);
+    }
+
+    @PostMapping("/verify-otp")
+    public String verifyOtp(@Valid @RequestBody com.athletex.backend.dto.VerifyOtpRequest request) {
+        return authService.verifyOtp(request.getEmail(), request.getOtp());
+    }
 }

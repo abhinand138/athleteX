@@ -31,6 +31,11 @@ public class User {
 
     private Role role;
 
+    private String otp;
+
+    @Builder.Default
+    private boolean isVerified = false;
+
     // ==========================
     // Athlete Profile
     // ==========================

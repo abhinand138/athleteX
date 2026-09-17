@@ -120,6 +120,11 @@ export default function Sidebar() {
           path: "/achievements"
         },
         {
+          icon: <FaUserFriends />,
+          name: "Find Coaches",
+          path: "/coaches"
+        },
+        {
           icon: <FaBell />,
           name: "Notifications",
           path: "/athlete/notifications"

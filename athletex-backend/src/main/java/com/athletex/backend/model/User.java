@@ -61,4 +61,16 @@ public class User {
     private String bio;
 
     private String profileImage;
+
+    // ==========================
+    // Coach Profile Additions
+    // ==========================
+
+    private String specialization;
+
+    private Integer experienceYears;
+
+    private String certifications;
+
+    private String title;
 }

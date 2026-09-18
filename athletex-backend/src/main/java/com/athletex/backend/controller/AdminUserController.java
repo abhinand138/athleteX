@@ -59,4 +59,26 @@ public class AdminUserController {
     public ResponseEntity<List<CoachAthleteResponse>> getAllRosterAssignments() {
         return ResponseEntity.ok(adminUserService.getAllRosterAssignments());
     }
+
+    // DELETE /api/admin/users/last
+    @DeleteMapping("/users/last")
+    public ResponseEntity<String> deleteLastUser() {
+        try {
+            String message = adminUserService.deleteLastUser();
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // DELETE /api/admin/users/{userId}
+    @DeleteMapping("/users/{userId}")
+    public ResponseEntity<String> deleteUser(@PathVariable String userId) {
+        try {
+            String message = adminUserService.deleteUser(userId);
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

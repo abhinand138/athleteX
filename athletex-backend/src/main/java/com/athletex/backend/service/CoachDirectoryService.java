@@ -1,15 +1,13 @@
 package com.athletex.backend.service;
 
+import com.athletex.backend.dto.ConnectionRequestDto;
 import com.athletex.backend.dto.CoachPublicProfileDto;
-import com.athletex.backend.model.AssignmentStatus;
-import com.athletex.backend.model.CoachAthleteAssignment;
-import com.athletex.backend.model.Role;
-import com.athletex.backend.model.User;
-import com.athletex.backend.repository.CoachAthleteAssignmentRepository;
-import com.athletex.backend.repository.UserRepository;
+import com.athletex.backend.model.*;
+import com.athletex.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +19,128 @@ public class CoachDirectoryService {
 
     private final UserRepository userRepository;
     private final CoachAthleteAssignmentRepository assignmentRepository;
+    private final CoachConnectionRequestRepository connectionRequestRepository;
+    private final NotificationRepository notificationRepository;
+
+    public String sendConnectionRequest(ConnectionRequestDto dto) {
+        if (dto.getAthleteId() == null || dto.getCoachId() == null) {
+            throw new IllegalArgumentException("Athlete ID and Coach ID are required.");
+        }
+
+        User athlete = userRepository.findById(dto.getAthleteId()).orElse(null);
+        String athleteName = athlete != null ? athlete.getFullName() : "An Athlete";
+        String athleteSport = athlete != null && athlete.getSport() != null ? athlete.getSport() : "General Sports";
+
+        User coach = userRepository.findById(dto.getCoachId()).orElse(null);
+        String coachName = coach != null ? coach.getFullName() : "Coach";
+
+        // Save Connection Request
+        CoachConnectionRequest request = CoachConnectionRequest.builder()
+                .athleteId(dto.getAthleteId())
+                .athleteName(athleteName)
+                .athleteSport(athleteSport)
+                .coachId(dto.getCoachId())
+                .coachName(coachName)
+                .message(dto.getMessage() != null && !dto.getMessage().isBlank() ? dto.getMessage() : "Requesting coaching consultation and guidance.")
+                .status("PENDING")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        CoachConnectionRequest savedRequest = connectionRequestRepository.save(request);
+
+        // Trigger Notification for Coach
+        Notification notification = Notification.builder()
+                .userId(dto.getCoachId())
+                .title("New Consultation Request from " + athleteName)
+                .message(athleteName + " (" + athleteSport + ") sent a consultation request: \"" + request.getMessage() + "\"")
+                .type("COACH_REQUEST")
+                .link("/coach/notifications")
+                .referenceType("COACH_REQUEST")
+                .referenceId(savedRequest.getId())
+                .isRead(false)
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        notificationRepository.save(notification);
+
+        return "Connection request successfully sent to " + coachName + "!";
+    }
+
+    public List<CoachConnectionRequest> getPendingRequestsForCoach(String coachId) {
+        return connectionRequestRepository.findByCoachId(coachId).stream()
+                .filter(req -> "PENDING".equalsIgnoreCase(req.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    public String respondToRequest(String requestId, String status) {
+        CoachConnectionRequest request = connectionRequestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (!"ACCEPTED".equalsIgnoreCase(status) && !"DECLINED".equalsIgnoreCase(status)) {
+            throw new IllegalArgumentException("Status must be ACCEPTED or DECLINED");
+        }
+
+        request.setStatus(status.toUpperCase());
+        connectionRequestRepository.save(request);
+
+        if ("ACCEPTED".equalsIgnoreCase(status)) {
+            // Check if active assignment exists
+            boolean exists = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(
+                    request.getCoachId(), request.getAthleteId(), AssignmentStatus.ACTIVE);
+
+            if (!exists) {
+                // Deactivate any existing assignment for this athlete
+                Optional<CoachAthleteAssignment> existing = assignmentRepository.findByAthleteIdAndStatus(request.getAthleteId(), AssignmentStatus.ACTIVE);
+                existing.ifPresent(a -> {
+                    a.setStatus(AssignmentStatus.INACTIVE);
+                    assignmentRepository.save(a);
+                });
+
+                // Create new active assignment
+                CoachAthleteAssignment newAssignment = CoachAthleteAssignment.builder()
+                        .coachId(request.getCoachId())
+                        .athleteId(request.getAthleteId())
+                        .assignedAt(LocalDateTime.now())
+                        .status(AssignmentStatus.ACTIVE)
+                        .build();
+
+                assignmentRepository.save(newAssignment);
+            }
+
+            // Notify Athlete
+            Notification notif = Notification.builder()
+                    .userId(request.getAthleteId())
+                    .title("Coach Connection Accepted!")
+                    .message(request.getCoachName() + " has accepted your connection request. They are now your assigned primary coach.")
+                    .type("COACH_ASSIGNED")
+                    .link("/coaches")
+                    .referenceType("COACH_ASSIGNMENT")
+                    .referenceId(request.getId())
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            notificationRepository.save(notif);
+            return "Connection request accepted! Athlete " + request.getAthleteName() + " is now assigned to your roster.";
+
+        } else {
+            // Notify Athlete of declination
+            Notification notif = Notification.builder()
+                    .userId(request.getAthleteId())
+                    .title("Connection Request Update")
+                    .message(request.getCoachName() + " was unable to accept your connection request at this time.")
+                    .type("COACH_DECLINED")
+                    .link("/coaches")
+                    .referenceType("COACH_ASSIGNMENT")
+                    .referenceId(request.getId())
+                    .isRead(false)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            notificationRepository.save(notif);
+            return "Connection request declined.";
+        }
+    }
 
     public List<CoachPublicProfileDto> getCoachDirectory(String athleteId, String sport, String search) {
         List<User> coaches = userRepository.findByRole(Role.COACH);

@@ -69,7 +69,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   const [loginData, setLoginData] = useState({
-    email: "",
+    identifier: "",
     password: "",
   });
 
@@ -89,16 +89,26 @@ export default function Login() {
     setMessage({ type: "", text: "" });
 
     try {
-  const response = await api.post("/auth/login", loginData);
+      // Clear old user session to avoid session leakage
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
 
-  console.log(response.data);
+      // Pass identifier as email parameter to backend auth service
+      const payload = {
+        email: loginData.identifier || loginData.email || "",
+        password: loginData.password
+      };
 
-  if (response.data.message === "Login Successful") {
+      const response = await api.post("/auth/login", payload);
 
-    localStorage.setItem("user", JSON.stringify(response.data));
-    if (response.data.token) {
-      localStorage.setItem("token", response.data.token);
-    }
+      console.log(response.data);
+
+      if (response.data.message === "Login Successful") {
+
+        localStorage.setItem("user", JSON.stringify(response.data));
+        if (response.data.token) {
+          localStorage.setItem("token", response.data.token);
+        }
 
     setMessage({
       type: "success",
@@ -192,23 +202,24 @@ export default function Login() {
               </div>
             )}
 
-            {/* IDENTITY TOKEN / EMAIL */}
+            {/* FULL NAME / EMAIL IDENTIFIER */}
             <div className="flex flex-col gap-2">
-              <label className="text-[8px] font-sans font-bold tracking-[0.2em] text-gray-500 uppercase">
-                [ 01 ] IDENTITY TOKEN / EMAIL
+              <label className="text-[8px] font-sans font-bold tracking-[0.2em] text-brand-peach uppercase">
+                [ 01 ] FULL NAME / EMAIL
               </label>
               
               <div className="relative flex items-center bg-[#111115]/50 border border-white/5 focus-within:border-brand-peach/40 focus-within:bg-[#111115]/80 transition-all duration-300 px-4 py-3.5 rounded-sm">
                 <input
-                  type="email"
-                  name="email"
-                  placeholder="Enter email..."
-                  value={loginData.email}
+                  type="text"
+                  name="identifier"
+                  autoComplete="off"
+                  placeholder="Enter registered full name or email..."
+                  value={loginData.identifier || ""}
                   onChange={handleChange}
-                  className="w-full bg-transparent border-none outline-none text-xs font-sans tracking-wider text-white placeholder-gray-700 focus:ring-0"
+                  className="w-full bg-transparent border-none outline-none text-xs font-sans tracking-wider text-white placeholder-gray-600 focus:ring-0"
                   required
                 />
-                <FaFingerprint className="text-gray-600 text-sm flex-shrink-0" />
+                <FaFingerprint className="text-brand-peach text-sm flex-shrink-0" />
               </div>
             </div>
 

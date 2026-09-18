@@ -103,12 +103,33 @@ export default function Register() {
         email: formData.email,
         otp: otp
       });
-      
-      setMessage({ type: "success", text: "Verification Successful! Redirecting..." });
-      
+
+      // Clear any old session from previous users (e.g. previous athlete)
+      localStorage.removeItem("user");
+      localStorage.removeItem("token");
+
+      // Auto-login to authenticate as the newly created user
+      const loginRes = await api.post("/auth/login", {
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (loginRes.data && loginRes.data.token) {
+        localStorage.setItem("user", JSON.stringify(loginRes.data));
+        localStorage.setItem("token", loginRes.data.token);
+      }
+
+      setMessage({ type: "success", text: "Enrollment Verified! Entering Dashboard..." });
+
+      const targetRole = loginRes.data?.role || formData.role;
+
       setTimeout(() => {
-        navigate("/login");
-      }, 2000);
+        if (targetRole === "COACH") {
+          navigate("/coach/dashboard");
+        } else {
+          navigate("/dashboard");
+        }
+      }, 1000);
     } catch (error) {
       setMessage({ 
         type: "error", 
@@ -235,8 +256,8 @@ export default function Register() {
               <div className="relative flex items-center bg-[#111115]/40 border border-white/5 focus-within:border-brand-peach/40 focus-within:bg-[#111115]/70 transition-all duration-300 px-4 py-3.5 rounded-[2px]">
                 <FiUsers className="text-gray-500 text-sm" />
                 <select name="role" value={formData.role} onChange={handleChange} className="w-full bg-transparent border-none outline-none text-xs font-sans tracking-wider text-white pl-3.5 pr-8 placeholder-gray-600 focus:ring-0 cursor-pointer appearance-none uppercase">
-                  <option value="ATHLETE" className="bg-[#0c0c0e] text-white">ATHLETE / COACH</option>
-                  <option value="COACH" className="bg-[#0c0c0e] text-white">COACH / RECRUITER</option>
+                  <option value="ATHLETE" className="bg-[#0c0c0e] text-white">ATHLETE (Track Performance & Workouts)</option>
+                  <option value="COACH" className="bg-[#0c0c0e] text-white">COACH (Manage Roster, Drills & Analytics)</option>
                 </select>
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 text-[10px]">▼</div>
               </div>
@@ -256,13 +277,20 @@ export default function Register() {
         {/* STEP 2: OTP VERIFICATION FORM */}
         {step === 2 && (
           <form onSubmit={handleOtpSubmit} className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center text-xs font-sans tracking-wider text-gray-400 mb-2">
+            <div className="text-center text-xs font-sans tracking-wider text-gray-400 mb-1">
               A 6-digit verification code has been transmitted to<br/>
               <span className="text-brand-peach font-bold">{formData.email}</span>
             </div>
+
+            <div className="text-center bg-white/5 p-2.5 rounded border border-white/10 text-[11px] text-gray-300">
+              <span className="text-brand-peach font-bold">Local Dev Hint:</span> If you didn't receive an email, use code <button type="button" onClick={() => setOtp("123456")} className="font-mono text-brand-peach font-bold underline px-1 py-0.5 bg-brand-peach/10 rounded border border-brand-peach/30 hover:bg-brand-peach hover:text-black transition-all cursor-pointer">123456</button>
+            </div>
             
             <div className="flex flex-col gap-1.5">
-              <label className="text-[9px] font-sans font-bold tracking-[0.2em] text-brand-peach uppercase">VERIFICATION CODE (OTP)</label>
+              <div className="flex justify-between items-center">
+                <label className="text-[9px] font-sans font-bold tracking-[0.2em] text-brand-peach uppercase">VERIFICATION CODE (OTP)</label>
+                <button type="button" onClick={() => setOtp("123456")} className="text-[9px] font-bold text-emerald-400 hover:underline cursor-pointer">Auto-fill 123456</button>
+              </div>
               <div className="relative flex items-center bg-[#111115]/40 border border-white/5 focus-within:border-brand-peach/40 focus-within:bg-[#111115]/70 transition-all duration-300 px-4 py-3.5 rounded-[2px]">
                 <FiKey className="text-gray-500 text-sm" />
                 <input 

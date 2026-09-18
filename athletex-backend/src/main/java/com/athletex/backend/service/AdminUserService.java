@@ -100,6 +100,47 @@ public class AdminUserService {
                 .collect(Collectors.toList());
     }
 
+    public String deleteLastUser() {
+        List<User> users = userRepository.findAll();
+        if (users.isEmpty()) {
+            return "No users found in database.";
+        }
+
+        User lastUser = users.get(users.size() - 1);
+        String userId = lastUser.getId();
+        String deletedInfo = lastUser.getFullName() + " (" + lastUser.getEmail() + ", Role: " + lastUser.getRole() + ")";
+
+        // Clean up assignments
+        List<CoachAthleteAssignment> coachAssignments = assignmentRepository.findByCoachIdAndStatus(userId, AssignmentStatus.ACTIVE);
+        assignmentRepository.deleteAll(coachAssignments);
+
+        Optional<CoachAthleteAssignment> athleteAssignment = assignmentRepository.findByAthleteIdAndStatus(userId, AssignmentStatus.ACTIVE);
+        athleteAssignment.ifPresent(assignmentRepository::delete);
+
+        // Delete User
+        userRepository.deleteById(userId);
+
+        return "Successfully deleted last user: " + deletedInfo;
+    }
+
+    public String deleteUser(String userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        String deletedInfo = user.getFullName() + " (" + user.getEmail() + ", Role: " + user.getRole() + ")";
+
+        // Clean up assignments
+        List<CoachAthleteAssignment> coachAssignments = assignmentRepository.findByCoachIdAndStatus(userId, AssignmentStatus.ACTIVE);
+        assignmentRepository.deleteAll(coachAssignments);
+
+        Optional<CoachAthleteAssignment> athleteAssignment = assignmentRepository.findByAthleteIdAndStatus(userId, AssignmentStatus.ACTIVE);
+        athleteAssignment.ifPresent(assignmentRepository::delete);
+
+        userRepository.deleteById(userId);
+
+        return "Successfully deleted user: " + deletedInfo;
+    }
+
     private UserAdminResponse mapToUserAdminResponse(User u) {
         long count = 0;
         if (u.getRole() == Role.COACH) {

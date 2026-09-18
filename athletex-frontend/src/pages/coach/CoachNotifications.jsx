@@ -23,6 +23,7 @@ import {
 
 export default function CoachNotifications() {
   const [notifications, setNotifications] = useState([]);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeFilter, setActiveFilter] = useState("ALL");
@@ -48,8 +49,32 @@ export default function CoachNotifications() {
       return;
     }
     fetchNotifications();
+    fetchPendingRequests();
     loadRoster();
   }, [coachId]);
+
+  const fetchPendingRequests = async () => {
+    try {
+      const res = await api.get(`/coaches/connection-requests/${coachId}`);
+      setPendingRequests(res.data || []);
+    } catch (err) {
+      console.error("Failed to load pending requests:", err);
+    }
+  };
+
+  const handleRespondToRequest = async (requestId, status) => {
+    try {
+      const res = await api.post(`/coaches/connection-requests/${requestId}/respond`, null, {
+        params: { status }
+      });
+      toast.success(res.data || `Request ${status.toLowerCase()}ed.`);
+      setPendingRequests((prev) => prev.filter((r) => r.id !== requestId));
+      loadRoster();
+      fetchNotifications();
+    } catch (err) {
+      toast.error(err.response?.data || "Failed to respond to request.");
+    }
+  };
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -271,6 +296,65 @@ export default function CoachNotifications() {
             )}
           </div>
         </div>
+
+        {/* ========================================================================= */}
+        {/* PENDING ATHLETE CONNECTION REQUESTS BANNER                                */}
+        {/* ========================================================================= */}
+        {pendingRequests.length > 0 && (
+          <div className="bg-gradient-to-r from-brand-peach/15 via-brand-dark/95 to-brand-dark border border-brand-peach/40 rounded-3xl p-6 shadow-2xl backdrop-blur-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-xl bg-brand-peach/20 text-brand-peach text-lg font-bold">
+                  <FaUsers />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-white tracking-wide">
+                    Pending Athlete Connection Requests ({pendingRequests.length})
+                  </h3>
+                  <p className="text-xs text-gray-400">
+                    Athletes requesting coaching consultations and assignment to your active roster
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {pendingRequests.map((req) => (
+                <div
+                  key={req.id}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-between gap-3 hover:border-brand-peach/30 transition-all"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-white">{req.athleteName}</span>
+                      <span className="px-2.5 py-0.5 rounded-full bg-brand-peach/20 text-brand-peach text-[10px] font-extrabold uppercase">
+                        {req.athleteSport || "Athlete"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-300 italic bg-black/30 p-2.5 rounded-xl border border-white/5 mt-2">
+                      "{req.message || "Requesting coaching consultation and guidance."}"
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                    <button
+                      onClick={() => handleRespondToRequest(req.id, "ACCEPTED")}
+                      className="flex-1 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <FaCheck /> Accept Athlete
+                    </button>
+                    <button
+                      onClick={() => handleRespondToRequest(req.id, "DECLINED")}
+                      className="px-4 py-2 rounded-xl bg-white/10 hover:bg-red-500/20 hover:text-red-400 text-gray-300 font-bold text-xs transition-all border border-white/10 cursor-pointer"
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* ========================================================================= */}
         {/* FILTER TABS                                                               */}

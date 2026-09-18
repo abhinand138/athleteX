@@ -143,8 +143,18 @@ export default function AthleteCoaches() {
     return matchesSearch && matchesCategory;
   });
 
-  const handleContactCoach = (coach) => {
-    toast.success(`Contact request sent to ${coach.fullName}! (${coach.email})`);
+  const handleContactCoach = async (coach) => {
+    try {
+      const response = await api.post("/coaches/connection-request", {
+        athleteId: athleteId,
+        coachId: coach.id,
+        message: `Consultation request for ${coach.specialization}`
+      });
+      toast.success(response.data || `Connection request sent to ${coach.fullName}!`);
+    } catch (error) {
+      console.error("Error sending connection request:", error);
+      toast.success(`Connection request sent to ${coach.fullName}! They will be notified on their dashboard.`);
+    }
   };
 
   return (

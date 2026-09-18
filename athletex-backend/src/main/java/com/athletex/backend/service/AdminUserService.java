@@ -1,13 +1,12 @@
 package com.athletex.backend.service;
 
-import com.athletex.backend.dto.AdminStatsResponse;
-import com.athletex.backend.dto.CoachAthleteResponse;
-import com.athletex.backend.dto.UserAdminResponse;
+import com.athletex.backend.dto.*;
 import com.athletex.backend.model.*;
 import com.athletex.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,6 +30,13 @@ public class AdminUserService {
         long totalAchievements = achievementRepository.count();
         long totalAssignments = assignmentRepository.findByStatus(AssignmentStatus.ACTIVE).size();
 
+        // Get 5 most recent registered users
+        List<UserAdminResponse> recentUsers = allUsers.stream()
+                .sorted(Comparator.comparing(User::getId, Comparator.nullsLast(Comparator.reverseOrder())))
+                .limit(5)
+                .map(this::mapToUserAdminResponse)
+                .collect(Collectors.toList());
+
         return AdminStatsResponse.builder()
                 .totalUsers(totalUsers)
                 .totalAthletes(totalAthletes)
@@ -39,6 +45,7 @@ public class AdminUserService {
                 .totalTrainings(totalTrainings)
                 .totalAchievements(totalAchievements)
                 .totalAssignments(totalAssignments)
+                .recentUsers(recentUsers)
                 .build();
     }
 
@@ -66,11 +73,124 @@ public class AdminUserService {
 
     public UserAdminResponse updateUserRole(String userId, Role newRole) {
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
         user.setRole(newRole);
         User saved = userRepository.save(user);
         return mapToUserAdminResponse(saved);
+    }
+
+    public UserAdminResponse updateUserDetails(String userId, AdminUserUpdateRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName().trim());
+        }
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            user.setEmail(request.getEmail().trim());
+        }
+        if (request.getPhone() != null) {
+            user.setPhone(request.getPhone().trim());
+        }
+        if (request.getSport() != null) {
+            user.setSport(request.getSport().trim());
+        }
+        if (request.getCity() != null) {
+            user.setCity(request.getCity().trim());
+        }
+        if (request.getRole() != null) {
+            user.setRole(request.getRole());
+        }
+
+        User saved = userRepository.save(user);
+        return mapToUserAdminResponse(saved);
+    }
+
+    public List<AdminRosterResponse> getDetailedRosterAssignments() {
+        List<CoachAthleteAssignment> assignments = assignmentRepository.findByStatus(AssignmentStatus.ACTIVE);
+        if (assignments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Map<String, User> userCache = new HashMap<>();
+
+        return assignments.stream()
+                .map(a -> {
+                    User coach = userCache.computeIfAbsent(a.getCoachId(), id -> userRepository.findById(id).orElse(null));
+                    User athlete = userCache.computeIfAbsent(a.getAthleteId(), id -> userRepository.findById(id).orElse(null));
+
+                    return AdminRosterResponse.builder()
+                            .assignmentId(a.getId())
+                            .coachId(a.getCoachId())
+                            .coachName(coach != null ? coach.getFullName() : "Coach " + a.getCoachId())
+                            .coachEmail(coach != null ? coach.getEmail() : null)
+                            .athleteId(a.getAthleteId())
+                            .athleteName(athlete != null ? athlete.getFullName() : "Athlete " + a.getAthleteId())
+                            .athleteEmail(athlete != null ? athlete.getEmail() : null)
+                            .sport(athlete != null ? athlete.getSport() : (coach != null ? coach.getSport() : "General"))
+                            .assignedAt(a.getAssignedAt() != null ? a.getAssignedAt() : LocalDateTime.now())
+                            .status(a.getStatus() != null ? a.getStatus().name() : "ACTIVE")
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
+    public AdminRosterResponse createRosterAssignment(AdminCreateAssignmentRequest request) {
+        if (request.getCoachId() == null || request.getAthleteId() == null) {
+            throw new RuntimeException("Coach ID and Athlete ID are required.");
+        }
+
+        User coach = userRepository.findById(request.getCoachId())
+                .orElseThrow(() -> new RuntimeException("Coach not found with ID: " + request.getCoachId()));
+
+        User athlete = userRepository.findById(request.getAthleteId())
+                .orElseThrow(() -> new RuntimeException("Athlete not found with ID: " + request.getAthleteId()));
+
+        if (coach.getRole() != Role.COACH) {
+            throw new RuntimeException("Selected user " + coach.getFullName() + " is not a Coach.");
+        }
+        if (athlete.getRole() != Role.ATHLETE) {
+            throw new RuntimeException("Selected user " + athlete.getFullName() + " is not an Athlete.");
+        }
+
+        // Deactivate existing active assignment for athlete if any
+        Optional<CoachAthleteAssignment> existing = assignmentRepository.findByAthleteIdAndStatus(athlete.getId(), AssignmentStatus.ACTIVE);
+        existing.ifPresent(a -> {
+            a.setStatus(AssignmentStatus.INACTIVE);
+            assignmentRepository.save(a);
+        });
+
+        // Create new assignment
+        CoachAthleteAssignment newAssignment = CoachAthleteAssignment.builder()
+                .coachId(coach.getId())
+                .athleteId(athlete.getId())
+                .assignedAt(LocalDateTime.now())
+                .status(AssignmentStatus.ACTIVE)
+                .build();
+
+        CoachAthleteAssignment saved = assignmentRepository.save(newAssignment);
+
+        return AdminRosterResponse.builder()
+                .assignmentId(saved.getId())
+                .coachId(coach.getId())
+                .coachName(coach.getFullName())
+                .coachEmail(coach.getEmail())
+                .athleteId(athlete.getId())
+                .athleteName(athlete.getFullName())
+                .athleteEmail(athlete.getEmail())
+                .sport(athlete.getSport() != null ? athlete.getSport() : coach.getSport())
+                .assignedAt(saved.getAssignedAt())
+                .status(saved.getStatus().name())
+                .build();
+    }
+
+    public String terminateRosterAssignment(String assignmentId) {
+        CoachAthleteAssignment assignment = assignmentRepository.findById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Roster assignment not found: " + assignmentId));
+
+        assignmentRepository.delete(assignment);
+        return "Roster assignment terminated successfully.";
     }
 
     public List<CoachAthleteResponse> getAllRosterAssignments() {

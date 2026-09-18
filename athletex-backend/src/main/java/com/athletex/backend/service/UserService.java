@@ -40,6 +40,10 @@ public class UserService {
                 .country(user.getCountry())
                 .bio(user.getBio())
                 .profileImage(user.getProfileImage())
+                .title(user.getTitle())
+                .specialization(user.getSpecialization())
+                .experienceYears(user.getExperienceYears())
+                .certifications(user.getCertifications())
                 .build();
     }
 
@@ -62,6 +66,11 @@ public class UserService {
         user.setCountry(request.getCountry());
         user.setBio(request.getBio());
         user.setProfileImage(request.getProfileImage());
+
+        if (request.getTitle() != null) user.setTitle(request.getTitle());
+        if (request.getSpecialization() != null) user.setSpecialization(request.getSpecialization());
+        if (request.getExperienceYears() != null) user.setExperienceYears(request.getExperienceYears());
+        if (request.getCertifications() != null) user.setCertifications(request.getCertifications());
 
         userRepository.save(user);
 

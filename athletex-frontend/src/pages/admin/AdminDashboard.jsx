@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import toast from "react-hot-toast";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
+import { getErrorMessage } from "../../utils/errorHandler";
 import {
   FaUsers,
   FaUserFriends,
@@ -12,7 +14,13 @@ import {
   FaShieldAlt,
   FaArrowRight,
   FaCheckCircle,
-  FaExclamationTriangle
+  FaExclamationTriangle,
+  FaTrashAlt,
+  FaPlus,
+  FaUserCheck,
+  FaUser,
+  FaEdit,
+  FaTimes
 } from "react-icons/fa";
 
 export default function AdminDashboard() {
@@ -23,10 +31,15 @@ export default function AdminDashboard() {
     totalAdmins: 0,
     totalTrainings: 0,
     totalAchievements: 0,
-    totalAssignments: 0
+    totalAssignments: 0,
+    recentUsers: []
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Quick Action: Delete Last User Modal
+  const [showDeleteLastModal, setShowDeleteLastModal] = useState(false);
+  const [deletingLast, setDeletingLast] = useState(false);
 
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
 
@@ -41,9 +54,23 @@ export default function AdminDashboard() {
       const res = await api.get("/admin/stats");
       setStats(res.data || {});
     } catch (err) {
-      setError(err.response?.data || "Failed to load platform statistics.");
+      setError(getErrorMessage(err, "Failed to load platform statistics."));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteLastUser = async () => {
+    setDeletingLast(true);
+    try {
+      const res = await api.delete("/admin/users/last");
+      toast.success(res.data || "Last registered user deleted successfully! 🗑️");
+      setShowDeleteLastModal(false);
+      fetchStats();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to delete last registered user."));
+    } finally {
+      setDeletingLast(false);
     }
   };
 
@@ -86,21 +113,29 @@ export default function AdminDashboard() {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
             <Link
               to="/admin/users"
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-brand-peach text-black font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(238,155,116,0.3)] cursor-pointer"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-brand-peach text-black font-bold text-xs hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_25px_rgba(238,155,116,0.3)] cursor-pointer"
             >
               <FaUsers />
               Manage Users
             </Link>
             <Link
               to="/admin/rosters"
-              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-sm hover:bg-white/10 transition-all cursor-pointer"
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-bold text-xs hover:bg-white/10 transition-all cursor-pointer"
             >
               <FaUserFriends />
               View Pairings
             </Link>
+            <button
+              onClick={() => setShowDeleteLastModal(true)}
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white font-bold text-xs transition-all cursor-pointer"
+              title="Delete the last registered user account"
+            >
+              <FaTrashAlt />
+              Delete Last User
+            </button>
           </div>
         </div>
 
@@ -131,7 +166,7 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Active Athletes</span>
               <div className="p-3 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20 text-xl">
-                <FaUsers />
+                <FaUserCheck />
               </div>
             </div>
             <p className="text-4xl font-black text-white mt-4 tracking-tight">{stats.totalAthletes}</p>
@@ -295,7 +330,7 @@ export default function AdminDashboard() {
             <div className="p-4 rounded-2xl bg-brand-peach/5 border border-brand-peach/10 space-y-2">
               <p className="text-xs font-bold text-brand-peach">Governance Quick Action</p>
               <p className="text-[11px] text-gray-400 leading-relaxed">
-                As an Admin, you can update user roles, toggle account access, or audit roster pairings.
+                As an Admin, you can update user roles, delete non-compliant accounts, or create manual roster pairings.
               </p>
               <Link
                 to="/admin/users"
@@ -307,6 +342,108 @@ export default function AdminDashboard() {
           </div>
 
         </div>
+
+        {/* Recent Registrations Live Stream */}
+        {stats.recentUsers && stats.recentUsers.length > 0 && (
+          <div className="glass-card rounded-3xl p-7 border border-white/5 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div>
+                <h2 className="text-xl font-extrabold text-white">Recent Platform Signups</h2>
+                <p className="text-gray-400 text-xs mt-1">Latest accounts registered on AthleteX</p>
+              </div>
+              <Link
+                to="/admin/users"
+                className="text-xs font-bold text-brand-peach hover:underline flex items-center gap-1"
+              >
+                View All Users <FaArrowRight className="text-[10px]" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {stats.recentUsers.map((u) => (
+                <div
+                  key={u.id}
+                  className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-white/10 transition-all flex items-center justify-between"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 font-bold overflow-hidden shrink-0">
+                      {u.profileImage ? (
+                        <img src={u.profileImage} alt={u.fullName} className="w-full h-full object-cover" />
+                      ) : (
+                        <FaUser className="text-sm" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white">{u.fullName}</p>
+                      <p className="text-[11px] text-gray-500 font-mono">{u.email}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    {u.role === "ADMIN" && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-red-500/10 text-red-400 border border-red-500/20">
+                        ADMIN
+                      </span>
+                    )}
+                    {u.role === "COACH" && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                        COACH
+                      </span>
+                    )}
+                    {u.role === "ATHLETE" && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                        ATHLETE
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Delete Last User Modal */}
+        {showDeleteLastModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+            <div className="glass-card bg-[#111317]/95 border border-red-500/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/10 blur-[90px] rounded-full pointer-events-none" />
+
+              <div className="flex items-center gap-4 pb-4 border-b border-white/10">
+                <div className="p-3 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20 text-2xl">
+                  <FaTrashAlt />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white">Delete Last Registered User</h2>
+                  <p className="text-gray-400 text-xs">Platform Governance Command</p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  Are you sure you want to delete the <strong className="text-white">most recently registered account</strong> from MongoDB? This will also clean up associated active roster pairings.
+                </p>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteLastModal(false)}
+                    className="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 font-semibold text-sm transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deletingLast}
+                    onClick={handleDeleteLastUser}
+                    className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-red-500/20"
+                  >
+                    {deletingLast ? "Deleting..." : "Delete Last User"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </DashboardLayout>

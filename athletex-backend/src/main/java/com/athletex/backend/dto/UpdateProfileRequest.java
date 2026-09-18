@@ -44,4 +44,10 @@ public class UpdateProfileRequest {
     private String bio;
 
     private String profileImage;
+
+    // Coach specific fields
+    private String title;
+    private String specialization;
+    private Integer experienceYears;
+    private String certifications;
 }

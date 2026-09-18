@@ -244,16 +244,41 @@ export default function CoachProfile() {
           </div>
 
           {/* Philosophy & Bio */}
-          <div className="lg:col-span-2 glass-card rounded-3xl p-6 sm:p-8 border border-white/5 space-y-4">
+          <div className="lg:col-span-2 glass-card rounded-3xl p-6 sm:p-8 border border-white/5 space-y-6">
             <h2 className="text-sm font-bold text-white uppercase tracking-wider pb-2 border-b border-white/5 flex items-center gap-2">
               <FiAward className="text-brand-peach" />
-              <span>Coaching Philosophy & Credentials</span>
+              <span>Coaching Philosophy & Specialization</span>
             </h2>
 
-            <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line">
-              {profile?.bio ||
-                "Welcome to my coaching hub. I specialize in developing athletic conditioning, technical fundamentals, and peak match readiness for competitive athletes."}
-            </p>
+            {/* Specialization & Certifications highlights */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-1">
+                <span className="text-[10px] font-bold text-brand-peach uppercase tracking-wider block">
+                  Primary Specialization
+                </span>
+                <span className="text-sm font-bold text-white block">
+                  {profile?.specialization || "Sprint Biomechanics & High Performance"}
+                </span>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/5 border border-white/5 space-y-1">
+                <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider block">
+                  Certifications & Licenses
+                </span>
+                <span className="text-sm font-bold text-white block">
+                  {profile?.certifications || "NSCA-CSCS, Certified Performance Specialist"}
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <span className="text-xs font-semibold text-gray-400 block uppercase tracking-wider">
+                Biography & Training Methodology
+              </span>
+              <p className="text-gray-300 text-sm leading-relaxed whitespace-pre-line bg-black/20 p-4 rounded-2xl border border-white/5">
+                {profile?.bio ||
+                  "Welcome to my coaching hub. I specialize in developing athletic conditioning, technical fundamentals, and peak match readiness for competitive athletes."}
+              </p>
+            </div>
           </div>
         </div>
       </div>

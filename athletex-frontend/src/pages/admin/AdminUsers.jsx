@@ -10,9 +10,12 @@ import {
   FaUserTie,
   FaUserCheck,
   FaEdit,
+  FaTrash,
+  FaTrashAlt,
   FaTimes,
   FaCheckCircle,
   FaExclamationCircle,
+  FaExclamationTriangle,
   FaShieldAlt,
   FaUser
 } from "react-icons/fa";
@@ -28,10 +31,25 @@ export default function AdminUsers() {
   const [search, setSearch] = useState("");
   const [selectedRole, setSelectedRole] = useState("ALL");
 
-  // Edit Modal State
+  // Edit User Details Modal
   const [editingUser, setEditingUser] = useState(null);
-  const [newRole, setNewRole] = useState("ATHLETE");
+  const [editForm, setEditForm] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    sport: "",
+    city: "",
+    role: "ATHLETE"
+  });
   const [updating, setUpdating] = useState(false);
+
+  // Delete User Modal State
+  const [deletingUser, setDeletingUser] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Delete Last User Modal State
+  const [showDeleteLastModal, setShowDeleteLastModal] = useState(false);
+  const [deletingLast, setDeletingLast] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -54,23 +72,62 @@ export default function AdminUsers() {
     }
   };
 
-  const handleRoleUpdateSubmit = async (e) => {
+  const openEditModal = (u) => {
+    setEditingUser(u);
+    setEditForm({
+      fullName: u.fullName || "",
+      email: u.email || "",
+      phone: u.phone || "",
+      sport: u.sport || "",
+      city: u.city || "",
+      role: u.role || "ATHLETE"
+    });
+  };
+
+  const handleEditSubmit = async (e) => {
     e.preventDefault();
     if (!editingUser) return;
 
     setUpdating(true);
     try {
-      await api.put(`/admin/users/${editingUser.id}/role`, {
-        role: newRole
-      });
-
-      toast.success(`Updated ${editingUser.fullName}'s role to ${newRole}! 🛡️`);
+      await api.put(`/admin/users/${editingUser.id}`, editForm);
+      toast.success(`Successfully updated ${editForm.fullName}'s profile! 🛡️`);
       setEditingUser(null);
       fetchUsers();
     } catch (err) {
-      toast.error(getErrorMessage(err, "Failed to update user role."));
+      toast.error(getErrorMessage(err, "Failed to update user details."));
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return;
+
+    setDeleting(true);
+    try {
+      const res = await api.delete(`/admin/users/${deletingUser.id}`);
+      toast.success(res.data || `User ${deletingUser.fullName} deleted successfully! 🗑️`);
+      setDeletingUser(null);
+      fetchUsers();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to delete user account."));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleDeleteLastUser = async () => {
+    setDeletingLast(true);
+    try {
+      const res = await api.delete("/admin/users/last");
+      toast.success(res.data || "Last registered user deleted successfully! 🗑️");
+      setShowDeleteLastModal(false);
+      fetchUsers();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to delete last registered user."));
+    } finally {
+      setDeletingLast(false);
     }
   };
 
@@ -105,7 +162,7 @@ export default function AdminUsers() {
       <div className="max-w-7xl mx-auto space-y-8 pb-16 relative z-10">
 
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative">
           <div>
             <div className="flex items-center gap-3 mb-2">
               <div className="w-1.5 h-8 bg-brand-peach rounded-full"></div>
@@ -114,13 +171,24 @@ export default function AdminUsers() {
               </h1>
             </div>
             <p className="text-gray-400 text-base font-medium ml-5">
-              Manage roles and governance across all registered platform accounts
+              Manage roles, update profiles, and execute account deletions across platform accounts
             </p>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-gray-300 text-xs font-mono font-bold self-start sm:self-auto">
-            <FaShieldAlt className="text-brand-peach text-sm" />
-            <span>{filteredUsers.length} Users Listed</span>
+          <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-gray-300 text-xs font-mono font-bold">
+              <FaShieldAlt className="text-brand-peach text-sm" />
+              <span>{filteredUsers.length} Users Listed</span>
+            </div>
+
+            <button
+              onClick={() => setShowDeleteLastModal(true)}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white font-bold text-xs transition-all cursor-pointer shadow-sm"
+              title="Delete the most recently registered user account"
+            >
+              <FaTrashAlt />
+              <span>Delete Last User</span>
+            </button>
           </div>
         </div>
 
@@ -175,9 +243,9 @@ export default function AdminUsers() {
                 <tr className="border-b border-white/10 bg-white/[0.02] text-[11px] font-bold text-gray-400 uppercase tracking-wider">
                   <th className="py-4 px-6">User</th>
                   <th className="py-4 px-6">Role</th>
-                  <th className="py-4 px-6">Sport</th>
-                  <th className="py-4 px-6">Contact</th>
-                  <th className="py-4 px-6">Active Roster</th>
+                  <th className="py-4 px-6">Sport & Location</th>
+                  <th className="py-4 px-6">Contact Phone</th>
+                  <th className="py-4 px-6">Active Pairings</th>
                   <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
@@ -228,11 +296,10 @@ export default function AdminUsers() {
                         )}
                       </td>
 
-                      {/* Sport */}
+                      {/* Sport & City */}
                       <td className="py-4 px-6">
-                        <span className="text-xs font-semibold text-gray-300">
-                          {u.sport || "N/A"}
-                        </span>
+                        <p className="text-xs font-semibold text-gray-300">{u.sport || "N/A"}</p>
+                        {u.city && <p className="text-[11px] text-gray-500">{u.city}</p>}
                       </td>
 
                       {/* Phone */}
@@ -245,22 +312,30 @@ export default function AdminUsers() {
                       {/* Active Pairings Count */}
                       <td className="py-4 px-6">
                         <span className="text-xs font-bold text-gray-300">
-                          {u.activeAssignmentsCount > 0 ? `${u.activeAssignmentsCount} Assigned` : "None"}
+                          {u.activeAssignmentsCount > 0 ? `${u.activeAssignmentsCount} Active` : "None"}
                         </span>
                       </td>
 
                       {/* Actions */}
                       <td className="py-4 px-6 text-right">
-                        <button
-                          onClick={() => {
-                            setEditingUser(u);
-                            setNewRole(u.role || "ATHLETE");
-                          }}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-all cursor-pointer"
-                        >
-                          <FaEdit className="text-brand-peach text-xs" />
-                          Change Role
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => openEditModal(u)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:text-white hover:bg-white/10 text-xs font-semibold transition-all cursor-pointer"
+                            title="Edit User Profile & Role"
+                          >
+                            <FaEdit className="text-brand-peach text-xs" />
+                            <span>Edit</span>
+                          </button>
+
+                          <button
+                            onClick={() => setDeletingUser(u)}
+                            className="p-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white text-xs font-semibold transition-all cursor-pointer"
+                            title="Delete User Account"
+                          >
+                            <FaTrash className="text-xs" />
+                          </button>
+                        </div>
                       </td>
 
                     </tr>
@@ -271,10 +346,10 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        {/* Change Role Modal */}
+        {/* Edit User Modal */}
         {editingUser && (
           <div className="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
-            <div className="glass-card bg-[#111317]/95 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+            <div className="glass-card bg-[#111317]/95 border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-brand-peach/10 blur-[90px] rounded-full pointer-events-none" />
 
               <div className="flex items-center justify-between pb-4 border-b border-white/10 relative z-10">
@@ -283,7 +358,7 @@ export default function AdminUsers() {
                     <FaUserShield />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-white">Update Role</h2>
+                    <h2 className="text-2xl font-black text-white">Edit User Profile</h2>
                     <p className="text-gray-400 text-xs">{editingUser.fullName}</p>
                   </div>
                 </div>
@@ -295,27 +370,91 @@ export default function AdminUsers() {
                 </button>
               </div>
 
-              <form onSubmit={handleRoleUpdateSubmit} className="mt-5 space-y-4 relative z-10">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
-                    Select New System Role *
-                  </label>
-                  <select
-                    value={newRole}
-                    onChange={(e) => setNewRole(e.target.value)}
-                    className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-brand-peach/50 transition-colors font-bold"
-                  >
-                    <option value="ATHLETE">ATHLETE (Standard User)</option>
-                    <option value="COACH">COACH (Roster & Training Governance)</option>
-                    <option value="ADMIN">ADMIN (Full Platform Owner)</option>
-                  </select>
+              <form onSubmit={handleEditSubmit} className="mt-5 space-y-4 relative z-10">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Full Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.fullName}
+                      onChange={(e) => setEditForm({ ...editForm, fullName: e.target.value })}
+                      className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-peach/50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Email Address *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-peach/50"
+                    />
+                  </div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs text-gray-400 leading-relaxed">
-                  ⚠️ Updating this role will instantly grant or modify account access capabilities across AthleteX.
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                      className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-peach/50 font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      Primary Sport
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.sport}
+                      onChange={(e) => setEditForm({ ...editForm, sport: e.target.value })}
+                      className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-peach/50"
+                    />
+                  </div>
                 </div>
 
-                <div className="flex gap-3 pt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      City / Location
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.city}
+                      onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                      className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-peach/50"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1.5">
+                      System Role *
+                    </label>
+                    <select
+                      value={editForm.role}
+                      onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                      className="w-full bg-[#181b22] border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-brand-peach/50 font-bold"
+                    >
+                      <option value="ATHLETE">ATHLETE</option>
+                      <option value="COACH">COACH</option>
+                      <option value="ADMIN">ADMIN</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setEditingUser(null)}
@@ -328,10 +467,103 @@ export default function AdminUsers() {
                     disabled={updating}
                     className="flex-1 py-3 rounded-xl bg-brand-peach text-black font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-lg"
                   >
-                    {updating ? "Saving..." : "Update Role"}
+                    {updating ? "Saving Changes..." : "Save User Details"}
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete User Modal */}
+        {deletingUser && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+            <div className="glass-card bg-[#111317]/95 border border-red-500/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/10 blur-[90px] rounded-full pointer-events-none" />
+
+              <div className="flex items-center gap-4 pb-4 border-b border-white/10">
+                <div className="p-3 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20 text-2xl">
+                  <FaExclamationTriangle />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white">Delete User Account</h2>
+                  <p className="text-gray-400 text-xs">{deletingUser.fullName}</p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  Are you sure you want to permanently delete <strong className="text-white">{deletingUser.fullName}</strong> (<span className="font-mono text-gray-400">{deletingUser.email}</span>)?
+                </p>
+
+                <div className="p-3.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-xs text-red-300 space-y-1">
+                  <p className="font-bold">⚠️ Warning: Irreversible Action</p>
+                  <p className="text-red-400/90">
+                    This will remove their profile and instantly clean up all active roster pairings from the system.
+                  </p>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setDeletingUser(null)}
+                    className="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 font-semibold text-sm transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deleting}
+                    onClick={handleDeleteUser}
+                    className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-red-500/20"
+                  >
+                    {deleting ? "Deleting..." : "Permanently Delete"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Last User Modal */}
+        {showDeleteLastModal && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+            <div className="glass-card bg-[#111317]/95 border border-red-500/20 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-red-500/10 blur-[90px] rounded-full pointer-events-none" />
+
+              <div className="flex items-center gap-4 pb-4 border-b border-white/10">
+                <div className="p-3 bg-red-500/10 text-red-400 rounded-2xl border border-red-500/20 text-2xl">
+                  <FaTrashAlt />
+                </div>
+                <div>
+                  <h2 className="text-xl font-black text-white">Delete Last Registered User</h2>
+                  <p className="text-gray-400 text-xs">Platform Maintenance Command</p>
+                </div>
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <p className="text-sm text-gray-300 leading-relaxed">
+                  This command will delete the <strong className="text-white">most recently registered account</strong> from MongoDB and clear any active roster pairings associated with it.
+                </p>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteLastModal(false)}
+                    className="flex-1 py-3 rounded-xl border border-white/10 text-gray-400 hover:text-white hover:bg-white/5 font-semibold text-sm transition-all cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    disabled={deletingLast}
+                    onClick={handleDeleteLastUser}
+                    className="flex-1 py-3 rounded-xl bg-red-500 text-white font-bold text-sm hover:bg-red-600 active:scale-[0.98] transition-all disabled:opacity-50 cursor-pointer shadow-lg shadow-red-500/20"
+                  >
+                    {deletingLast ? "Executing..." : "Delete Last User"}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         )}

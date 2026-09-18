@@ -102,8 +102,12 @@ export default function CoachEditProfile() {
     fullName: "",
     phone: "",
     sport: "",
-    position: "", // Used as Coaching Designation / Title
-    age: "",      // Used as Years of Experience
+    position: "", // Coaching Designation / Title
+    title: "",
+    specialization: "",
+    experienceYears: "",
+    certifications: "",
+    age: "",      // Years of Experience fallback
     gender: "",
     city: "",
     state: "",
@@ -131,8 +135,12 @@ export default function CoachEditProfile() {
           fullName: res.data.fullName || "",
           phone: res.data.phone || "",
           sport: res.data.sport || "",
-          position: res.data.position || "",
-          age: res.data.age || "",
+          position: res.data.position || res.data.title || "",
+          title: res.data.title || res.data.position || "",
+          specialization: res.data.specialization || "",
+          experienceYears: res.data.experienceYears || res.data.age || "",
+          certifications: res.data.certifications || "",
+          age: res.data.age || res.data.experienceYears || "",
           gender: res.data.gender || "",
           city: res.data.city || "",
           state: res.data.state || "",
@@ -156,7 +164,8 @@ export default function CoachEditProfile() {
           setCustomSportMode(true);
         }
 
-        if (res.data.position && !COACH_DESIGNATIONS.includes(res.data.position)) {
+        const currentPos = res.data.position || res.data.title;
+        if (currentPos && !COACH_DESIGNATIONS.includes(currentPos)) {
           setCustomPositionMode(true);
         }
       }
@@ -178,12 +187,19 @@ export default function CoachEditProfile() {
     setIsSubmitting(true);
 
     try {
+      const expYears = formData.experienceYears || formData.age;
+      const coachTitle = formData.title || formData.position;
+
       const payload = {
         fullName: formData.fullName.trim(),
         phone: formData.phone.trim(),
         sport: formData.sport.trim(),
-        position: formData.position.trim(),
-        age: formData.age ? parseInt(formData.age, 10) : null,
+        position: coachTitle ? coachTitle.trim() : "",
+        title: coachTitle ? coachTitle.trim() : "",
+        specialization: formData.specialization ? formData.specialization.trim() : "",
+        experienceYears: expYears ? parseInt(expYears, 10) : null,
+        certifications: formData.certifications ? formData.certifications.trim() : "",
+        age: expYears ? parseInt(expYears, 10) : null,
         gender: formData.gender,
         city: formData.city.trim(),
         state: formData.state.trim(),
@@ -204,7 +220,7 @@ export default function CoachEditProfile() {
 
       toast.success("Coach profile updated successfully!");
       setTimeout(() => {
-        navigate("/settings");
+        navigate("/coach/profile");
       }, 1000);
     } catch (err) {
       console.error("Failed to update coach profile:", err);
@@ -424,6 +440,27 @@ export default function CoachEditProfile() {
                   </button>
                 </div>
               )}
+
+              {/* Primary Specialization */}
+              <InputField
+                label="Primary Specialization"
+                name="specialization"
+                value={formData.specialization}
+                onChange={handleChange}
+                icon={FaDumbbell}
+                placeholder="e.g. Sprint Biomechanics, Plyometrics, VO2 Max"
+              />
+
+              {/* Certifications & Licenses */}
+              <InputField
+                label="Certifications & Licenses"
+                name="certifications"
+                value={formData.certifications}
+                onChange={handleChange}
+                icon={FiAward}
+                placeholder="e.g. CSCS, USATF Level 3, UEFA A License"
+              />
+
               <div className="sm:col-span-2 space-y-2">
                 <input
                   type="file"

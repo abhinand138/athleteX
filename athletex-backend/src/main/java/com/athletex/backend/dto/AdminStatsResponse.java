@@ -5,6 +5,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -18,4 +20,6 @@ public class AdminStatsResponse {
     private long totalTrainings;
     private long totalAchievements;
     private long totalAssignments;
+
+    private List<UserAdminResponse> recentUsers;
 }

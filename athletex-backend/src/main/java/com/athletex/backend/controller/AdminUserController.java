@@ -1,8 +1,6 @@
 package com.athletex.backend.controller;
 
-import com.athletex.backend.dto.AdminStatsResponse;
-import com.athletex.backend.dto.CoachAthleteResponse;
-import com.athletex.backend.dto.UserAdminResponse;
+import com.athletex.backend.dto.*;
 import com.athletex.backend.model.Role;
 import com.athletex.backend.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +32,19 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.getAllUsers(search, role));
     }
 
+    // PUT /api/admin/users/{userId}
+    @PutMapping("/users/{userId}")
+    public ResponseEntity<?> updateUserDetails(
+            @PathVariable String userId,
+            @RequestBody AdminUserUpdateRequest request) {
+        try {
+            UserAdminResponse updated = adminUserService.updateUserDetails(userId, request);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
     // PUT /api/admin/users/{userId}/role
     @PutMapping("/users/{userId}/role")
     public ResponseEntity<?> updateUserRole(
@@ -54,10 +65,38 @@ public class AdminUserController {
         }
     }
 
-    // GET /api/admin/assignments
+    // GET /api/admin/rosters (Detailed admin view of active roster assignments)
+    @GetMapping("/rosters")
+    public ResponseEntity<List<AdminRosterResponse>> getDetailedRosterAssignments() {
+        return ResponseEntity.ok(adminUserService.getDetailedRosterAssignments());
+    }
+
+    // GET /api/admin/assignments (Legacy list)
     @GetMapping("/assignments")
     public ResponseEntity<List<CoachAthleteResponse>> getAllRosterAssignments() {
         return ResponseEntity.ok(adminUserService.getAllRosterAssignments());
+    }
+
+    // POST /api/admin/assignments (Manual admin roster assignment)
+    @PostMapping("/assignments")
+    public ResponseEntity<?> createRosterAssignment(@RequestBody AdminCreateAssignmentRequest request) {
+        try {
+            AdminRosterResponse created = adminUserService.createRosterAssignment(request);
+            return ResponseEntity.ok(created);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // DELETE /api/admin/assignments/{assignmentId} (Terminate roster assignment)
+    @DeleteMapping("/assignments/{assignmentId}")
+    public ResponseEntity<String> terminateRosterAssignment(@PathVariable String assignmentId) {
+        try {
+            String message = adminUserService.terminateRosterAssignment(assignmentId);
+            return ResponseEntity.ok(message);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     // DELETE /api/admin/users/last

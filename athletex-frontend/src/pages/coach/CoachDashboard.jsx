@@ -88,6 +88,21 @@ export default function CoachDashboard() {
           </p>
         </div>
 
+        {JSON.parse(localStorage.getItem("user") || "{}").verificationStatus === "PENDING" && (
+          <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs font-semibold flex items-center justify-between gap-4 animate-fadeIn">
+            <div className="flex items-center gap-3">
+              <span className="p-2.5 rounded-xl bg-amber-500/20 text-amber-400 font-bold text-base">⏳</span>
+              <div>
+                <p className="font-bold text-amber-400 text-sm">Account Pending Verification</p>
+                <p className="text-gray-400">Your coach credentials and specializations are currently under administrative review.</p>
+              </div>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-black uppercase text-[10px] tracking-wider shrink-0">
+              IN REVIEW
+            </span>
+          </div>
+        )}
+
         {/* Statistics */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <StatCard title="Total Athletes" value={dashboard.totalAthletes || 0} icon={<FaUsers />} color="text-blue-500" />

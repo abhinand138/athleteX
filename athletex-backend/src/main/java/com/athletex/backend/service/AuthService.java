@@ -3,7 +3,9 @@ package com.athletex.backend.service;
 import com.athletex.backend.dto.LoginResponse;
 import com.athletex.backend.dto.LoginRequest;
 import com.athletex.backend.dto.RegisterRequest;
+import com.athletex.backend.model.Role;
 import com.athletex.backend.model.User;
+import com.athletex.backend.model.VerificationStatus;
 import com.athletex.backend.repository.UserRepository;
 import com.athletex.backend.security.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -37,12 +39,17 @@ public class AuthService {
 
         String otp = emailService.generateOtp();
 
+        VerificationStatus verificationStatus = (request.getRole() == Role.COACH)
+                ? VerificationStatus.PENDING
+                : VerificationStatus.APPROVED;
+
         User user = User.builder()
                 .fullName(request.getFullName())
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
+                .verificationStatus(verificationStatus)
                 .otp(otp)
                 .isVerified(true)
                 .build();

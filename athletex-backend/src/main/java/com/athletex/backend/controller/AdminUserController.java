@@ -120,4 +120,30 @@ public class AdminUserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    // GET /api/admin/coaches/pending
+    @GetMapping("/coaches/pending")
+    public ResponseEntity<List<UserAdminResponse>> getPendingCoaches() {
+        return ResponseEntity.ok(adminUserService.getPendingCoaches());
+    }
+
+    // PUT /api/admin/coaches/{coachId}/verify
+    @PutMapping("/coaches/{coachId}/verify")
+    public ResponseEntity<?> verifyCoach(
+            @PathVariable String coachId,
+            @RequestBody Map<String, String> body) {
+        try {
+            String statusStr = body.get("status");
+            if (statusStr == null || statusStr.isBlank()) {
+                return ResponseEntity.badRequest().body("Status is required (APPROVED or REJECTED)");
+            }
+            com.athletex.backend.model.VerificationStatus status = com.athletex.backend.model.VerificationStatus.valueOf(statusStr.toUpperCase());
+            UserAdminResponse updated = adminUserService.verifyCoach(coachId, status);
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body("Invalid verification status specified");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 }

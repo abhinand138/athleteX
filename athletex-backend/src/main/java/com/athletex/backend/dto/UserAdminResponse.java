@@ -1,6 +1,7 @@
 package com.athletex.backend.dto;
 
 import com.athletex.backend.model.Role;
+import com.athletex.backend.model.VerificationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,4 +24,10 @@ public class UserAdminResponse {
     private String country;
     private String profileImage;
     private long activeAssignmentsCount;
+
+    private VerificationStatus verificationStatus;
+    private String specialization;
+    private String certifications;
+    private Integer experienceYears;
+    private String title;
 }

@@ -261,6 +261,26 @@ public class AdminUserService {
         return "Successfully deleted user: " + deletedInfo;
     }
 
+    public List<UserAdminResponse> getPendingCoaches() {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getRole() == Role.COACH && u.getVerificationStatus() == VerificationStatus.PENDING)
+                .map(this::mapToUserAdminResponse)
+                .collect(Collectors.toList());
+    }
+
+    public UserAdminResponse verifyCoach(String coachId, VerificationStatus status) {
+        User user = userRepository.findById(coachId)
+                .orElseThrow(() -> new RuntimeException("Coach user not found: " + coachId));
+
+        if (user.getRole() != Role.COACH) {
+            throw new RuntimeException("User is not a Coach");
+        }
+
+        user.setVerificationStatus(status);
+        User saved = userRepository.save(user);
+        return mapToUserAdminResponse(saved);
+    }
+
     private UserAdminResponse mapToUserAdminResponse(User u) {
         long count = 0;
         if (u.getRole() == Role.COACH) {
@@ -281,6 +301,11 @@ public class AdminUserService {
                 .country(u.getCountry())
                 .profileImage(u.getProfileImage())
                 .activeAssignmentsCount(count)
+                .verificationStatus(u.getVerificationStatus() != null ? u.getVerificationStatus() : VerificationStatus.APPROVED)
+                .specialization(u.getSpecialization())
+                .certifications(u.getCertifications())
+                .experienceYears(u.getExperienceYears())
+                .title(u.getTitle())
                 .build();
     }
 }

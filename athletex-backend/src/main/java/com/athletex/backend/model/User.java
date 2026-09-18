@@ -73,4 +73,7 @@ public class User {
     private String certifications;
 
     private String title;
+
+    @Builder.Default
+    private VerificationStatus verificationStatus = VerificationStatus.APPROVED;
 }

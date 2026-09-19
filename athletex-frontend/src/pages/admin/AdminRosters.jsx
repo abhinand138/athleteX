@@ -14,7 +14,8 @@ import {
   FaTimes,
   FaTrash,
   FaCheckCircle,
-  FaExchangeAlt
+  FaExchangeAlt,
+  FaDownload
 } from "react-icons/fa";
 
 export default function AdminRosters() {
@@ -39,6 +40,22 @@ export default function AdminRosters() {
   useEffect(() => {
     fetchRostersAndUsers();
   }, []);
+
+  const handleExportCsv = async () => {
+    try {
+      const response = await api.get("/admin/export/rosters", { responseType: "blob" });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.setAttribute("download", "athletex_rosters_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Roster pairings exported successfully! 📥");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to export roster pairings."));
+    }
+  };
 
   const fetchRostersAndUsers = async () => {
     setLoading(true);
@@ -146,6 +163,15 @@ export default function AdminRosters() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportCsv}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-peach/10 border border-brand-peach/20 text-brand-peach hover:bg-brand-peach hover:text-black font-bold text-xs transition-all cursor-pointer shadow-sm"
+              title="Export Roster Pairings as CSV"
+            >
+              <FaDownload />
+              <span>Export CSV</span>
+            </button>
+
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-gray-300 text-xs font-mono font-bold">
               <FaUserFriends className="text-brand-peach text-sm" />
               <span>{filteredAssignments.length} Active Pairings</span>

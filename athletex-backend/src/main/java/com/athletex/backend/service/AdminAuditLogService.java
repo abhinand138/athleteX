@@ -40,4 +40,25 @@ public class AdminAuditLogService {
     public void clearAllLogs() {
         auditLogRepository.deleteAll();
     }
+
+    public String exportAuditLogsCsv() {
+        List<AdminAuditLog> logs = getAllLogs();
+        StringBuilder csv = new StringBuilder();
+        csv.append("Log ID,Timestamp,Action,Admin Name,Target Entity,Details\n");
+        for (AdminAuditLog log : logs) {
+            csv.append(escapeCsv(log.getId())).append(",")
+               .append(escapeCsv(log.getTimestamp() != null ? log.getTimestamp().toString() : "")).append(",")
+               .append(escapeCsv(log.getAction())).append(",")
+               .append(escapeCsv(log.getPerformedByAdminName())).append(",")
+               .append(escapeCsv(log.getTargetEntityName())).append(",")
+               .append(escapeCsv(log.getDetails())).append("\n");
+        }
+        return csv.toString();
+    }
+
+    private String escapeCsv(String text) {
+        if (text == null) return "\"\"";
+        String escaped = text.replace("\"", "\"\"");
+        return "\"" + escaped + "\"";
+    }
 }

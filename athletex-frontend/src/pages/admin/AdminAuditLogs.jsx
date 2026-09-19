@@ -16,7 +16,8 @@ import {
   FaFilter,
   FaExclamationCircle,
   FaClock,
-  FaInfoCircle
+  FaInfoCircle,
+  FaDownload
 } from "react-icons/fa";
 
 const ACTION_CATEGORIES = [
@@ -57,6 +58,22 @@ export default function AdminAuditLogs() {
       setError(getErrorMessage(err, "Failed to load admin audit activity history."));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      const response = await api.get("/admin/export/audit-logs", { responseType: "blob" });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.setAttribute("download", "athletex_audit_logs_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("Audit history exported successfully! 📥");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to export audit logs."));
     }
   };
 
@@ -202,13 +219,24 @@ export default function AdminAuditLogs() {
 
           <div className="flex items-center gap-3">
             {logs.length > 0 && (
-              <button
-                onClick={() => setShowClearModal(true)}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white font-bold text-xs transition-all cursor-pointer"
-              >
-                <FaTrashAlt />
-                Clear Audit History
-              </button>
+              <>
+                <button
+                  onClick={handleExportCsv}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white font-bold text-xs transition-all cursor-pointer shadow-sm"
+                  title="Export Audit Logs as CSV"
+                >
+                  <FaDownload />
+                  <span>Export CSV</span>
+                </button>
+
+                <button
+                  onClick={() => setShowClearModal(true)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500 hover:text-white font-bold text-xs transition-all cursor-pointer"
+                >
+                  <FaTrashAlt />
+                  Clear Audit History
+                </button>
+              </>
             )}
           </div>
         </div>

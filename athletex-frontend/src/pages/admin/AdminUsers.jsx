@@ -17,7 +17,8 @@ import {
   FaExclamationCircle,
   FaExclamationTriangle,
   FaShieldAlt,
-  FaUser
+  FaUser,
+  FaDownload
 } from "react-icons/fa";
 
 const ROLES = ["ALL", "ATHLETE", "COACH", "ADMIN"];
@@ -69,6 +70,28 @@ export default function AdminUsers() {
       setError(getErrorMessage(err, "Failed to load user list."));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleExportCsv = async () => {
+    try {
+      let url = "/admin/export/users";
+      const params = new URLSearchParams();
+      if (search) params.append("search", search);
+      if (selectedRole !== "ALL") params.append("role", selectedRole);
+      if (params.toString()) url += `?${params.toString()}`;
+
+      const response = await api.get(url, { responseType: "blob" });
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.setAttribute("download", "athletex_users_export.csv");
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success("User directory exported successfully! 📥");
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to export user directory."));
     }
   };
 
@@ -176,6 +199,15 @@ export default function AdminUsers() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap sm:flex-nowrap">
+            <button
+              onClick={handleExportCsv}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-brand-peach/10 border border-brand-peach/20 text-brand-peach hover:bg-brand-peach hover:text-black font-bold text-xs transition-all cursor-pointer shadow-sm"
+              title="Export User Directory as CSV"
+            >
+              <FaDownload />
+              <span>Export CSV</span>
+            </button>
+
             <div className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/5 border border-white/10 text-gray-300 text-xs font-mono font-bold">
               <FaShieldAlt className="text-brand-peach text-sm" />
               <span>{filteredUsers.length} Users Listed</span>

@@ -314,6 +314,60 @@ public class AdminUserService {
         return mapToUserAdminResponse(saved);
     }
 
+    public List<UserAdminResponse> batchVerifyCoaches(List<String> coachIds, VerificationStatus status) {
+        if (coachIds == null || coachIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<UserAdminResponse> updatedList = new ArrayList<>();
+        for (String coachId : coachIds) {
+            try {
+                UserAdminResponse updated = verifyCoach(coachId, status);
+                updatedList.add(updated);
+            } catch (Exception ignored) {}
+        }
+        return updatedList;
+    }
+
+    public String exportUsersCsv(String search, Role roleFilter) {
+        List<UserAdminResponse> users = getAllUsers(search, roleFilter);
+        StringBuilder csv = new StringBuilder();
+        csv.append("User ID,Full Name,Email,Phone,Role,Sport,City,Verification Status\n");
+        for (UserAdminResponse u : users) {
+            csv.append(escapeCsv(u.getId())).append(",")
+               .append(escapeCsv(u.getFullName())).append(",")
+               .append(escapeCsv(u.getEmail())).append(",")
+               .append(escapeCsv(u.getPhone())).append(",")
+               .append(escapeCsv(u.getRole() != null ? u.getRole().name() : "")).append(",")
+               .append(escapeCsv(u.getSport())).append(",")
+               .append(escapeCsv(u.getCity())).append(",")
+               .append(escapeCsv(u.getVerificationStatus() != null ? u.getVerificationStatus().name() : "")).append("\n");
+        }
+        return csv.toString();
+    }
+
+    public String exportRostersCsv() {
+        List<AdminRosterResponse> rosters = getDetailedRosterAssignments();
+        StringBuilder csv = new StringBuilder();
+        csv.append("Assignment ID,Coach Name,Coach Email,Athlete Name,Athlete Email,Sport,Status,Assigned Date\n");
+        for (AdminRosterResponse r : rosters) {
+            csv.append(escapeCsv(r.getAssignmentId())).append(",")
+               .append(escapeCsv(r.getCoachName())).append(",")
+               .append(escapeCsv(r.getCoachEmail())).append(",")
+               .append(escapeCsv(r.getAthleteName())).append(",")
+               .append(escapeCsv(r.getAthleteEmail())).append(",")
+               .append(escapeCsv(r.getSport())).append(",")
+               .append(escapeCsv(r.getStatus())).append(",")
+               .append(escapeCsv(r.getAssignedAt() != null ? r.getAssignedAt().toString() : "")).append("\n");
+        }
+        return csv.toString();
+    }
+
+    private String escapeCsv(String text) {
+        if (text == null) return "\"\"";
+        String escaped = text.replace("\"", "\"\"");
+        return "\"" + escaped + "\"";
+    }
+
     private UserAdminResponse mapToUserAdminResponse(User u) {
         long count = 0;
         if (u.getRole() == Role.COACH) {

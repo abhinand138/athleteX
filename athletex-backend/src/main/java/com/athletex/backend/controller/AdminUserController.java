@@ -166,4 +166,50 @@ public class AdminUserController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+    // PUT /api/admin/coaches/batch-verify
+    @PutMapping("/coaches/batch-verify")
+    public ResponseEntity<?> batchVerifyCoaches(@RequestBody Map<String, Object> body) {
+        try {
+            List<String> coachIds = (List<String>) body.get("coachIds");
+            String statusStr = (String) body.get("status");
+            if (coachIds == null || coachIds.isEmpty() || statusStr == null || statusStr.isBlank()) {
+                return ResponseEntity.badRequest().body("Coach IDs list and status are required.");
+            }
+            com.athletex.backend.model.VerificationStatus status = com.athletex.backend.model.VerificationStatus.valueOf(statusStr.toUpperCase());
+            List<UserAdminResponse> updated = adminUserService.batchVerifyCoaches(coachIds, status);
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // GET /api/admin/export/users
+    @GetMapping(value = "/export/users", produces = "text/csv")
+    public ResponseEntity<String> exportUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Role role) {
+        String csvData = adminUserService.exportUsersCsv(search, role);
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"athletex_users_export.csv\"")
+                .body(csvData);
+    }
+
+    // GET /api/admin/export/rosters
+    @GetMapping(value = "/export/rosters", produces = "text/csv")
+    public ResponseEntity<String> exportRosters() {
+        String csvData = adminUserService.exportRostersCsv();
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"athletex_rosters_export.csv\"")
+                .body(csvData);
+    }
+
+    // GET /api/admin/export/audit-logs
+    @GetMapping(value = "/export/audit-logs", produces = "text/csv")
+    public ResponseEntity<String> exportAuditLogs() {
+        String csvData = adminAuditLogService.exportAuditLogsCsv();
+        return ResponseEntity.ok()
+                .header("Content-Disposition", "attachment; filename=\"athletex_audit_logs_export.csv\"")
+                .body(csvData);
+    }
 }

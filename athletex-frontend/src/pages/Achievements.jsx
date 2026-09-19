@@ -18,7 +18,8 @@ import {
   FaUnlock,
   FaImage,
   FaStar,
-  FaShieldAlt
+  FaShieldAlt,
+  FaExclamationCircle
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
@@ -46,6 +47,15 @@ export default function Achievements() {
     proofUrl: "",
     proofType: "IMAGE"
   });
+
+  const [fieldErrors, setFieldErrors] = useState({
+    title: "",
+    description: "",
+    date: "",
+    proofUrl: ""
+  });
+
+  const todayDateStr = new Date().toISOString().split("T")[0];
 
   /* ============================= */
   /* FETCH ACHIEVEMENTS & BADGES */
@@ -90,7 +100,7 @@ export default function Achievements() {
   }, []);
 
   /* ============================= */
-  /* HANDLE INPUT */
+  /* HANDLE INPUT & REALTIME VALIDATION */
   /* ============================= */
 
   const handleChange = (e) => {
@@ -101,8 +111,61 @@ export default function Achievements() {
       [name]: value,
     });
 
+    // Clear specific field error
+    if (fieldErrors[name]) {
+      setFieldErrors({
+        ...fieldErrors,
+        [name]: ""
+      });
+    }
+
     setMessage("");
     setError("");
+  };
+
+  const validateForm = () => {
+    const errors = { title: "", description: "", date: "", proofUrl: "" };
+    let isValid = true;
+
+    if (!formData.title || formData.title.trim().length < 3) {
+      errors.title = "Achievement title must be at least 3 characters long.";
+      isValid = false;
+    } else if (formData.title.trim().length > 100) {
+      errors.title = "Achievement title cannot exceed 100 characters.";
+      isValid = false;
+    }
+
+    if (!formData.description || formData.description.trim().length < 5) {
+      errors.description = "Description must be at least 5 characters long.";
+      isValid = false;
+    } else if (formData.description.trim().length > 500) {
+      errors.description = "Description cannot exceed 500 characters.";
+      isValid = false;
+    }
+
+    if (!formData.date) {
+      errors.date = "Achievement date is required.";
+      isValid = false;
+    } else {
+      const selectedDate = new Date(formData.date);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (selectedDate > today) {
+        errors.date = "Achievement date cannot be in the future.";
+        isValid = false;
+      }
+    }
+
+    if (formData.proofUrl && formData.proofUrl.trim()) {
+      const url = formData.proofUrl.trim().toLowerCase();
+      if (!url.startsWith("http://") && !url.startsWith("https://")) {
+        errors.proofUrl = "Proof URL must be a valid web link starting with http:// or https://";
+        isValid = false;
+      }
+    }
+
+    setFieldErrors(errors);
+    return isValid;
   };
 
   /* ============================= */
@@ -111,6 +174,11 @@ export default function Achievements() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      toast.error("Please fix validation errors before submitting.");
+      return;
+    }
 
     try {
       setSaving(true);
@@ -149,6 +217,7 @@ export default function Achievements() {
         proofType: "IMAGE"
       });
 
+      setFieldErrors({ title: "", description: "", date: "", proofUrl: "" });
       setShowForm(false);
 
       await fetchAchievementsAndBadges();
@@ -186,10 +255,6 @@ export default function Achievements() {
     toast.success("Public Verification Link copied to clipboard! 📋");
   };
 
-  /* ============================= */
-  /* LOADING */
-  /* ============================= */
-
   if (loading) {
     return (
       <DashboardLayout>
@@ -202,10 +267,6 @@ export default function Achievements() {
       </DashboardLayout>
     );
   }
-
-  /* ============================= */
-  /* ERROR */
-  /* ============================= */
 
   if (error && achievements.length === 0) {
     return (
@@ -226,10 +287,7 @@ export default function Achievements() {
     <DashboardLayout>
       <div className="space-y-10 relative z-10 pb-16">
 
-        {/* ============================= */}
         {/* HEADER */}
-        {/* ============================= */}
-
         <div className="relative">
           <div className="absolute -left-10 -top-10 w-64 h-64 bg-brand-peach/10 blur-[80px] rounded-full pointer-events-none" />
 
@@ -246,7 +304,6 @@ export default function Achievements() {
               </p>
             </div>
 
-            {/* ADD BUTTON */}
             <button
               onClick={() => {
                 setShowForm(true);
@@ -261,10 +318,7 @@ export default function Achievements() {
           </div>
         </div>
 
-        {/* ============================= */}
         {/* MESSAGE */}
-        {/* ============================= */}
-
         {(message || (error && achievements.length > 0)) && (
           <div
             className={`rounded-xl px-5 py-3 text-sm font-medium border ${
@@ -277,10 +331,7 @@ export default function Achievements() {
           </div>
         )}
 
-        {/* ============================= */}
-        {/* ADD ACHIEVEMENT FORM */}
-        {/* ============================= */}
-
+        {/* ADD ACHIEVEMENT FORM WITH VALIDATIONS */}
         {showForm && (
           <div className="glass-card rounded-2xl p-8 shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-48 h-48 bg-brand-peach/10 blur-[60px] rounded-full pointer-events-none" />
@@ -307,8 +358,8 @@ export default function Achievements() {
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
               {/* TITLE */}
               <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
-                  Achievement Title
+                <label className="block text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">
+                  Achievement Title <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
@@ -316,25 +367,37 @@ export default function Achievements() {
                   value={formData.title}
                   onChange={handleChange}
                   placeholder="e.g. District Championship 100m Gold"
-                  required
-                  className="w-full bg-white/5 border border-white/10 focus:border-brand-peach/50 rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none transition-colors"
+                  className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none transition-colors ${
+                    fieldErrors.title ? "border-red-500/60 focus:border-red-500" : "border-white/10 focus:border-brand-peach/50"
+                  }`}
                 />
+                {fieldErrors.title && (
+                  <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1 font-medium">
+                    <FaExclamationCircle /> {fieldErrors.title}
+                  </p>
+                )}
               </div>
 
               {/* DESCRIPTION */}
               <div className="md:col-span-2">
-                <label className="block text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
-                  Description
+                <label className="block text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">
+                  Description <span className="text-red-400">*</span>
                 </label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
-                  placeholder="Describe your athletic achievement..."
+                  placeholder="Describe your athletic achievement in detail..."
                   rows="3"
-                  required
-                  className="w-full bg-white/5 border border-white/10 focus:border-brand-peach/50 rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none transition-colors resize-none"
+                  className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none transition-colors resize-none ${
+                    fieldErrors.description ? "border-red-500/60 focus:border-red-500" : "border-white/10 focus:border-brand-peach/50"
+                  }`}
                 />
+                {fieldErrors.description && (
+                  <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1 font-medium">
+                    <FaExclamationCircle /> {fieldErrors.description}
+                  </p>
+                )}
               </div>
 
               {/* PROOF URL */}
@@ -348,13 +411,20 @@ export default function Achievements() {
                   value={formData.proofUrl}
                   onChange={handleChange}
                   placeholder="e.g. https://example.com/medal_photo.jpg or timing certificate URL"
-                  className="w-full bg-white/5 border border-brand-peach/30 focus:border-brand-peach rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none transition-colors"
+                  className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white placeholder-gray-600 outline-none transition-colors ${
+                    fieldErrors.proofUrl ? "border-red-500/60 focus:border-red-500" : "border-brand-peach/30 focus:border-brand-peach"
+                  }`}
                 />
+                {fieldErrors.proofUrl && (
+                  <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1 font-medium">
+                    <FaExclamationCircle /> {fieldErrors.proofUrl}
+                  </p>
+                )}
               </div>
 
               {/* CATEGORY */}
               <div>
-                <label className="block text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">
                   Category
                 </label>
                 <select
@@ -372,7 +442,7 @@ export default function Achievements() {
 
               {/* LEVEL */}
               <div>
-                <label className="block text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">
                   Level
                 </label>
                 <select
@@ -390,22 +460,29 @@ export default function Achievements() {
 
               {/* DATE */}
               <div>
-                <label className="block text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
-                  Date
+                <label className="block text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">
+                  Date <span className="text-red-400">*</span> (Cannot be in the future)
                 </label>
                 <input
                   type="date"
                   name="date"
                   value={formData.date}
+                  max={todayDateStr}
                   onChange={handleChange}
-                  required
-                  className="w-full bg-white/5 border border-white/10 focus:border-brand-peach/50 rounded-xl px-4 py-3 text-white outline-none transition-colors"
+                  className={`w-full bg-white/5 border rounded-xl px-4 py-3 text-white outline-none transition-colors ${
+                    fieldErrors.date ? "border-red-500/60 focus:border-red-500" : "border-white/10 focus:border-brand-peach/50"
+                  }`}
                 />
+                {fieldErrors.date && (
+                  <p className="text-red-400 text-xs mt-1.5 flex items-center gap-1 font-medium">
+                    <FaExclamationCircle /> {fieldErrors.date}
+                  </p>
+                )}
               </div>
 
               {/* ICON */}
               <div>
-                <label className="block text-xs text-gray-500 uppercase tracking-widest font-bold mb-2">
+                <label className="block text-xs text-gray-400 uppercase tracking-widest font-bold mb-2">
                   Icon
                 </label>
                 <select
@@ -446,10 +523,7 @@ export default function Achievements() {
           </div>
         )}
 
-        {/* ============================= */}
         {/* GAMIFICATION BADGES SHOWCASE */}
-        {/* ============================= */}
-
         <div className="glass-card rounded-3xl p-7 border border-brand-peach/20 shadow-2xl space-y-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 blur-[90px] rounded-full pointer-events-none" />
 
@@ -527,10 +601,7 @@ export default function Achievements() {
           </div>
         </div>
 
-        {/* ============================= */}
         {/* ACHIEVEMENTS GRID */}
-        {/* ============================= */}
-
         {achievements.length === 0 ? (
           <div className="glass-card rounded-2xl p-12 shadow-xl text-center">
             <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto">

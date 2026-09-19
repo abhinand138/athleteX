@@ -30,6 +30,8 @@ public class AchievementService {
     // CREATE ACHIEVEMENT (DTO / COACH)
     // =============================
     public AchievementResponse createAchievement(AchievementRequest request) {
+        validateAchievementFields(request.getTitle(), request.getDescription(), request.getDate(), request.getProofUrl());
+
         String coachName = "Coach";
         String athleteName = "Athlete";
         User coachObj = null;
@@ -106,6 +108,8 @@ public class AchievementService {
     // LEGACY CREATE ACHIEVEMENT
     // =============================
     public Achievement createAchievement(String userId, Achievement achievement) {
+        validateAchievementFields(achievement.getTitle(), achievement.getDescription(), achievement.getDate(), achievement.getProofUrl());
+
         achievement.setId(null);
         achievement.setAthleteId(userId);
         achievement.setUserId(userId);
@@ -246,6 +250,8 @@ public class AchievementService {
     // UPDATE ACHIEVEMENT
     // =============================
     public AchievementResponse updateAchievement(String id, AchievementRequest request) {
+        validateAchievementFields(request.getTitle(), request.getDescription(), request.getDate(), request.getProofUrl());
+
         Achievement achievement = achievementRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Achievement not found"));
 
@@ -417,6 +423,27 @@ public class AchievementService {
             count = achievementRepository.countByUserId(userId);
         }
         return count;
+    }
+
+    private void validateAchievementFields(String title, String description, LocalDate date, String proofUrl) {
+        if (title == null || title.trim().length() < 3 || title.trim().length() > 100) {
+            throw new IllegalArgumentException("Achievement title must be between 3 and 100 characters.");
+        }
+        if (description == null || description.trim().length() < 5 || description.trim().length() > 500) {
+            throw new IllegalArgumentException("Achievement description must be between 5 and 500 characters.");
+        }
+        if (date == null) {
+            throw new IllegalArgumentException("Achievement date is required.");
+        }
+        if (date.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Achievement date cannot be in the future.");
+        }
+        if (proofUrl != null && !proofUrl.isBlank()) {
+            String trimmedUrl = proofUrl.trim().toLowerCase();
+            if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://")) {
+                throw new IllegalArgumentException("Proof URL must be a valid link starting with http:// or https://");
+            }
+        }
     }
 
     private AchievementResponse mapToResponse(Achievement a, String coachName, String athleteName) {

@@ -75,6 +75,8 @@ public class AchievementService {
                 .level(request.getLevel())
                 .date(request.getDate())
                 .icon(icon)
+                .proofUrl(request.getProofUrl())
+                .proofType(request.getProofType())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -266,6 +268,12 @@ public class AchievementService {
         if (request.getIcon() != null && !request.getIcon().isBlank()) {
             achievement.setIcon(request.getIcon());
         }
+        if (request.getProofUrl() != null) {
+            achievement.setProofUrl(request.getProofUrl());
+        }
+        if (request.getProofType() != null) {
+            achievement.setProofType(request.getProofType());
+        }
         achievement.setUpdatedAt(LocalDateTime.now());
 
         Achievement updated = achievementRepository.save(achievement);
@@ -424,6 +432,8 @@ public class AchievementService {
                 .level(a.getLevel())
                 .date(a.getDate())
                 .icon(a.getIcon())
+                .proofUrl(a.getProofUrl())
+                .proofType(a.getProofType())
                 .isVerified(a.getIsVerified() != null ? a.getIsVerified() : false)
                 .verifiedByCoachId(a.getVerifiedByCoachId())
                 .verifiedByCoachName(a.getVerifiedByCoachName())

@@ -122,43 +122,94 @@ export function generateAchievementCertificate(achievement, athleteName, coachNa
   doc.text("ATHLETEX", sealX, sealY + 2, { align: "center" });
   doc.text("★ EXCELLENCE ★", sealX, sealY + 5.5, { align: "center" });
 
-  // 10. Signatures
+  // 10. QR Validation Graphic Box (Bottom Left Accent)
+  const qrX = 18;
+  const qrY = 145;
+  doc.setFillColor(20, 24, 35);
+  doc.setDrawColor(238, 155, 116);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(qrX, qrY, 32, 32, 2, 2, "FD");
+
+  // Draw simulated QR matrix pattern
+  doc.setFillColor(238, 155, 116);
+  // Outer QR Corners
+  doc.rect(qrX + 3, qrY + 3, 7, 7, "F");
+  doc.setFillColor(11, 13, 19);
+  doc.rect(qrX + 4.5, qrY + 4.5, 4, 4, "F");
+  doc.setFillColor(238, 155, 116);
+  doc.rect(qrX + 5.5, qrY + 5.5, 2, 2, "F");
+
+  doc.rect(qrX + 22, qrY + 3, 7, 7, "F");
+  doc.setFillColor(11, 13, 19);
+  doc.rect(qrX + 23.5, qrY + 4.5, 4, 4, "F");
+  doc.setFillColor(238, 155, 116);
+  doc.rect(qrX + 24.5, qrY + 5.5, 2, 2, "F");
+
+  doc.rect(qrX + 3, qrY + 22, 7, 7, "F");
+  doc.setFillColor(11, 13, 19);
+  doc.rect(qrX + 4.5, qrY + 23.5, 4, 4, "F");
+  doc.setFillColor(238, 155, 116);
+  doc.rect(qrX + 5.5, qrY + 24.5, 2, 2, "F");
+
+  // QR Random data dots
+  const dots = [
+    [12, 12], [14, 12], [16, 12], [18, 12],
+    [12, 14], [16, 14], [22, 14], [24, 14],
+    [14, 16], [18, 16], [20, 16], [26, 16],
+    [12, 18], [16, 18], [24, 18], [26, 18],
+    [14, 20], [20, 20], [22, 20], [26, 20],
+    [12, 22], [18, 22], [24, 22], [26, 22],
+    [14, 24], [16, 24], [20, 24], [22, 24]
+  ];
+  dots.forEach(([dx, dy]) => {
+    doc.rect(qrX + dx, qrY + dy, 1.5, 1.5, "F");
+  });
+
+  doc.setTextColor(170, 180, 195);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(6);
+  doc.text("SCAN TO VERIFY", qrX + 16, qrY + 30.5, { align: "center" });
+
+  // 11. Signatures
   // Left: Coach Signature
   doc.setDrawColor(255, 255, 255);
   doc.setLineWidth(0.4);
-  doc.line(35, 182, 95, 182);
+  doc.line(65, 182, 115, 182);
 
   doc.setTextColor(238, 155, 116);
   doc.setFont("times", "italic");
   doc.setFontSize(13);
-  doc.text(coachName ? `Coach ${coachName}` : "Assigned Coach", 65, 178, { align: "center" });
+  doc.text(coachName ? `Coach ${coachName}` : "Assigned Coach", 90, 178, { align: "center" });
 
   doc.setTextColor(160, 170, 185);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.text("OFFICIAL COACHING ATTESTATION", 65, 187, { align: "center" });
+  doc.text("OFFICIAL COACHING ATTESTATION", 90, 187, { align: "center" });
 
   // Right: Platform Director Signature
-  doc.line(pageWidth - 95, 182, pageWidth - 35, 182);
+  doc.line(pageWidth - 115, 182, pageWidth - 65, 182);
 
   doc.setTextColor(238, 155, 116);
   doc.setFont("times", "italic");
   doc.setFontSize(13);
-  doc.text("Dr. Marcus Vance", pageWidth - 65, 178, { align: "center" });
+  doc.text("Dr. Marcus Vance", pageWidth - 90, 178, { align: "center" });
 
   doc.setTextColor(160, 170, 185);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.text("DIRECTOR OF ATHLETIC DEVELOPMENT", pageWidth - 65, 187, { align: "center" });
+  doc.text("DIRECTOR OF ATHLETIC DEVELOPMENT", pageWidth - 90, 187, { align: "center" });
 
-  // 11. Footer Verification Code & Anti-Counterfeit Hash
+  // 12. Footer Verification Code & Anti-Counterfeit Hash
   const certId = `AX-${achievement.id ? achievement.id.substring(0, 8).toUpperCase() : Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  const athleteIdStr = achievement.athleteId || achievement.userId || "guest";
+  const verifyUrl = `${window.location.origin}/verify/${athleteIdStr}`;
+
   doc.setTextColor(100, 110, 125);
   doc.setFont("courier", "normal");
   doc.setFontSize(7);
-  doc.text(`VERIFICATION ID: ${certId} • ISSUED VIA ATHLETEX PERFORMANCE ENGINE • SECURE DIGITAL ACCREDITATION`, pageWidth / 2, 202, { align: "center" });
+  doc.text(`VERIFICATION ID: ${certId} • URL: ${verifyUrl} • SECURE DIGITAL ACCREDITATION`, pageWidth / 2, 202, { align: "center" });
 
-  // 12. Save File
+  // 13. Save File
   const safeName = (athleteName || "Athlete").replace(/[^a-zA-Z0-9]/g, "_");
   const safeTitle = (achievement.title || "Achievement").replace(/[^a-zA-Z0-9]/g, "_");
   doc.save(`${safeName}_Certificate_${safeTitle}.pdf`);

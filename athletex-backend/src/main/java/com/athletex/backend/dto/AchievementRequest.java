@@ -34,4 +34,8 @@ public class AchievementRequest {
     private LocalDate date;
 
     private String icon;
+
+    private String proofUrl;
+
+    private String proofType;
 }

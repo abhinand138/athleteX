@@ -25,6 +25,8 @@ public class AchievementResponse {
     private String level;
     private LocalDate date;
     private String icon;
+    private String proofUrl;
+    private String proofType;
     private Boolean isVerified;
     private String verifiedByCoachId;
     private String verifiedByCoachName;

@@ -3,8 +3,10 @@ package com.athletex.backend.controller;
 import com.athletex.backend.dto.AchievementRequest;
 import com.athletex.backend.dto.AchievementResponse;
 import com.athletex.backend.dto.AchievementStatsResponse;
+import com.athletex.backend.dto.BadgeResponse;
 import com.athletex.backend.model.Achievement;
 import com.athletex.backend.service.AchievementService;
+import com.athletex.backend.service.BadgeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +22,7 @@ import java.util.List;
 public class AchievementController {
 
     private final AchievementService achievementService;
+    private final BadgeService badgeService;
 
     // POST /api/achievements
     @PostMapping
@@ -129,6 +132,12 @@ public class AchievementController {
     @GetMapping("/{userId}/count")
     public ResponseEntity<Long> getLegacyAchievementCount(@PathVariable String userId) {
         return ResponseEntity.ok(achievementService.getAchievementCount(userId));
+    }
+
+    // GET /api/achievements/athlete/{athleteId}/badges
+    @GetMapping("/athlete/{athleteId}/badges")
+    public ResponseEntity<List<BadgeResponse>> getAthleteBadges(@PathVariable String athleteId) {
+        return ResponseEntity.ok(badgeService.evaluateAthleteBadges(athleteId));
     }
 
     // Legacy POST /api/achievements/{userId}

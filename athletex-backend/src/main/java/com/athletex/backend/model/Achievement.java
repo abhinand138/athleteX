@@ -38,6 +38,10 @@ public class Achievement {
 
     private String icon;
 
+    private String proofUrl;
+
+    private String proofType; // IMAGE, DOCUMENT, LINK
+
     private Boolean isVerified;
 
     private String verifiedByCoachId;

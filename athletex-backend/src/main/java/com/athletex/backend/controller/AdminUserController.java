@@ -1,7 +1,9 @@
 package com.athletex.backend.controller;
 
 import com.athletex.backend.dto.*;
+import com.athletex.backend.model.AdminAuditLog;
 import com.athletex.backend.model.Role;
+import com.athletex.backend.service.AdminAuditLogService;
 import com.athletex.backend.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +19,29 @@ import java.util.Map;
 public class AdminUserController {
 
     private final AdminUserService adminUserService;
+    private final AdminAuditLogService adminAuditLogService;
 
     // GET /api/admin/stats
     @GetMapping("/stats")
     public ResponseEntity<AdminStatsResponse> getAdminStats() {
         return ResponseEntity.ok(adminUserService.getAdminStats());
+    }
+
+    // GET /api/admin/audit-logs
+    @GetMapping("/audit-logs")
+    public ResponseEntity<List<AdminAuditLog>> getAuditLogs(
+            @RequestParam(required = false) String action) {
+        if (action != null && !action.isBlank()) {
+            return ResponseEntity.ok(adminAuditLogService.getLogsByAction(action.trim()));
+        }
+        return ResponseEntity.ok(adminAuditLogService.getAllLogs());
+    }
+
+    // DELETE /api/admin/audit-logs
+    @DeleteMapping("/audit-logs")
+    public ResponseEntity<String> clearAuditLogs() {
+        adminAuditLogService.clearAllLogs();
+        return ResponseEntity.ok("Audit log history cleared successfully.");
     }
 
     // GET /api/admin/users

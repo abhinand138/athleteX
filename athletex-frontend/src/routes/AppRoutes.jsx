@@ -26,6 +26,7 @@ import AdminDashboard from "../pages/admin/AdminDashboard";
 import AdminUsers from "../pages/admin/AdminUsers";
 import AdminRosters from "../pages/admin/AdminRosters";
 import AdminVerification from "../pages/admin/AdminVerification";
+import AdminAuditLogs from "../pages/admin/AdminAuditLogs";
 import PublicVerificationPage from "../pages/PublicVerificationPage";
 import ProtectedRoute from "../components/common/ProtectedRoute";
 
@@ -66,6 +67,7 @@ function AppRoutes() {
       <Route path="/admin/users" element={<ProtectedRoute requiredRole="ADMIN"><AdminUsers /></ProtectedRoute>} />
       <Route path="/admin/rosters" element={<ProtectedRoute requiredRole="ADMIN"><AdminRosters /></ProtectedRoute>} />
       <Route path="/admin/verification" element={<ProtectedRoute requiredRole="ADMIN"><AdminVerification /></ProtectedRoute>} />
+      <Route path="/admin/audit-logs" element={<ProtectedRoute requiredRole="ADMIN"><AdminAuditLogs /></ProtectedRoute>} />
     </Routes>
   );
 }

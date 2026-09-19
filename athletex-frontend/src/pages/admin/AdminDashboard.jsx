@@ -20,7 +20,8 @@ import {
   FaUserCheck,
   FaUser,
   FaEdit,
-  FaTimes
+  FaTimes,
+  FaHistory
 } from "react-icons/fa";
 
 export default function AdminDashboard() {
@@ -127,6 +128,13 @@ export default function AdminDashboard() {
             >
               <FaUserFriends />
               View Pairings
+            </Link>
+            <Link
+              to="/admin/audit-logs"
+              className="flex items-center gap-2 px-4 py-3 rounded-2xl bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white font-bold text-xs transition-all cursor-pointer"
+            >
+              <FaHistory />
+              Audit Trail
             </Link>
             <button
               onClick={() => setShowDeleteLastModal(true)}

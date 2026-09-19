@@ -19,6 +19,7 @@ public class AdminUserService {
     private final CoachAthleteAssignmentRepository assignmentRepository;
     private final TrainingRepository trainingRepository;
     private final AchievementRepository achievementRepository;
+    private final AdminAuditLogService adminAuditLogService;
 
     public AdminStatsResponse getAdminStats() {
         List<User> allUsers = userRepository.findAll();
@@ -75,8 +76,13 @@ public class AdminUserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
 
+        Role oldRole = user.getRole();
         user.setRole(newRole);
         User saved = userRepository.save(user);
+
+        adminAuditLogService.logAction("USER_ROLE_UPDATED", "ADMIN_CONSOLE", "System Admin",
+                saved.getId(), saved.getFullName(), "Updated user role from " + oldRole + " to " + newRole);
+
         return mapToUserAdminResponse(saved);
     }
 
@@ -104,6 +110,10 @@ public class AdminUserService {
         }
 
         User saved = userRepository.save(user);
+
+        adminAuditLogService.logAction("USER_DETAILS_UPDATED", "ADMIN_CONSOLE", "System Admin",
+                saved.getId(), saved.getFullName(), "Updated profile details for " + saved.getFullName() + " (" + saved.getEmail() + ")");
+
         return mapToUserAdminResponse(saved);
     }
 
@@ -171,6 +181,10 @@ public class AdminUserService {
 
         CoachAthleteAssignment saved = assignmentRepository.save(newAssignment);
 
+        adminAuditLogService.logAction("ROSTER_PAIRING_CREATED", "ADMIN_CONSOLE", "System Admin",
+                saved.getId(), coach.getFullName() + " & " + athlete.getFullName(),
+                "Created active roster pairing between Coach " + coach.getFullName() + " and Athlete " + athlete.getFullName());
+
         return AdminRosterResponse.builder()
                 .assignmentId(saved.getId())
                 .coachId(coach.getId())
@@ -190,6 +204,11 @@ public class AdminUserService {
                 .orElseThrow(() -> new RuntimeException("Roster assignment not found: " + assignmentId));
 
         assignmentRepository.delete(assignment);
+
+        adminAuditLogService.logAction("ROSTER_PAIRING_TERMINATED", "ADMIN_CONSOLE", "System Admin",
+                assignmentId, "Assignment " + assignmentId,
+                "Terminated active roster assignment ID: " + assignmentId);
+
         return "Roster assignment terminated successfully.";
     }
 
@@ -240,6 +259,10 @@ public class AdminUserService {
         // Delete User
         userRepository.deleteById(userId);
 
+        adminAuditLogService.logAction("USER_DELETED", "ADMIN_CONSOLE", "System Admin",
+                userId, lastUser.getFullName(),
+                "Deleted last registered user account: " + deletedInfo);
+
         return "Successfully deleted last user: " + deletedInfo;
     }
 
@@ -257,6 +280,10 @@ public class AdminUserService {
         athleteAssignment.ifPresent(assignmentRepository::delete);
 
         userRepository.deleteById(userId);
+
+        adminAuditLogService.logAction("USER_DELETED", "ADMIN_CONSOLE", "System Admin",
+                userId, user.getFullName(),
+                "Deleted user account: " + deletedInfo);
 
         return "Successfully deleted user: " + deletedInfo;
     }
@@ -278,6 +305,12 @@ public class AdminUserService {
 
         user.setVerificationStatus(status);
         User saved = userRepository.save(user);
+
+        String actionStr = status == VerificationStatus.APPROVED ? "COACH_VERIFIED" : "COACH_REJECTED";
+        adminAuditLogService.logAction(actionStr, "ADMIN_CONSOLE", "System Admin",
+                saved.getId(), saved.getFullName(),
+                (status == VerificationStatus.APPROVED ? "Approved credentials and verified" : "Rejected verification application for") + " coach " + saved.getFullName());
+
         return mapToUserAdminResponse(saved);
     }
 

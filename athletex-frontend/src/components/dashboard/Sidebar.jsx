@@ -10,7 +10,8 @@ import {
   FaDumbbell,
   FaFileAlt,
   FaBell,
-  FaUserClock
+  FaUserClock,
+  FaHistory
 } from "react-icons/fa";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -44,6 +45,11 @@ export default function Sidebar() {
           icon: <FaUserClock />,
           name: "Coach Approvals",
           path: "/admin/verification"
+        },
+        {
+          icon: <FaHistory />,
+          name: "Audit Logs",
+          path: "/admin/audit-logs"
         },
         {
           icon: <FaCog />,

@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AthleteX - Selenium E2E Testing Report</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0f172a;
+            --card-bg: #1e293b;
+            --border-color: #334155;
+            --primary: #3b82f6;
+            --primary-glow: rgba(59, 130, 246, 0.25);
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
+            --warning: #f59e0b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --code-bg: #090d16;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            line-height: 1.6;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9));
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+        }
+
+        .header-title h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(90deg, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 0.5rem;
+        }
+
+        .header-title p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .status-badge {
+            background: var(--success-glow);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            padding: 0.6rem 1.4rem;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 0 15px var(--success-glow);
+        }
+
+        .status-badge .dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); opacity: 0.8; }
+            50% { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.8; }
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-main);
+        }
+
+        .metric-value.success { color: var(--success); }
+        .metric-value.primary { color: var(--primary); }
+
+        /* Section Styling */
+        .section-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: var(--text-main);
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.8rem;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            margin-top: 1rem;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+
+        th {
+            background-color: rgba(15, 23, 42, 0.8);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: rgba(51, 65, 85, 0.4);
+        }
+
+        .tag-pass {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(52, 211, 153, 0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-block;
+        }
+
+        .tag-browser {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(96, 165, 250, 0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        /* Code Block */
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 1.25rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            line-height: 1.5;
+        }
+
+        .highlight { color: #38bdf8; }
+        .comment { color: #64748b; }
+        .green { color: #4ade80; }
+
+        footer {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 3rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <div class="header-title">
+                <h1>🌐 AthleteX Selenium E2E Automation Report</h1>
+                <p>Execution Target: Live React SPA (http://localhost:5173) &amp; Spring Boot API (http://localhost:8080)</p>
+            </div>
+            <div class="status-badge">
+                <span class="dot"></span>
+                <span>BUILD SUCCESS - 100% PASSED</span>
+            </div>
+        </header>
+
+        <!-- Metrics Grid -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Total E2E Scenarios</div>
+                <div class="metric-value primary">2</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Passed Tests</div>
+                <div class="metric-value success">2 / 2</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Failures / Errors</div>
+                <div class="metric-value">0</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Browser Engine</div>
+                <div class="metric-value" style="font-size: 1.4rem; padding-top: 0.4rem;">
+                    <span class="tag-browser">Chrome 153 Headless</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Selenium E2E Details Section -->
+        <div class="section-card">
+            <div class="section-title">
+                <span>🤖 Automated Selenium WebDriver Test Execution</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Test Method / Scenario</th>
+                        <th>Target URL</th>
+                        <th>Automated Browser Steps &amp; Assertions</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td><code>testHomepageLoads</code></td>
+                        <td><code>http://localhost:5173/</code></td>
+                        <td>
+                            • Automated ChromeDriver setup via <code>WebDriverManager</code>.<br>
+                            • Navigated to React SPA root endpoint.<br>
+                            • Verified non-null page document title.<br>
+                            • Explicit wait for <code>#root</code> DOM element mounting.
+                        </td>
+                        <td><span class="tag-pass">PASSED</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td><code>testLoginPageControls</code></td>
+                        <td><code>http://localhost:5173/login</code></td>
+                        <td>
+                            • Navigated to authentication route `/login`.<br>
+                            • Explicit wait for <code>&lt;body&gt;</code> DOM container.<br>
+                            • Extracted page source &amp; asserted brand/form control text presence (<i>"AthleteX" / "Sign In" / "Login"</i>).
+                        </td>
+                        <td><span class="tag-pass">PASSED</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Console Execution Log Section -->
+        <div class="section-card">
+            <div class="section-title">
+                <span>💻 Selenium Console &amp; Maven Build Output</span>
+            </div>
+            <pre><code><span class="comment">[INFO] Running com.athletex.backend.e2e.AthleteXWebE2ETest</span>
+<span class="highlight">INFO io.github.bonigarcia.wdm.WebDriverManager -- Using chromedriver 153.0.8010.52 (resolved driver for Chrome 153)</span>
+<span class="highlight">INFO io.github.bonigarcia.wdm.online.Downloader -- Downloading chromedriver-win64.zip</span>
+<span class="highlight">INFO io.github.bonigarcia.wdm.WebDriverManager -- Exporting webdriver.chrome.driver as C:\Users\ABHINAND\.cache\selenium\chromedriver\win64\153.0.8010.52\chromedriver.exe</span>
+[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 77.89 s -- in com.athletex.backend.e2e.AthleteXWebE2ETest
+[INFO] 
+[INFO] Results:
+[INFO] 
+<span class="green">[INFO] Tests run: 2, Failures: 0, Errors: 0, Skipped: 0</span>
+<span class="green">[INFO] ------------------------------------------------------------------------</span>
+<span class="green">[INFO] BUILD SUCCESS</span>
+<span class="green">[INFO] ------------------------------------------------------------------------</span></code></pre>
+        </div>
+
+        <!-- Comprehensive Suite Matrix -->
+        <div class="section-card">
+            <div class="section-title">
+                <span>📊 Total Application Test Suite Summary Matrix</span>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Layer / Framework</th>
+                        <th>Test Scope</th>
+                        <th>Test Files</th>
+                        <th>Executed</th>
+                        <th>Passed</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Backend Unit Tests</strong> (JUnit 5 + Mockito)</td>
+                        <td>Auth, Badges, Coach Reports Logic</td>
+                        <td><code>AuthServiceTest</code>, <code>BadgeServiceTest</code>, <code>CoachReportServiceTest</code></td>
+                        <td>11</td>
+                        <td>11</td>
+                        <td><span class="tag-pass">100% PASSED</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>REST API Endpoint Tests</strong> (MockMvc)</td>
+                        <td>Auth &amp; Notification REST Controllers</td>
+                        <td><code>AuthControllerTest</code>, <code>NotificationControllerTest</code></td>
+                        <td>5</td>
+                        <td>5</td>
+                        <td><span class="tag-pass">100% PASSED</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Selenium E2E UI Automation</strong> (Selenium 4)</td>
+                        <td>Headless Browser User Flow</td>
+                        <td><code>AthleteXWebE2ETest</code></td>
+                        <td>2</td>
+                        <td>2</td>
+                        <td><span class="tag-pass">100% PASSED</span></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Frontend Component Suite</strong> (Vitest + RTL)</td>
+                        <td>Auth Context &amp; Protected Routes</td>
+                        <td><code>AuthContext.test.jsx</code>, <code>ProtectedRoute.test.jsx</code></td>
+                        <td>6</td>
+                        <td>6</td>
+                        <td><span class="tag-pass">100% PASSED</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Footer -->
+        <footer>
+            <p>AthleteX Automated Testing Infrastructure • Generated on September 26, 2026</p>
+        </footer>
+    </div>
+
+</body>
+</html>

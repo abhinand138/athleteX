@@ -29,6 +29,7 @@ import AdminVerification from "../pages/admin/AdminVerification";
 import AdminAuditLogs from "../pages/admin/AdminAuditLogs";
 import PublicVerificationPage from "../pages/PublicVerificationPage";
 import ProtectedRoute from "../components/common/ProtectedRoute";
+import Chat from "../pages/Chat";
 
 function AppRoutes() {
   return (
@@ -46,6 +47,7 @@ function AppRoutes() {
       <Route path="/training" element={<ProtectedRoute requiredRole="ATHLETE"><Training /></ProtectedRoute>} />
       <Route path="/achievements" element={<ProtectedRoute requiredRole="ATHLETE"><Achievements /></ProtectedRoute>} />
       <Route path="/coaches" element={<ProtectedRoute requiredRole="ATHLETE"><AthleteCoaches /></ProtectedRoute>} />
+      <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/athlete/notifications" element={<ProtectedRoute requiredRole="ATHLETE"><AthleteNotifications /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
@@ -61,6 +63,7 @@ function AppRoutes() {
       <Route path="/coach/analytics" element={<ProtectedRoute requiredRole="COACH"><CoachAnalytics /></ProtectedRoute>} />
       <Route path="/coach/reports" element={<ProtectedRoute requiredRole="COACH"><CoachReports /></ProtectedRoute>} />
       <Route path="/coach/notifications" element={<ProtectedRoute requiredRole="COACH"><CoachNotifications /></ProtectedRoute>} />
+      <Route path="/coach/chat" element={<ProtectedRoute requiredRole="COACH"><Chat /></ProtectedRoute>} />
       
       {/* Admin Routes */}
       <Route path="/admin/dashboard" element={<ProtectedRoute requiredRole="ADMIN"><AdminDashboard /></ProtectedRoute>} />

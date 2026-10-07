@@ -11,7 +11,8 @@ import {
   FaFileAlt,
   FaBell,
   FaUserClock,
-  FaHistory
+  FaHistory,
+  FaComments
 } from "react-icons/fa";
 
 import { NavLink, useNavigate } from "react-router-dom";
@@ -75,6 +76,11 @@ export default function Sidebar() {
           path: "/coach/athletes"
         },
         {
+          icon: <FaComments />,
+          name: "Messages",
+          path: "/coach/chat"
+        },
+        {
           icon: <FaDumbbell />,
           name: "Training",
           path: "/coach/training"
@@ -115,6 +121,11 @@ export default function Sidebar() {
           icon: <FaUser />,
           name: "Profile",
           path: "/profile"
+        },
+        {
+          icon: <FaComments />,
+          name: "Messages",
+          path: "/chat"
         },
         {
           icon: <FaChartBar />,

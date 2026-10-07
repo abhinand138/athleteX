@@ -17,8 +17,10 @@ import {
   FaTimesCircle,
   FaHourglassHalf,
   FaExclamationCircle,
-  FaUsers
+  FaUsers,
+  FaMagic
 } from "react-icons/fa";
+import AiWorkoutGeneratorModal from "../../components/coach/AiWorkoutGeneratorModal";
 
 const CATEGORIES = ["Speed", "Strength", "Endurance", "Agility", "Recovery", "General"];
 
@@ -29,6 +31,7 @@ export default function CoachTraining() {
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("ALL"); // ALL, SCHEDULED, COMPLETED, CANCELLED
   const [search, setSearch] = useState("");
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
 
   // Create Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -290,16 +293,26 @@ export default function CoachTraining() {
             </p>
           </div>
 
-          <button
-            onClick={() => {
-              setFormError("");
-              setShowCreateModal(true);
-            }}
-            className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-brand-peach to-orange-500 hover:from-brand-peach/90 hover:to-orange-500/90 text-black font-bold rounded-2xl shadow-[0_0_25px_rgba(255,123,84,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer shrink-0"
-          >
-            <FaPlus className="text-sm" />
-            Create Training
-          </button>
+          <div className="flex items-center gap-3 shrink-0">
+            <button
+              onClick={() => setIsAiModalOpen(true)}
+              className="flex items-center justify-center gap-2.5 px-5 py-3.5 bg-white/10 hover:bg-white/15 border border-brand-peach/40 text-brand-peach font-bold rounded-2xl shadow-[0_0_20px_rgba(238,155,116,0.2)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <FaMagic className="text-sm" />
+              Generate AI Workout
+            </button>
+
+            <button
+              onClick={() => {
+                setFormError("");
+                setShowCreateModal(true);
+              }}
+              className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-brand-peach to-orange-500 hover:from-brand-peach/90 hover:to-orange-500/90 text-black font-bold rounded-2xl shadow-[0_0_25px_rgba(255,123,84,0.3)] hover:scale-[1.02] active:scale-[0.98] transition-all cursor-pointer"
+            >
+              <FaPlus className="text-sm" />
+              Create Training
+            </button>
+          </div>
         </div>
 
         {/* Stat Cards */}
@@ -1107,6 +1120,12 @@ export default function CoachTraining() {
             </div>
           </div>
         )}
+
+        <AiWorkoutGeneratorModal
+          isOpen={isAiModalOpen}
+          onClose={() => setIsAiModalOpen(false)}
+          onWorkoutAssigned={loadData}
+        />
 
       </div>
     </DashboardLayout>

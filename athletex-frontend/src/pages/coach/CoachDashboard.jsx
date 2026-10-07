@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
-import { FaUsers, FaCalendarAlt, FaChartLine, FaUserFriends, FaArrowRight } from "react-icons/fa";
+import { FaUsers, FaCalendarAlt, FaChartLine, FaUserFriends, FaArrowRight, FaMagic } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
+import AiWorkoutGeneratorModal from "../../components/coach/AiWorkoutGeneratorModal";
 
 const StatCard = ({ title, value, icon, color }) => (
   <div className="glass-card rounded-2xl p-6 shadow-xl relative overflow-hidden group">
@@ -25,6 +26,7 @@ export default function CoachDashboard() {
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -78,14 +80,24 @@ export default function CoachDashboard() {
       <div className="max-w-7xl mx-auto space-y-10 pb-12 relative z-10">
 
         {/* Header */}
-        <div className="relative">
-          <div className="absolute -left-10 -top-10 w-64 h-64 bg-brand-peach/10 blur-[80px] rounded-full pointer-events-none" />
-          <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
-            Welcome Coach, {dashboard.fullName || "User"} 👋
-          </h1>
-          <p className="text-gray-400 mt-3 text-lg font-medium">
-            Manage your athletes and monitor their progress.
-          </p>
+        <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="relative">
+            <div className="absolute -left-10 -top-10 w-64 h-64 bg-brand-peach/10 blur-[80px] rounded-full pointer-events-none" />
+            <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-400 tracking-tight">
+              Welcome Coach, {dashboard.fullName || "User"} 👋
+            </h1>
+            <p className="text-gray-400 mt-3 text-lg font-medium">
+              Manage your athletes and monitor their progress.
+            </p>
+          </div>
+
+          <button
+            onClick={() => setIsAiModalOpen(true)}
+            className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-brand-peach via-orange-400 to-amber-500 text-black font-extrabold text-sm flex items-center gap-2.5 shadow-[0_0_25px_rgba(238,155,116,0.3)] hover:scale-105 active:scale-95 transition duration-300 self-start md:self-auto shrink-0"
+          >
+            <FaMagic className="text-base" />
+            <span>Generate AI Workout Plan</span>
+          </button>
         </div>
 
         {JSON.parse(localStorage.getItem("user") || "{}").verificationStatus === "PENDING" && (
@@ -189,6 +201,11 @@ export default function CoachDashboard() {
             </p>
           </div>
         </div>
+
+        <AiWorkoutGeneratorModal
+          isOpen={isAiModalOpen}
+          onClose={() => setIsAiModalOpen(false)}
+        />
 
       </div>
     </DashboardLayout>

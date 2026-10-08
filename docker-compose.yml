@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # MongoDB Database Service
+  mongodb:
+    image: mongo:7.0
+    container_name: athletex-mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - athletex-network
+
+  # Spring Boot Backend Service
+  backend:
+    build:
+      context: ./athletex-backend
+      dockerfile: Dockerfile
+    container_name: athletex-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - MONGODB_URI=mongodb://mongodb:27017/athletex_db
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-nooreply.athletex@gmail.com}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-doummbrbxxosmyla}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - athletex-network
+
+  # React / Vite Frontend Service
+  frontend:
+    build:
+      context: ./athletex-frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8080/api
+    container_name: athletex-frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - athletex-network
+
+volumes:
+  mongodb_data:
+    driver: local
+
+networks:
+  athletex-network:
+    driver: bridge

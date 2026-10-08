@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import axios from "axios";
+import api from "../services/api";
 import {
   FaCheckCircle,
   FaShieldAlt,
@@ -30,7 +30,7 @@ export default function PublicVerificationPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`http://localhost:8080/api/public/verify/${athleteId}`);
+      const res = await api.get(`/public/verify/${athleteId}`);
       setData(res.data);
     } catch (err) {
       setError(err.response?.data || "Verification record not found or invalid QR code.");

@@ -14,6 +14,9 @@ import api from "../services/api";
 import PerformanceChart from "../components/performance/PerformanceChart";
 import FitnessRadarChart from "../components/performance/FitnessRadarChart";
 import FitnessFreshnessWidget from "../components/performance/FitnessFreshnessWidget";
+import CombinePrSection from "../components/performance/CombinePrSection";
+import LogDrillModal from "../components/performance/LogDrillModal";
+import DrillHistoryModal from "../components/performance/DrillHistoryModal";
 
 export default function Performance() {
   const [performance, setPerformance] = useState(null);
@@ -36,6 +39,22 @@ export default function Performance() {
 
   const [fitnessProfile, setFitnessProfile] = useState(null);
 
+  // Combine & PR Tracker states
+  const [combineData, setCombineData] = useState(null);
+  const [isLogDrillOpen, setIsLogDrillOpen] = useState(false);
+  const [selectedDrillForLog, setSelectedDrillForLog] = useState(null);
+  const [historyModalDrill, setHistoryModalDrill] = useState(null);
+
+  const storedUserObj = (() => {
+    try {
+      const u = localStorage.getItem("user");
+      return u ? JSON.parse(u) : null;
+    } catch {
+      return null;
+    }
+  })();
+  const currentUserId = storedUserObj?.id;
+
   /*
    * =============================
    * FETCH PERFORMANCE & FITNESS PROFILE
@@ -48,6 +67,15 @@ export default function Performance() {
       setFitnessProfile(fitRes.data);
     } catch (err) {
       console.error("Failed to load fitness profile:", err);
+    }
+  };
+
+  const fetchCombineData = async (userId) => {
+    try {
+      const combRes = await api.get(`/performance/${userId}/combine`);
+      setCombineData(combRes.data);
+    } catch (err) {
+      console.error("Failed to load combine summary:", err);
     }
   };
 
@@ -93,6 +121,9 @@ export default function Performance() {
         // Fetch Banister & Radar profile
         await fetchFitnessData(user.id);
 
+        // Fetch Combine & PR summary
+        await fetchCombineData(user.id);
+
       } catch (error) {
         console.error("Performance API Error:", error);
 
@@ -108,6 +139,47 @@ export default function Performance() {
 
     fetchPerformance();
   }, []);
+
+  const handleOpenLogModal = (drillCode) => {
+    setSelectedDrillForLog(drillCode || null);
+    setIsLogDrillOpen(true);
+  };
+
+  const handleOpenHistoryModal = (drillCode, drillName) => {
+    setHistoryModalDrill({ code: drillCode, name: drillName });
+  };
+
+  const handleDrillSuccess = async () => {
+    if (currentUserId) {
+      await fetchCombineData(currentUserId);
+      await fetchFitnessData(currentUserId);
+      try {
+        const pRes = await api.get(`/performance/${currentUserId}`);
+        setPerformance(pRes.data);
+      } catch (err) {
+        console.error("Failed to reload performance:", err);
+      }
+    }
+  };
+
+  const handleRatingsCalibrated = (updatedPerformance) => {
+    if (updatedPerformance) {
+      setPerformance(updatedPerformance);
+      setFormData({
+        speed: updatedPerformance.speed ?? 0,
+        strength: updatedPerformance.strength ?? 0,
+        endurance: updatedPerformance.endurance ?? 0,
+        agility: updatedPerformance.agility ?? 0,
+      });
+    }
+    if (currentUserId) {
+      fetchCombineData(currentUserId);
+      fetchFitnessData(currentUserId);
+      api.get(`/performance/${currentUserId}/history`).then((res) => {
+        setHistory(res.data);
+      }).catch(console.error);
+    }
+  };
 
   /*
    * =============================
@@ -585,6 +657,17 @@ export default function Performance() {
         )}
 
         {/* ============================= */}
+        {/* COMBINE DRILLS & PERSONAL RECORDS (PRS) */}
+        {/* ============================= */}
+        <CombinePrSection
+          userId={currentUserId}
+          combineData={combineData}
+          onOpenLogModal={handleOpenLogModal}
+          onOpenHistoryModal={handleOpenHistoryModal}
+          onRefreshData={handleRatingsCalibrated}
+        />
+
+        {/* ============================= */}
         {/* CHARTS: RADAR & PROGRESSION */}
         {/* ============================= */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -690,6 +773,33 @@ export default function Performance() {
           </p>
 
         </div>
+
+        {/* ============================= */}
+        {/* MODALS */}
+        {/* ============================= */}
+        <LogDrillModal
+          isOpen={isLogDrillOpen}
+          onClose={() => {
+            setIsLogDrillOpen(false);
+            setSelectedDrillForLog(null);
+          }}
+          userId={currentUserId}
+          initialDrillCode={selectedDrillForLog}
+          existingPrs={combineData?.personalRecords || []}
+          onSuccess={handleDrillSuccess}
+        />
+
+        <DrillHistoryModal
+          isOpen={!!historyModalDrill}
+          onClose={() => setHistoryModalDrill(null)}
+          userId={currentUserId}
+          drillCode={historyModalDrill?.code}
+          drillName={historyModalDrill?.name}
+          onLogNew={(drillCode) => {
+            handleOpenLogModal(drillCode);
+          }}
+          onUpdate={handleDrillSuccess}
+        />
 
       </div>
 

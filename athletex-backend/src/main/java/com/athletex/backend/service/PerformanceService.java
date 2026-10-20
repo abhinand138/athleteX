@@ -336,4 +336,277 @@ public class PerformanceService {
                 .trendData(trendData)
                 .build();
     }
+
+    /*
+     * =========================================================================
+     * WORKOUT-DRIVEN PERFORMANCE ENGINE (AUTOMATED & SCIENTIFIC)
+     * =========================================================================
+     */
+
+    /**
+     * Automatically recalculates athlete's 4-pillar scores and overall score
+     * purely from completed training sessions, RPE intensity, and volume.
+     */
+    public Performance recalculatePerformanceFromWorkouts(String userId) {
+        Performance performance = performanceRepository.findByUserId(userId)
+                .orElseGet(() -> Performance.builder().userId(userId).build());
+
+        List<Training> allTrainings = trainingRepository.findByAthleteIdOrderByDateDescTimeDesc(userId);
+        LocalDate today = LocalDate.now();
+
+        double speedLoad = 0;
+        double strengthLoad = 0;
+        double enduranceLoad = 0;
+        double agilityLoad = 0;
+        int completedWindowSessions = 0;
+
+        for (Training t : allTrainings) {
+            if (t.getStatus() == TrainingStatus.COMPLETED && t.getDate() != null) {
+                long daysAgo = java.time.temporal.ChronoUnit.DAYS.between(t.getDate(), today);
+                if (daysAgo >= 0 && daysAgo <= 28) {
+                    completedWindowSessions++;
+                    int duration = t.getActualDurationMinutes() != null && t.getActualDurationMinutes() > 0 ? t.getActualDurationMinutes() : 60;
+                    int rpe = t.getRpe() != null && t.getRpe() > 0 ? t.getRpe() : 7;
+                    double rawAU = (duration * rpe);
+
+                    // Recency weight: sessions in last 7 days carry more neurological punch
+                    double recencyWeight = Math.max(0.25, 1.0 - (daysAgo * 0.025));
+                    double sessionAU = rawAU * recencyWeight;
+
+                    String cat = (t.getCategory() != null ? t.getCategory().toUpperCase() : "");
+                    String title = (t.getTitle() != null ? t.getTitle().toUpperCase() : "");
+
+                    boolean matched = false;
+                    if (cat.contains("SPEED") || cat.contains("SPRINT") || title.contains("SPEED") || title.contains("SPRINT") || title.contains("ACCELERATION")) {
+                        speedLoad += sessionAU;
+                        matched = true;
+                    }
+                    if (cat.contains("STRENGTH") || cat.contains("WEIGHT") || cat.contains("POWER") || title.contains("STRENGTH") || title.contains("LIFT") || title.contains("SQUAT") || title.contains("BENCH")) {
+                        strengthLoad += sessionAU;
+                        matched = true;
+                    }
+                    if (cat.contains("ENDURANCE") || cat.contains("CARDIO") || cat.contains("RUN") || cat.contains("HIIT") || title.contains("ENDURANCE") || title.contains("RUN") || title.contains("TEMPO")) {
+                        enduranceLoad += sessionAU;
+                        matched = true;
+                    }
+                    if (cat.contains("AGILITY") || cat.contains("PLYO") || cat.contains("SHUTTLE") || cat.contains("CONE") || title.contains("AGILITY") || title.contains("LADDER") || title.contains("CONE")) {
+                        agilityLoad += sessionAU;
+                        matched = true;
+                    }
+                    if (!matched) {
+                        // Distribute hybrid/generic sessions evenly
+                        speedLoad += sessionAU * 0.25;
+                        strengthLoad += sessionAU * 0.25;
+                        enduranceLoad += sessionAU * 0.25;
+                        agilityLoad += sessionAU * 0.25;
+                    }
+                }
+            }
+        }
+
+        // Calculate pillar scores using physiological logarithmic scaling
+        double baseFloor = 50.0;
+        double maxGain = 46.0;
+
+        double calcSpeed = completedWindowSessions > 0
+                ? Math.round((baseFloor + maxGain * (1.0 - Math.exp(-speedLoad / 900.0))) * 10.0) / 10.0
+                : (performance.getSpeed() != null && performance.getSpeed() > 0 ? performance.getSpeed() : 60.0);
+
+        double calcStrength = completedWindowSessions > 0
+                ? Math.round((baseFloor + maxGain * (1.0 - Math.exp(-strengthLoad / 900.0))) * 10.0) / 10.0
+                : (performance.getStrength() != null && performance.getStrength() > 0 ? performance.getStrength() : 60.0);
+
+        double calcEndurance = completedWindowSessions > 0
+                ? Math.round((baseFloor + maxGain * (1.0 - Math.exp(-enduranceLoad / 900.0))) * 10.0) / 10.0
+                : (performance.getEndurance() != null && performance.getEndurance() > 0 ? performance.getEndurance() : 60.0);
+
+        double calcAgility = completedWindowSessions > 0
+                ? Math.round((baseFloor + maxGain * (1.0 - Math.exp(-agilityLoad / 900.0))) * 10.0) / 10.0
+                : (performance.getAgility() != null && performance.getAgility() > 0 ? performance.getAgility() : 60.0);
+
+        // Clamp 0 - 100
+        calcSpeed = Math.min(100.0, Math.max(10.0, calcSpeed));
+        calcStrength = Math.min(100.0, Math.max(10.0, calcStrength));
+        calcEndurance = Math.min(100.0, Math.max(10.0, calcEndurance));
+        calcAgility = Math.min(100.0, Math.max(10.0, calcAgility));
+
+        // Consistency from 30-day compliance
+        long total30Day = allTrainings.stream()
+                .filter(t -> t.getDate() != null && java.time.temporal.ChronoUnit.DAYS.between(t.getDate(), today) <= 30 && java.time.temporal.ChronoUnit.DAYS.between(t.getDate(), today) >= 0)
+                .count();
+        long completed30Day = allTrainings.stream()
+                .filter(t -> t.getStatus() == TrainingStatus.COMPLETED && t.getDate() != null && java.time.temporal.ChronoUnit.DAYS.between(t.getDate(), today) <= 30 && java.time.temporal.ChronoUnit.DAYS.between(t.getDate(), today) >= 0)
+                .count();
+
+        double consistency = total30Day > 0
+                ? Math.min(100.0, Math.round(((double) completed30Day / total30Day) * 100.0 * 10.0) / 10.0)
+                : 80.0;
+
+        double overall = Math.round(((calcSpeed * 0.25) + (calcEndurance * 0.25) + (calcStrength * 0.20) + (calcAgility * 0.15) + (consistency * 0.15)) * 10.0) / 10.0;
+
+        Double previousOverall = performance.getOverallScore();
+
+        performance.setSpeed(calcSpeed);
+        performance.setStrength(calcStrength);
+        performance.setEndurance(calcEndurance);
+        performance.setAgility(calcAgility);
+        performance.setOverallScore(overall);
+        performance.setLastEvaluatedBy("WORKOUT_ENGINE");
+        performance.setLastUpdated(LocalDateTime.now());
+
+        Performance saved = performanceRepository.save(performance);
+
+        // Record history snapshot if change is notable or first run
+        if (previousOverall == null || Math.abs(overall - previousOverall) >= 0.5) {
+            PerformanceHistory history = PerformanceHistory.builder()
+                    .userId(userId)
+                    .speed(calcSpeed)
+                    .strength(calcStrength)
+                    .endurance(calcEndurance)
+                    .agility(calcAgility)
+                    .overallScore(overall)
+                    .recordedAt(LocalDateTime.now())
+                    .build();
+            performanceHistoryRepository.save(history);
+
+            activityService.createActivity(
+                    userId,
+                    "workout_recalibration",
+                    "Conditioning Index Recalibrated",
+                    "Scores automatically updated to " + overall + "% based on recent training workload.",
+                    "⚡"
+            );
+        }
+
+        return saved;
+    }
+
+    /**
+     * Generates a comprehensive workload attribution report showing session counts,
+     * total impulse (AU), detraining states, and predicted gains from the next scheduled workout.
+     */
+    public com.athletex.backend.dto.WorkloadAttributionResponse getWorkloadAttribution(String userId) {
+        List<Training> allTrainings = trainingRepository.findByAthleteIdOrderByDateDescTimeDesc(userId);
+        LocalDate today = LocalDate.now();
+
+        int completedCount = 0;
+        double totalLoadAU = 0;
+
+        int speedCount = 0; double speedAU = 0; Integer speedLastDays = null;
+        int strengthCount = 0; double strengthAU = 0; Integer strengthLastDays = null;
+        int enduranceCount = 0; double enduranceAU = 0; Integer enduranceLastDays = null;
+        int agilityCount = 0; double agilityAU = 0; Integer agilityLastDays = null;
+
+        for (Training t : allTrainings) {
+            if (t.getStatus() == TrainingStatus.COMPLETED && t.getDate() != null) {
+                completedCount++;
+                int duration = t.getActualDurationMinutes() != null && t.getActualDurationMinutes() > 0 ? t.getActualDurationMinutes() : 60;
+                int rpe = t.getRpe() != null && t.getRpe() > 0 ? t.getRpe() : 7;
+                double load = (duration * rpe);
+                totalLoadAU += load;
+
+                long daysAgo = java.time.temporal.ChronoUnit.DAYS.between(t.getDate(), today);
+                int days = (int) Math.max(0, daysAgo);
+
+                String cat = (t.getCategory() != null ? t.getCategory().toUpperCase() : "");
+                String title = (t.getTitle() != null ? t.getTitle().toUpperCase() : "");
+
+                if (cat.contains("SPEED") || cat.contains("SPRINT") || title.contains("SPEED") || title.contains("SPRINT")) {
+                    speedCount++; speedAU += load;
+                    if (speedLastDays == null || days < speedLastDays) speedLastDays = days;
+                } else if (cat.contains("STRENGTH") || cat.contains("WEIGHT") || cat.contains("POWER") || title.contains("STRENGTH") || title.contains("LIFT")) {
+                    strengthCount++; strengthAU += load;
+                    if (strengthLastDays == null || days < strengthLastDays) strengthLastDays = days;
+                } else if (cat.contains("ENDURANCE") || cat.contains("CARDIO") || cat.contains("RUN") || title.contains("RUN") || title.contains("CARDIO")) {
+                    enduranceCount++; enduranceAU += load;
+                    if (enduranceLastDays == null || days < enduranceLastDays) enduranceLastDays = days;
+                } else if (cat.contains("AGILITY") || cat.contains("PLYO") || cat.contains("SHUTTLE") || title.contains("AGILITY") || title.contains("LADDER")) {
+                    agilityCount++; agilityAU += load;
+                    if (agilityLastDays == null || days < agilityLastDays) agilityLastDays = days;
+                } else {
+                    speedCount++; speedAU += load * 0.25;
+                    strengthCount++; strengthAU += load * 0.25;
+                    enduranceCount++; enduranceAU += load * 0.25;
+                    agilityCount++; agilityAU += load * 0.25;
+                    if (speedLastDays == null || days < speedLastDays) speedLastDays = days;
+                    if (strengthLastDays == null || days < strengthLastDays) strengthLastDays = days;
+                    if (enduranceLastDays == null || days < enduranceLastDays) enduranceLastDays = days;
+                    if (agilityLastDays == null || days < agilityLastDays) agilityLastDays = days;
+                }
+            }
+        }
+
+        Performance performance = getPerformance(userId);
+
+        java.util.Map<String, com.athletex.backend.dto.WorkloadAttributionResponse.CategoryMetric> metrics = new java.util.HashMap<>();
+        metrics.put("SPEED", com.athletex.backend.dto.WorkloadAttributionResponse.CategoryMetric.builder()
+                .category("Speed")
+                .sessionsCount(speedCount)
+                .totalLoadAU(Math.round(speedAU))
+                .lastTrainedDaysAgo(speedLastDays)
+                .score(performance.getSpeed() != null ? performance.getSpeed() : 60.0)
+                .status(determineStatus(speedLastDays, speedCount))
+                .build());
+
+        metrics.put("STRENGTH", com.athletex.backend.dto.WorkloadAttributionResponse.CategoryMetric.builder()
+                .category("Strength")
+                .sessionsCount(strengthCount)
+                .totalLoadAU(Math.round(strengthAU))
+                .lastTrainedDaysAgo(strengthLastDays)
+                .score(performance.getStrength() != null ? performance.getStrength() : 60.0)
+                .status(determineStatus(strengthLastDays, strengthCount))
+                .build());
+
+        metrics.put("ENDURANCE", com.athletex.backend.dto.WorkloadAttributionResponse.CategoryMetric.builder()
+                .category("Endurance")
+                .sessionsCount(enduranceCount)
+                .totalLoadAU(Math.round(enduranceAU))
+                .lastTrainedDaysAgo(enduranceLastDays)
+                .score(performance.getEndurance() != null ? performance.getEndurance() : 60.0)
+                .status(determineStatus(enduranceLastDays, enduranceCount))
+                .build());
+
+        metrics.put("AGILITY", com.athletex.backend.dto.WorkloadAttributionResponse.CategoryMetric.builder()
+                .category("Agility")
+                .sessionsCount(agilityCount)
+                .totalLoadAU(Math.round(agilityAU))
+                .lastTrainedDaysAgo(agilityLastDays)
+                .score(performance.getAgility() != null ? performance.getAgility() : 60.0)
+                .status(determineStatus(agilityLastDays, agilityCount))
+                .build());
+
+        // Find next scheduled workout to predict boost
+        List<Training> upcoming = trainingRepository.findByAthleteIdAndStatusOrderByDateAscTimeAsc(userId, TrainingStatus.SCHEDULED);
+        String nextImpact = "Complete your next scheduled workout to increase your training impulse and condition rating.";
+        String nextTitle = null;
+        Double gain = 2.5;
+
+        if (!upcoming.isEmpty()) {
+            Training next = upcoming.get(0);
+            nextTitle = next.getTitle() != null ? next.getTitle() : "Upcoming Workout";
+            String cat = next.getCategory() != null ? next.getCategory() : "Training";
+            nextImpact = "Completing '" + nextTitle + "' (" + cat + ") will increase your training volume and boost your conditioning index!";
+            gain = 3.0;
+        }
+
+        return com.athletex.backend.dto.WorkloadAttributionResponse.builder()
+                .userId(userId)
+                .totalCompletedWorkouts(completedCount)
+                .totalTrainingLoadAU(Math.round(totalLoadAU))
+                .windowDays(28)
+                .consistencyPercentage(85.0)
+                .categoryMetrics(metrics)
+                .nextWorkoutImpact(nextImpact)
+                .nextWorkoutTitle(nextTitle)
+                .potentialScoreGain(gain)
+                .build();
+    }
+
+    private String determineStatus(Integer lastDaysAgo, int sessions) {
+        if (lastDaysAgo == null || sessions == 0) return "Untrained";
+        if (lastDaysAgo <= 3 && sessions >= 3) return "Peaking";
+        if (lastDaysAgo <= 7) return "Building";
+        if (lastDaysAgo <= 14) return "Maintaining";
+        return "Detraining";
+    }
 }

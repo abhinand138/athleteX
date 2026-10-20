@@ -76,4 +76,26 @@ public class PerformanceController {
     ) {
         return performanceService.getPerformanceHistory(userId);
     }
+
+    /*
+     * POST /api/performance/{userId}/recalculate-from-workouts
+     * Automatically recalibrates scores from all completed workouts.
+     */
+    @PostMapping("/{userId}/recalculate-from-workouts")
+    public ResponseEntity<Performance> recalculateFromWorkouts(
+            @PathVariable String userId
+    ) {
+        return ResponseEntity.ok(performanceService.recalculatePerformanceFromWorkouts(userId));
+    }
+
+    /*
+     * GET /api/performance/{userId}/workload-attribution
+     * Returns detailed breakdown of completed workout impulse, session counts, and next session impact.
+     */
+    @GetMapping("/{userId}/workload-attribution")
+    public ResponseEntity<com.athletex.backend.dto.WorkloadAttributionResponse> getWorkloadAttribution(
+            @PathVariable String userId
+    ) {
+        return ResponseEntity.ok(performanceService.getWorkloadAttribution(userId));
+    }
 }

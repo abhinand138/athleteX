@@ -47,7 +47,14 @@ public class PerformanceDrill {
 
     private Boolean isCoachVerified;
 
+    private VerificationStatus verificationStatus; // APPROVED, PENDING, REJECTED
+
+    private String coachFeedback;
+
+    private LocalDateTime verifiedAt;
+
     private String verifiedByCoachId;
 
     private String verifiedByCoachName;
 }
+

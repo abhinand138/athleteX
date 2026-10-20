@@ -26,6 +26,7 @@ public class TrainingService {
     private final UserRepository userRepository;
     private final CoachAthleteAssignmentRepository assignmentRepository;
     private final NotificationService notificationService;
+    private final PerformanceService performanceService;
 
     // ===========================
     // CREATE TRAINING
@@ -475,6 +476,13 @@ public class TrainingService {
 
         try {
             notificationService.notifyTrainingCompleted(saved, userId, coachName, athleteName);
+        } catch (Exception e) {
+            // Non-blocking
+        }
+
+        // Trigger Automated Workout-Driven Performance Engine
+        try {
+            performanceService.recalculatePerformanceFromWorkouts(saved.getAthleteId());
         } catch (Exception e) {
             // Non-blocking
         }

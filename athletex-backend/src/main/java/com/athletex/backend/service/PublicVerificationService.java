@@ -2,10 +2,14 @@ package com.athletex.backend.service;
 
 import com.athletex.backend.dto.AchievementResponse;
 import com.athletex.backend.dto.PublicVerificationResponse;
+import com.athletex.backend.dto.drill.PersonalRecordDto;
 import com.athletex.backend.model.Achievement;
+import com.athletex.backend.model.PerformanceDrill;
 import com.athletex.backend.model.PerformanceHistory;
 import com.athletex.backend.model.User;
+import com.athletex.backend.model.VerificationStatus;
 import com.athletex.backend.repository.AchievementRepository;
+import com.athletex.backend.repository.PerformanceDrillRepository;
 import com.athletex.backend.repository.PerformanceHistoryRepository;
 import com.athletex.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +26,7 @@ public class PublicVerificationService {
     private final UserRepository userRepository;
     private final AchievementRepository achievementRepository;
     private final PerformanceHistoryRepository performanceHistoryRepository;
+    private final PerformanceDrillRepository drillRepository;
 
     public PublicVerificationResponse getPublicVerification(String athleteId) {
         User user = userRepository.findById(athleteId).orElse(null);
@@ -52,6 +57,29 @@ public class PublicVerificationService {
             overall = latest.getOverallScore() != null ? latest.getOverallScore() : (speed + strength + endurance + agility) / 4.0;
         }
 
+        // Fetch coach-certified combine PRs
+        List<PersonalRecordDto> verifiedCombineDrills = drillRepository.findByUserIdAndVerificationStatus(athleteId, VerificationStatus.APPROVED)
+                .stream()
+                .map(d -> PersonalRecordDto.builder()
+                        .drillCode(d.getDrillCode())
+                        .drillName(d.getDrillName())
+                        .category(d.getCategory())
+                        .bestValue(d.getValue())
+                        .unit(d.getUnit())
+                        .lowerIsBetter(d.getLowerIsBetter())
+                        .achievedAt(d.getRecordedAt())
+                        .percentile(d.getPercentile() != null ? d.getPercentile() : 75.0)
+                        .tierBadge(d.getTierBadge() != null ? d.getTierBadge() : "Varsity")
+                        .isCoachVerified(true)
+                        .verificationStatus(VerificationStatus.APPROVED)
+                        .verifiedByCoachName(d.getVerifiedByCoachName())
+                        .verifiedAt(d.getVerifiedAt())
+                        .coachFeedback(d.getCoachFeedback())
+                        .proofUrl(d.getProofUrl())
+                        .latestRecordId(d.getId())
+                        .build())
+                .collect(Collectors.toList());
+
         return PublicVerificationResponse.builder()
                 .athleteId(user.getId())
                 .fullName(user.getFullName())
@@ -76,6 +104,7 @@ public class PublicVerificationService {
                 .verificationStatus("OFFICIALLY VERIFIED ATHLETE")
                 .totalVerifiedAchievements(verifiedAchievements.size())
                 .verifiedAchievements(verifiedAchievements)
+                .verifiedCombineDrills(verifiedCombineDrills)
                 .build();
     }
 

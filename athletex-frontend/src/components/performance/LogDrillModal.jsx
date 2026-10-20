@@ -422,8 +422,8 @@ export default function LogDrillModal({
               onChange={(e) => setProofUrl(e.target.value)}
               className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-white text-xs focus:outline-none focus:border-brand-peach/50"
             />
-            <p className="text-[11px] text-gray-500 mt-1">
-              Adding a video proof helps coaches verify your attempt on your talent passport.
+            <p className="text-[11px] text-brand-peach/80 mt-1 flex items-center gap-1">
+              <span>🛡️ Attaching video/timing proof is required for your coach to certify this milestone on your public Talent Passport.</span>
             </p>
           </div>
 

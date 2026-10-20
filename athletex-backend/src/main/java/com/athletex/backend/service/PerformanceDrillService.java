@@ -1,7 +1,9 @@
 package com.athletex.backend.service;
 
+import com.athletex.backend.dto.drill.CoachReviewDrillRequest;
 import com.athletex.backend.dto.drill.CombineSummaryResponse;
 import com.athletex.backend.dto.drill.LogDrillRequest;
+import com.athletex.backend.dto.drill.PendingDrillReviewResponse;
 import com.athletex.backend.dto.drill.PersonalRecordDto;
 import com.athletex.backend.model.*;
 import com.athletex.backend.repository.CoachAthleteAssignmentRepository;
@@ -203,6 +205,7 @@ public class PerformanceDrillService {
                 .proofUrl(request.getProofUrl())
                 .recordedAt(request.getRecordedAt() != null ? request.getRecordedAt() : LocalDateTime.now())
                 .isCoachVerified(false)
+                .verificationStatus(VerificationStatus.PENDING)
                 .build();
 
         PerformanceDrill saved = drillRepository.save(drill);
@@ -213,7 +216,7 @@ public class PerformanceDrillService {
                     userId,
                     "personal_record",
                     "🎯 New Personal Record in " + request.getDrillName() + "!",
-                    "You achieved an all-time PR of " + request.getValue() + " " + request.getUnit() + " (" + tierBadge + ")!",
+                    "You achieved an all-time PR of " + request.getValue() + " " + request.getUnit() + " (" + tierBadge + ")! Submitted for coach certification.",
                     "🏆"
             );
 
@@ -221,30 +224,30 @@ public class PerformanceDrillService {
                 notificationService.sendNotification(
                         userId,
                         "🏆 New Personal Record: " + request.getDrillName() + "!",
-                        "Congratulations! You smashed your personal record with " + request.getValue() + " " + request.getUnit() + "!",
+                        "Congratulations! You smashed your personal record with " + request.getValue() + " " + request.getUnit() + "! Submission queued for coach review.",
                         "ACHIEVEMENT",
                         "/performance"
                 );
             } catch (Exception e) {
                 log.warn("Notification error: {}", e.getMessage());
             }
-
-            // Also notify active coach if assigned
-            notifyCoachOfPr(userId, request.getDrillName(), request.getValue(), request.getUnit());
         } else {
             activityService.createActivity(
                     userId,
                     "drill_attempt",
                     request.getDrillName() + " Logged",
-                    "Attempt: " + request.getValue() + " " + request.getUnit() + ".",
+                    "Attempt: " + request.getValue() + " " + request.getUnit() + ". Queued for coach certification.",
                     "⏱️"
             );
         }
 
+        // Notify active coach if assigned
+        notifyCoachOfSubmission(userId, request.getDrillName(), request.getValue(), request.getUnit(), request.getProofUrl(), isNewPr);
+
         return saved;
     }
 
-    private void notifyCoachOfPr(String athleteId, String drillName, Double value, String unit) {
+    private void notifyCoachOfSubmission(String athleteId, String drillName, Double value, String unit, String proofUrl, boolean isNewPr) {
         try {
             Optional<CoachAthleteAssignment> assignment = assignmentRepository.findByAthleteIdAndStatus(athleteId, AssignmentStatus.ACTIVE);
             if (assignment.isPresent()) {
@@ -252,16 +255,23 @@ public class PerformanceDrillService {
                 Optional<User> athleteOpt = userRepository.findById(athleteId);
                 String athleteName = athleteOpt.map(User::getFullName).orElse("Your athlete");
 
+                String title = isNewPr
+                        ? "🔥 PR Awaiting Review: " + athleteName
+                        : "⏱️ Drill Submitted: " + athleteName;
+
+                String body = athleteName + " submitted a " + drillName + " attempt (" + value + " " + unit + ")"
+                        + (proofUrl != null && !proofUrl.isBlank() ? " with video proof" : "") + " awaiting your certification.";
+
                 notificationService.sendNotification(
                         coachId,
-                        "🔥 New Athlete PR: " + athleteName,
-                        athleteName + " logged a new Personal Record in " + drillName + ": " + value + " " + unit + "!",
+                        title,
+                        body,
                         "PERFORMANCE",
                         "/coach/athletes/" + athleteId
                 );
             }
         } catch (Exception e) {
-            log.warn("Failed to notify coach of PR: {}", e.getMessage());
+            log.warn("Failed to notify coach of drill submission: {}", e.getMessage());
         }
     }
 
@@ -305,6 +315,9 @@ public class PerformanceDrillService {
                     .percentile(best.getPercentile() != null ? best.getPercentile() : 75.0)
                     .tierBadge(best.getTierBadge() != null ? best.getTierBadge() : "Varsity")
                     .isCoachVerified(Boolean.TRUE.equals(best.getIsCoachVerified()))
+                    .verificationStatus(best.getVerificationStatus() != null ? best.getVerificationStatus() : (Boolean.TRUE.equals(best.getIsCoachVerified()) ? VerificationStatus.APPROVED : VerificationStatus.PENDING))
+                    .coachFeedback(best.getCoachFeedback())
+                    .verifiedAt(best.getVerifiedAt())
                     .verifiedByCoachName(best.getVerifiedByCoachName())
                     .proofUrl(best.getProofUrl())
                     .latestRecordId(best.getId())
@@ -436,29 +449,186 @@ public class PerformanceDrillService {
     }
 
     /**
-     * Verifies drill by coach.
+     * Reviews and either certifies (APPROVED) or requests re-test (REJECTED) for an athlete's combine drill.
      */
-    public PerformanceDrill verifyDrillByCoach(String drillId, String coachId) {
+    public PerformanceDrill reviewDrill(String drillId, String coachId, CoachReviewDrillRequest request) {
         User coach = userRepository.findById(coachId)
                 .orElseThrow(() -> new RuntimeException("Coach not found"));
 
         PerformanceDrill drill = drillRepository.findById(drillId)
                 .orElseThrow(() -> new RuntimeException("Drill not found"));
 
-        drill.setIsCoachVerified(true);
+        // Validate coach assignment to athlete (or coach role check)
+        boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(coachId, drill.getUserId(), AssignmentStatus.ACTIVE);
+        if (!isAssigned && coach.getRole() != Role.COACH) {
+            throw new SecurityException("Access Denied: Coach is not assigned to this athlete");
+        }
+
+        drill.setVerificationStatus(request.getStatus());
+        drill.setCoachFeedback(request.getFeedback());
+        drill.setVerifiedAt(LocalDateTime.now());
         drill.setVerifiedByCoachId(coach.getId());
         drill.setVerifiedByCoachName(coach.getFullName());
 
-        PerformanceDrill saved = drillRepository.save(drill);
+        if (request.getStatus() == VerificationStatus.APPROVED) {
+            drill.setIsCoachVerified(true);
 
-        activityService.createActivity(
-                drill.getUserId(),
-                "drill_verified",
-                "Combine Test Verified",
-                "Coach " + coach.getFullName() + " verified your " + drill.getDrillName() + " result.",
-                "✔"
+            activityService.createActivity(
+                    drill.getUserId(),
+                    "drill_approved",
+                    "🏆 Combine Test Certified!",
+                    "Coach " + coach.getFullName() + " certified your " + drill.getDrillName() + " (" + drill.getValue() + " " + drill.getUnit() + ").",
+                    "✔"
+            );
+
+            try {
+                notificationService.sendNotification(
+                        drill.getUserId(),
+                        "🏆 Combine Record Certified!",
+                        "Coach " + coach.getFullName() + " officially certified your " + drill.getDrillName() + " (" + drill.getValue() + " " + drill.getUnit() + ")!",
+                        "ACHIEVEMENT",
+                        "/performance"
+                );
+            } catch (Exception e) {
+                log.warn("Notification error: {}", e.getMessage());
+            }
+        } else if (request.getStatus() == VerificationStatus.REJECTED) {
+            drill.setIsCoachVerified(false);
+
+            // If it was marked as PR, re-evaluate PR among remaining valid attempts
+            boolean wasPr = Boolean.TRUE.equals(drill.getIsPersonalRecord());
+            if (wasPr) {
+                drill.setIsPersonalRecord(false);
+                drillRepository.save(drill);
+                recalculatePrForUserAndDrill(drill.getUserId(), drill.getDrillCode(), drill.getLowerIsBetter());
+            }
+
+            String feedbackMsg = request.getFeedback() != null && !request.getFeedback().isBlank()
+                    ? request.getFeedback()
+                    : "Re-test requested by coach.";
+
+            activityService.createActivity(
+                    drill.getUserId(),
+                    "drill_rejected",
+                    "⚠️ Combine Test Feedback",
+                    "Coach " + coach.getFullName() + " reviewed your " + drill.getDrillName() + ": " + feedbackMsg,
+                    "⚠️"
+            );
+
+            try {
+                notificationService.sendNotification(
+                        drill.getUserId(),
+                        "⚠️ Combine Test Review: " + drill.getDrillName(),
+                        "Coach " + coach.getFullName() + " requested a re-test. Feedback: " + feedbackMsg,
+                        "PERFORMANCE",
+                        "/performance"
+                );
+            } catch (Exception e) {
+                log.warn("Notification error: {}", e.getMessage());
+            }
+        }
+
+        return drillRepository.save(drill);
+    }
+
+    /**
+     * Recalculates PR for a specific drill after a rejection or deletion.
+     */
+    private void recalculatePrForUserAndDrill(String userId, String drillCode, Boolean lowerIsBetter) {
+        List<PerformanceDrill> candidates = drillRepository.findByUserIdAndDrillCodeOrderByRecordedAtDesc(userId, drillCode)
+                .stream()
+                .filter(d -> d.getVerificationStatus() != VerificationStatus.REJECTED)
+                .collect(Collectors.toList());
+
+        for (PerformanceDrill d : candidates) {
+            if (Boolean.TRUE.equals(d.getIsPersonalRecord())) {
+                d.setIsPersonalRecord(false);
+                drillRepository.save(d);
+            }
+        }
+
+        if (!candidates.isEmpty()) {
+            boolean lower = lowerIsBetter != null && lowerIsBetter;
+            candidates.sort((a, b) -> {
+                if (a.getValue() == null) return 1;
+                if (b.getValue() == null) return -1;
+                return lower ? Double.compare(a.getValue(), b.getValue()) : Double.compare(b.getValue(), a.getValue());
+            });
+            PerformanceDrill newBest = candidates.get(0);
+            newBest.setIsPersonalRecord(true);
+            drillRepository.save(newBest);
+        }
+    }
+
+    /**
+     * Retrieves all pending drill submissions awaiting review across all active athletes assigned to the coach.
+     */
+    public List<PendingDrillReviewResponse> getPendingDrillsForCoach(String coachId) {
+        List<CoachAthleteAssignment> assignments = assignmentRepository.findByCoachIdAndStatus(coachId, AssignmentStatus.ACTIVE);
+        if (assignments.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<String> athleteIds = assignments.stream()
+                .map(CoachAthleteAssignment::getAthleteId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (athleteIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        List<PerformanceDrill> pendingDrills = drillRepository.findByUserIdInAndVerificationStatusOrderByRecordedAtDesc(
+                athleteIds, VerificationStatus.PENDING
         );
 
-        return saved;
+        Map<String, User> userMap = userRepository.findAllById(athleteIds).stream()
+                .collect(Collectors.toMap(User::getId, u -> u, (k1, k2) -> k1));
+
+        return pendingDrills.stream().map(drill -> {
+            User athlete = userMap.get(drill.getUserId());
+            return PendingDrillReviewResponse.builder()
+                    .drillId(drill.getId())
+                    .athleteId(drill.getUserId())
+                    .athleteName(athlete != null ? athlete.getFullName() : "Athlete")
+                    .athleteImage(athlete != null ? athlete.getProfileImage() : null)
+                    .athleteSport(athlete != null ? athlete.getSport() : null)
+                    .drillCode(drill.getDrillCode())
+                    .drillName(drill.getDrillName())
+                    .category(drill.getCategory())
+                    .value(drill.getValue())
+                    .unit(drill.getUnit())
+                    .lowerIsBetter(drill.getLowerIsBetter())
+                    .percentile(drill.getPercentile())
+                    .tierBadge(drill.getTierBadge())
+                    .proofUrl(drill.getProofUrl())
+                    .notes(drill.getNotes())
+                    .recordedAt(drill.getRecordedAt())
+                    .isPersonalRecord(drill.getIsPersonalRecord())
+                    .verificationStatus(drill.getVerificationStatus())
+                    .coachFeedback(drill.getCoachFeedback())
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieves all drill attempts for a specific athlete for the coach view.
+     */
+    public List<PerformanceDrill> getAthleteDrillsForCoach(String coachId, String athleteId) {
+        boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(coachId, athleteId, AssignmentStatus.ACTIVE);
+        if (!isAssigned) {
+            throw new SecurityException("Access Denied: Athlete is not assigned to this coach");
+        }
+        return drillRepository.findByUserIdOrderByRecordedAtDesc(athleteId);
+    }
+
+    /**
+     * Backwards-compatible verify endpoint.
+     */
+    public PerformanceDrill verifyDrillByCoach(String drillId, String coachId) {
+        return reviewDrill(drillId, coachId, CoachReviewDrillRequest.builder()
+                .status(VerificationStatus.APPROVED)
+                .feedback("Verified by coach.")
+                .build());
     }
 }

@@ -37,6 +37,12 @@ public class PersonalRecordDto {
 
     private Boolean isCoachVerified;
 
+    private com.athletex.backend.model.VerificationStatus verificationStatus;
+
+    private String coachFeedback;
+
+    private LocalDateTime verifiedAt;
+
     private String verifiedByCoachName;
 
     private String proofUrl;

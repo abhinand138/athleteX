@@ -1,5 +1,6 @@
 package com.athletex.backend.dto;
 
+import com.athletex.backend.dto.drill.PersonalRecordDto;
 import com.athletex.backend.model.Achievement;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,4 +44,7 @@ public class PublicVerificationResponse {
     private String verificationStatus; // e.g. "OFFICIALLY VERIFIED"
     private int totalVerifiedAchievements;
     private List<AchievementResponse> verifiedAchievements;
+
+    // Certified Combine Milestones & PRs
+    private List<PersonalRecordDto> verifiedCombineDrills;
 }

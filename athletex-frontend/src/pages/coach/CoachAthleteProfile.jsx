@@ -23,8 +23,14 @@ import {
   FaClipboardCheck,
   FaBullseye,
   FaCommentDots,
-  FaCheckCircle
+  FaCheckCircle,
+  FaVideo,
+  FaExternalLinkAlt,
+  FaTimes,
+  FaExclamationTriangle,
+  FaShieldAlt
 } from "react-icons/fa";
+import toast from "react-hot-toast";
 import PerformanceChart from "../../components/performance/PerformanceChart";
 import CoachEvaluationModal from "../../components/coach/CoachEvaluationModal";
 
@@ -36,6 +42,15 @@ export default function CoachAthleteProfile() {
   const [isEvalModalOpen, setIsEvalModalOpen] = useState(false);
   const navigate = useNavigate();
 
+  // Combine Drills & Proof Certification State
+  const [drills, setDrills] = useState([]);
+  const [drillsLoading, setDrillsLoading] = useState(false);
+  const [drillsFilter, setDrillsFilter] = useState("ALL"); // ALL, PENDING, APPROVED, REJECTED
+  const [reviewModalDrill, setReviewModalDrill] = useState(null);
+  const [reviewStatus, setReviewStatus] = useState("APPROVED");
+  const [reviewFeedback, setReviewFeedback] = useState("");
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const coachId = storedUser?.id;
 
@@ -46,7 +61,65 @@ export default function CoachAthleteProfile() {
       return;
     }
     fetchAthleteDetails();
+    fetchAthleteDrills();
   }, [athleteId]);
+
+  const fetchAthleteDrills = async () => {
+    try {
+      setDrillsLoading(true);
+      const res = await api.get(`/performance/coach/${coachId}/athlete/${athleteId}/drills`);
+      setDrills(res.data || []);
+    } catch (err) {
+      console.warn("Could not load drills via coach endpoint, trying combine endpoint:", err);
+      try {
+        const fallbackRes = await api.get(`/performance/${athleteId}/combine`);
+        setDrills(fallbackRes.data?.recentAttempts || []);
+      } catch (e) {
+        console.error("Failed to load drills:", e);
+      }
+    } finally {
+      setDrillsLoading(false);
+    }
+  };
+
+  const handleQuickApprove = async (drill) => {
+    try {
+      await api.put(`/performance/drills/${drill.id}/review?coachId=${coachId}`, {
+        status: "APPROVED",
+        feedback: "Official certified combine performance."
+      });
+      toast.success(`Certified ${drill.drillName} attempt! ✔`);
+      fetchAthleteDrills();
+      fetchAthleteDetails();
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to certify drill.");
+    }
+  };
+
+  const handleSubmitReview = async () => {
+    if (!reviewModalDrill) return;
+    try {
+      setReviewSubmitting(true);
+      await api.put(`/performance/drills/${reviewModalDrill.id}/review?coachId=${coachId}`, {
+        status: reviewStatus,
+        feedback: reviewFeedback
+      });
+      toast.success(
+        reviewStatus === "APPROVED"
+          ? "Combine drill certified with your official seal! ✔"
+          : "Re-test request sent to athlete with coaching feedback."
+      );
+      setReviewModalDrill(null);
+      setReviewFeedback("");
+      fetchAthleteDrills();
+      fetchAthleteDetails();
+    } catch (err) {
+      console.error("Failed to review drill:", err);
+      toast.error(err.response?.data?.message || err.response?.data || "Failed to submit review.");
+    } finally {
+      setReviewSubmitting(false);
+    }
+  };
 
   const fetchAthleteDetails = async () => {
     setLoading(true);
@@ -493,6 +566,217 @@ export default function CoachAthleteProfile() {
         </div>
 
         {/* ========================================================================= */}
+        {/* COMBINE DRILLS & PROOF CERTIFICATION GATE                                  */}
+        {/* ========================================================================= */}
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-7 bg-brand-peach rounded-full"></div>
+              <div>
+                <h2 className="text-2xl font-bold text-white tracking-wide flex items-center gap-2">
+                  <FaShieldAlt className="text-brand-peach" />
+                  <span>Combine Drill Submissions & Certification</span>
+                </h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Proof-backed combine PR tests audited and certified for external scouting
+                </p>
+              </div>
+            </div>
+
+            {/* Filter Pills */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {[
+                { id: "ALL", label: `All (${drills.length})` },
+                {
+                  id: "PENDING",
+                  label: `🟡 Pending (${drills.filter(d => !d.isCoachVerified && d.verificationStatus === "PENDING").length})`
+                },
+                {
+                  id: "APPROVED",
+                  label: `🟢 Certified (${drills.filter(d => d.isCoachVerified || d.verificationStatus === "APPROVED").length})`
+                },
+                {
+                  id: "REJECTED",
+                  label: `🔴 Re-test (${drills.filter(d => d.verificationStatus === "REJECTED").length})`
+                }
+              ].map(f => (
+                <button
+                  key={f.id}
+                  onClick={() => setDrillsFilter(f.id)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+                    drillsFilter === f.id
+                      ? "bg-brand-peach text-black shadow-md shadow-brand-peach/20"
+                      : "bg-white/5 text-gray-400 hover:text-white hover:bg-white/10 border border-white/5"
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {drillsLoading ? (
+            <div className="glass-card rounded-3xl p-8 text-center border border-white/5">
+              <div className="w-8 h-8 border-2 border-brand-peach border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+              <p className="text-xs text-gray-400">Loading combine submissions...</p>
+            </div>
+          ) : drills.length === 0 ? (
+            <div className="glass-card rounded-3xl p-10 border border-white/5 shadow-2xl text-center">
+              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4 text-2xl text-gray-600">
+                <FaTrophy />
+              </div>
+              <h3 className="text-lg font-bold text-white mb-1">No Combine Drills Logged</h3>
+              <p className="text-gray-500 text-sm">This athlete has not submitted any 40-yd dash, vertical jump, or 1RM test results yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {drills
+                .filter(d => {
+                  if (drillsFilter === "PENDING") return !d.isCoachVerified && d.verificationStatus === "PENDING";
+                  if (drillsFilter === "APPROVED") return d.isCoachVerified || d.verificationStatus === "APPROVED";
+                  if (drillsFilter === "REJECTED") return d.verificationStatus === "REJECTED";
+                  return true;
+                })
+                .map(drill => (
+                  <div
+                    key={drill.id}
+                    className="glass-card rounded-3xl p-6 border border-white/5 shadow-2xl relative overflow-hidden flex flex-col justify-between hover:border-brand-peach/20 transition-all"
+                  >
+                    <div>
+                      {/* Card Top Row */}
+                      <div className="flex items-center justify-between gap-2 mb-3">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-white/5 text-gray-300 border border-white/10">
+                          {drill.category || "COMBINE"}
+                        </span>
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                          {drill.tierBadge || "Varsity"} ({drill.percentile || 75}th%)
+                        </span>
+                      </div>
+
+                      {/* Drill Title & Value */}
+                      <h4 className="text-lg font-black text-white leading-tight">
+                        {drill.drillName}
+                      </h4>
+
+                      <div className="mt-3 flex items-baseline gap-2">
+                        <span className="text-3xl font-black text-white font-mono">
+                          {drill.value}
+                        </span>
+                        <span className="text-base font-bold text-brand-peach">
+                          {drill.unit}
+                        </span>
+                        {drill.isPersonalRecord && (
+                          <span className="ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-extrabold uppercase">
+                            <FaTrophy className="text-[9px]" />
+                            <span>PR</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Athlete Notes */}
+                      {drill.notes && (
+                        <p className="text-xs text-gray-400 mt-2 bg-black/20 p-2.5 rounded-xl border border-white/5 italic">
+                          "{drill.notes}"
+                        </p>
+                      )}
+
+                      {/* Proof URL Button */}
+                      <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
+                        {drill.proofUrl ? (
+                          <a
+                            href={drill.proofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-peach/10 hover:bg-brand-peach hover:text-black text-brand-peach font-bold border border-brand-peach/30 transition-all text-xs"
+                            title="Open video proof link"
+                          >
+                            <FaVideo className="text-xs" />
+                            <span>Watch Video Proof</span>
+                            <FaExternalLinkAlt className="text-[10px]" />
+                          </a>
+                        ) : (
+                          <span className="text-gray-500 italic text-xs">No video link attached</span>
+                        )}
+
+                        <span className="text-gray-500 font-mono text-[11px]">
+                          {drill.recordedAt ? new Date(drill.recordedAt).toLocaleDateString() : ""}
+                        </span>
+                      </div>
+
+                      {/* Verification Status Banner */}
+                      <div className="mt-4">
+                        {drill.isCoachVerified || drill.verificationStatus === "APPROVED" ? (
+                          <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <FaCheckCircle />
+                              <span>Certified by Coach {drill.verifiedByCoachName || "You"}</span>
+                            </div>
+                            {drill.verifiedAt && (
+                              <p className="text-[10px] text-gray-400 mt-0.5">
+                                Certified on {new Date(drill.verifiedAt).toLocaleDateString()}
+                              </p>
+                            )}
+                            {drill.coachFeedback && (
+                              <p className="text-[11px] text-emerald-300/80 mt-1 italic">
+                                Note: "{drill.coachFeedback}"
+                              </p>
+                            )}
+                          </div>
+                        ) : drill.verificationStatus === "REJECTED" ? (
+                          <div className="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs">
+                            <div className="flex items-center gap-1.5 font-bold">
+                              <FaExclamationTriangle />
+                              <span>Re-test Requested</span>
+                            </div>
+                            {drill.coachFeedback && (
+                              <p className="text-[11px] text-rose-300 mt-1 italic">
+                                Feedback: "{drill.coachFeedback}"
+                              </p>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between">
+                            <span className="flex items-center gap-1.5 font-bold">
+                              <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                              <span>Pending Your Audit</span>
+                            </span>
+                            <span className="text-[10px] text-amber-400/80 font-mono">Gate Quarantined</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="grid grid-cols-2 gap-2 mt-5 pt-3 border-t border-white/5">
+                      <button
+                        onClick={() => handleQuickApprove(drill)}
+                        className="py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500 hover:text-black border border-emerald-500/30 text-emerald-400 text-xs font-black transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="Certify this record for the Talent Passport"
+                      >
+                        <FaCheckCircle className="text-xs" />
+                        <span>{drill.verificationStatus === "APPROVED" ? "Re-Certify" : "Certify"}</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setReviewModalDrill(drill);
+                          setReviewStatus("REJECTED");
+                          setReviewFeedback(drill.coachFeedback || "");
+                        }}
+                        className="py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500 hover:text-white border border-rose-500/20 text-rose-400 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="Request athlete re-test with feedback"
+                      >
+                        <FaTimes className="text-xs" />
+                        <span>Re-test Note</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================================= */}
         {/* ACHIEVEMENTS SECTION                                                      */}
         {/* ========================================================================= */}
         <div className="space-y-6">
@@ -571,6 +855,117 @@ export default function CoachAthleteProfile() {
         initialEvaluation={data?.coachEvaluation}
         onSaved={fetchAthleteDetails}
       />
+
+      {/* Combine Review & Rejection Modal */}
+      {reviewModalDrill && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="glass-card max-w-lg w-full rounded-3xl p-7 border border-white/10 shadow-2xl relative overflow-hidden space-y-5 animate-in fade-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div className="flex items-center gap-2">
+                <FaShieldAlt className="text-brand-peach text-lg" />
+                <h3 className="text-lg font-bold text-white">Review Combine Attempt</h3>
+              </div>
+              <button
+                onClick={() => setReviewModalDrill(null)}
+                className="text-gray-400 hover:text-white p-2"
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <div className="bg-black/30 p-4 rounded-2xl border border-white/5 space-y-2">
+              <p className="text-xs text-gray-400 uppercase font-bold tracking-wider">Attempt Detail</p>
+              <h4 className="text-xl font-black text-white">{reviewModalDrill.drillName}</h4>
+              <p className="text-2xl font-black text-brand-peach font-mono">
+                {reviewModalDrill.value} {reviewModalDrill.unit}
+              </p>
+              {reviewModalDrill.proofUrl && (
+                <a
+                  href={reviewModalDrill.proofUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs text-brand-peach hover:underline font-bold mt-1"
+                >
+                  <FaVideo />
+                  <span>Review Proof Link</span>
+                  <FaExternalLinkAlt className="text-[10px]" />
+                </a>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-2">
+                Certification Decision
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setReviewStatus("APPROVED")}
+                  className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                    reviewStatus === "APPROVED"
+                      ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20"
+                      : "bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  <FaCheckCircle />
+                  <span>Approve & Certify</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReviewStatus("REJECTED")}
+                  className={`py-3 px-4 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                    reviewStatus === "REJECTED"
+                      ? "bg-rose-500 text-white shadow-lg shadow-rose-500/20"
+                      : "bg-white/5 text-gray-300 border border-white/10 hover:bg-white/10"
+                  }`}
+                >
+                  <FaTimes />
+                  <span>Request Re-test</span>
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">
+                Coaching Feedback / Audit Note
+              </label>
+              <textarea
+                rows="3"
+                value={reviewFeedback}
+                onChange={(e) => setReviewFeedback(e.target.value)}
+                placeholder={
+                  reviewStatus === "APPROVED"
+                    ? "Optional certification note (e.g., 'Clean footwork and certified laser timing.')"
+                    : "Explain why re-test is required (e.g., 'Foot crossed the cone before timer stopped; re-record with timing gate visible.')"
+                }
+                className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-xs focus:outline-none focus:border-brand-peach/50 resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+              <button
+                type="button"
+                onClick={() => setReviewModalDrill(null)}
+                className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-300 text-xs font-bold hover:bg-white/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSubmitReview}
+                disabled={reviewSubmitting}
+                className={`px-5 py-2.5 rounded-xl text-xs font-black transition-all cursor-pointer ${
+                  reviewStatus === "APPROVED"
+                    ? "bg-emerald-500 text-black hover:bg-emerald-400"
+                    : "bg-rose-500 text-white hover:bg-rose-400"
+                }`}
+              >
+                {reviewSubmitting ? "Submitting..." : reviewStatus === "APPROVED" ? "Certify Attempt ✔" : "Send Re-test Request"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </DashboardLayout>
   );
 }

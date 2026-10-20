@@ -153,18 +153,21 @@ export default function CombinePrSection({
           </div>
 
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <p className="text-[11px] text-gray-500 font-bold uppercase">Attempts Logged</p>
-            <p className="text-2xl font-black text-white mt-1">
-              {combineData?.totalAttempts || 0}
+            <p className="text-[11px] text-gray-500 font-bold uppercase">Coach Certified</p>
+            <p className="text-2xl font-black text-emerald-400 mt-1 flex items-center gap-1.5">
+              <FaCheckCircle className="text-base" />
+              <span>
+                {personalRecords.filter((pr) => pr.isCoachVerified || pr.verificationStatus === "APPROVED").length}
+              </span>
             </p>
           </div>
 
           <div className="bg-black/30 rounded-xl p-3 border border-white/5">
-            <p className="text-[11px] text-gray-500 font-bold uppercase">Verified PRs</p>
-            <p className="text-2xl font-black text-emerald-400 mt-1 flex items-center gap-1.5">
-              <FaCheckCircle className="text-base" />
+            <p className="text-[11px] text-gray-500 font-bold uppercase">Pending Audit</p>
+            <p className="text-2xl font-black text-amber-400 mt-1 flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
               <span>
-                {personalRecords.filter((pr) => pr.isCoachVerified).length}
+                {personalRecords.filter((pr) => !pr.isCoachVerified && pr.verificationStatus === "PENDING").length}
               </span>
             </p>
           </div>
@@ -329,28 +332,45 @@ export default function CombinePrSection({
                     </div>
                   )}
 
-                  {/* Verification & Proof */}
-                  <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-[11px]">
-                    {pr.isCoachVerified ? (
-                      <span className="inline-flex items-center gap-1 text-emerald-400 font-bold">
-                        <FaCheckCircle className="text-[10px]" />
-                        <span>Verified by {pr.verifiedByCoachName || "Coach"}</span>
-                      </span>
-                    ) : (
-                      <span className="text-gray-500 italic">Self-Reported PR</span>
-                    )}
+                  {/* Verification Status & Proof Link */}
+                  <div className="mt-4 pt-3 border-t border-white/5 flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-[11px] gap-2">
+                      {pr.isCoachVerified || pr.verificationStatus === "APPROVED" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold">
+                          <FaCheckCircle className="text-[10px]" />
+                          <span>Verified by {pr.verifiedByCoachName || "Coach"}</span>
+                        </span>
+                      ) : pr.verificationStatus === "REJECTED" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-400 font-bold" title={pr.coachFeedback || "Coach requested a re-test"}>
+                          <span>⚠️ Re-test Requested</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold" title="Attempt submitted with proof, queued for coach review">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                          <span>In Review · Proof Submitted</span>
+                        </span>
+                      )}
 
-                    {pr.proofUrl && (
-                      <a
-                        href={pr.proofUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-brand-peach hover:underline inline-flex items-center gap-1"
-                        title="View Proof"
-                      >
-                        <span>Proof</span>
-                        <FaExternalLinkAlt className="text-[9px]" />
-                      </a>
+                      {pr.proofUrl && (
+                        <a
+                          href={pr.proofUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-peach hover:underline inline-flex items-center gap-1 text-[11px] font-bold shrink-0"
+                          title="Open Video or Activity Proof"
+                        >
+                          <span>Watch Proof</span>
+                          <FaExternalLinkAlt className="text-[9px]" />
+                        </a>
+                      )}
+                    </div>
+
+                    {/* Coach Feedback Note for Rejected Drills */}
+                    {pr.verificationStatus === "REJECTED" && pr.coachFeedback && (
+                      <div className="p-2 rounded-lg bg-rose-500/5 border border-rose-500/20 text-[11px] text-rose-300/90 leading-tight">
+                        <strong className="text-rose-400">Coach Feedback: </strong>
+                        <span>"{pr.coachFeedback}"</span>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -397,6 +417,7 @@ export default function CombinePrSection({
                   <th className="pb-3">Drill</th>
                   <th className="pb-3">Result</th>
                   <th className="pb-3">Tier Standing</th>
+                  <th className="pb-3">Status</th>
                   <th className="pb-3">Date</th>
                   <th className="pb-3 text-right">Proof</th>
                 </tr>
@@ -422,6 +443,26 @@ export default function CombinePrSection({
                     </td>
                     <td className="py-3 text-gray-300">
                       {attempt.tierBadge || "Varsity"} ({attempt.percentile || 75}th%)
+                    </td>
+                    <td className="py-3">
+                      {attempt.isCoachVerified || attempt.verificationStatus === "APPROVED" ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-bold">
+                          <FaCheckCircle className="text-[9px]" />
+                          <span>Certified</span>
+                        </span>
+                      ) : attempt.verificationStatus === "REJECTED" ? (
+                        <span
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/20 text-rose-400 text-[10px] font-bold cursor-help"
+                          title={attempt.coachFeedback ? `Coach feedback: ${attempt.coachFeedback}` : "Re-test requested by coach"}
+                        >
+                          <span>⚠️ Re-test</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] font-bold">
+                          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />
+                          <span>Pending</span>
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 text-gray-400 font-mono">
                       {attempt.recordedAt ? new Date(attempt.recordedAt).toLocaleDateString() : "--"}

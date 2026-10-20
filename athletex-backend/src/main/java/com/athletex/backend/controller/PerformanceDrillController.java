@@ -1,7 +1,9 @@
 package com.athletex.backend.controller;
 
+import com.athletex.backend.dto.drill.CoachReviewDrillRequest;
 import com.athletex.backend.dto.drill.CombineSummaryResponse;
 import com.athletex.backend.dto.drill.LogDrillRequest;
+import com.athletex.backend.dto.drill.PendingDrillReviewResponse;
 import com.athletex.backend.model.Performance;
 import com.athletex.backend.model.PerformanceDrill;
 import com.athletex.backend.service.PerformanceDrillService;
@@ -76,8 +78,42 @@ public class PerformanceDrillController {
     }
 
     /**
+     * PUT /api/performance/drills/{drillId}/review
+     * Allows a coach to certify (APPROVED) or request re-test with feedback (REJECTED) for an athlete's combine drill.
+     */
+    @PutMapping("/drills/{drillId}/review")
+    public ResponseEntity<PerformanceDrill> reviewDrill(
+            @PathVariable String drillId,
+            @RequestParam String coachId,
+            @Valid @RequestBody CoachReviewDrillRequest request) {
+        PerformanceDrill reviewed = drillService.reviewDrill(drillId, coachId, request);
+        return ResponseEntity.ok(reviewed);
+    }
+
+    /**
+     * GET /api/performance/coach/{coachId}/pending-drills
+     * Returns all combine drill submissions currently pending review across the coach's active roster.
+     */
+    @GetMapping("/coach/{coachId}/pending-drills")
+    public ResponseEntity<List<PendingDrillReviewResponse>> getPendingDrillsForCoach(
+            @PathVariable String coachId) {
+        return ResponseEntity.ok(drillService.getPendingDrillsForCoach(coachId));
+    }
+
+    /**
+     * GET /api/performance/coach/{coachId}/athlete/{athleteId}/drills
+     * Returns all combine drills for a specific athlete assigned to this coach.
+     */
+    @GetMapping("/coach/{coachId}/athlete/{athleteId}/drills")
+    public ResponseEntity<List<PerformanceDrill>> getAthleteDrillsForCoach(
+            @PathVariable String coachId,
+            @PathVariable String athleteId) {
+        return ResponseEntity.ok(drillService.getAthleteDrillsForCoach(coachId, athleteId));
+    }
+
+    /**
      * PUT /api/performance/{userId}/drills/{drillId}/verify
-     * Allows a coach to verify a combine drill attempt.
+     * Allows a coach to verify a combine drill attempt (backwards compatibility).
      */
     @PutMapping("/{userId}/drills/{drillId}/verify")
     public ResponseEntity<PerformanceDrill> verifyDrill(

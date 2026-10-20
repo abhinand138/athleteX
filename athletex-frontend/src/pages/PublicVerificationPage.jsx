@@ -11,7 +11,9 @@ import {
   FaRunning,
   FaDumbbell,
   FaHeartbeat,
-  FaBolt
+  FaBolt,
+  FaVideo,
+  FaExternalLinkAlt
 } from "react-icons/fa";
 
 export default function PublicVerificationPage() {
@@ -131,6 +133,75 @@ export default function PublicVerificationPage() {
             </div>
           </div>
         </div>
+
+        {/* Certified Combine Records & Physical Benchmarks */}
+        {data.verifiedCombineDrills && data.verifiedCombineDrills.length > 0 && (
+          <div className="glass-card bg-[#12151e]/80 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="flex items-center justify-between border-b border-white/10 pb-4">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                  <FaCheckCircle className="text-emerald-400" /> Certified Combine Records & Milestones
+                </h2>
+                <p className="text-xs text-gray-400 mt-1">
+                  Standardized physical combine tests audited with video proof and certified by assigned coaches
+                </p>
+              </div>
+              <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold font-mono">
+                {data.verifiedCombineDrills.length} Certified PRs
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {data.verifiedCombineDrills.map((drill) => (
+                <div
+                  key={drill.drillCode || drill.latestRecordId}
+                  className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-emerald-500/30 transition-all space-y-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                      {drill.category}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-300 border border-amber-500/20">
+                      {drill.tierBadge || "Varsity"} ({drill.percentile || 75}th%)
+                    </span>
+                  </div>
+
+                  <h3 className="text-lg font-black text-white">{drill.drillName}</h3>
+
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white via-white to-gray-300 font-mono">
+                      {drill.bestValue}
+                    </span>
+                    <span className="text-base font-bold text-emerald-400">
+                      {drill.unit}
+                    </span>
+                  </div>
+
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-gray-400">
+                    <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                      <FaUserCheck className="text-xs" />
+                      <span>Certified by {drill.verifiedByCoachName || "Coach"}</span>
+                    </span>
+
+                    {drill.proofUrl && (
+                      <a
+                        href={drill.proofUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-brand-peach hover:underline inline-flex items-center gap-1 font-bold"
+                        title="View certified video proof"
+                      >
+                        <FaVideo className="text-xs" />
+                        <span>Proof</span>
+                        <FaExternalLinkAlt className="text-[9px]" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Coach Verified Achievements List */}
         <div className="glass-card bg-[#12151e]/80 border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">

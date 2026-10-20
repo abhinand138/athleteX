@@ -17,6 +17,7 @@ import FitnessFreshnessWidget from "../components/performance/FitnessFreshnessWi
 import CombinePrSection from "../components/performance/CombinePrSection";
 import LogDrillModal from "../components/performance/LogDrillModal";
 import DrillHistoryModal from "../components/performance/DrillHistoryModal";
+import WorkloadEngineCard from "../components/performance/WorkloadEngineCard";
 
 export default function Performance() {
   const [performance, setPerformance] = useState(null);
@@ -44,6 +45,9 @@ export default function Performance() {
   const [isLogDrillOpen, setIsLogDrillOpen] = useState(false);
   const [selectedDrillForLog, setSelectedDrillForLog] = useState(null);
   const [historyModalDrill, setHistoryModalDrill] = useState(null);
+
+  // Automated Workout Engine attribution
+  const [attribution, setAttribution] = useState(null);
 
   const storedUserObj = (() => {
     try {
@@ -76,6 +80,15 @@ export default function Performance() {
       setCombineData(combRes.data);
     } catch (err) {
       console.error("Failed to load combine summary:", err);
+    }
+  };
+
+  const fetchWorkloadAttribution = async (userId) => {
+    try {
+      const attrRes = await api.get(`/performance/${userId}/workload-attribution`);
+      setAttribution(attrRes.data);
+    } catch (err) {
+      console.error("Failed to load workload attribution:", err);
     }
   };
 
@@ -124,6 +137,9 @@ export default function Performance() {
         // Fetch Combine & PR summary
         await fetchCombineData(user.id);
 
+        // Fetch Workout Engine attribution
+        await fetchWorkloadAttribution(user.id);
+
       } catch (error) {
         console.error("Performance API Error:", error);
 
@@ -153,12 +169,33 @@ export default function Performance() {
     if (currentUserId) {
       await fetchCombineData(currentUserId);
       await fetchFitnessData(currentUserId);
+      await fetchWorkloadAttribution(currentUserId);
       try {
         const pRes = await api.get(`/performance/${currentUserId}`);
         setPerformance(pRes.data);
       } catch (err) {
         console.error("Failed to reload performance:", err);
       }
+    }
+  };
+
+  const handleRecalculateSuccess = (updatedPerformance) => {
+    if (updatedPerformance) {
+      setPerformance(updatedPerformance);
+      setFormData({
+        speed: updatedPerformance.speed ?? 0,
+        strength: updatedPerformance.strength ?? 0,
+        endurance: updatedPerformance.endurance ?? 0,
+        agility: updatedPerformance.agility ?? 0,
+      });
+    }
+    if (currentUserId) {
+      fetchWorkloadAttribution(currentUserId);
+      fetchFitnessData(currentUserId);
+      fetchCombineData(currentUserId);
+      api.get(`/performance/${currentUserId}/history`).then((res) => {
+        setHistory(res.data);
+      }).catch(console.error);
     }
   };
 
@@ -416,21 +453,13 @@ export default function Performance() {
 
             </div>
 
-            {/* Edit Button */}
-
-            {!isEditing && (
-              <button
-                onClick={() => {
-                  setIsEditing(true);
-                  setMessage("");
-                  setError("");
-                }}
-                className="flex items-center justify-center gap-2 px-6 py-3 bg-brand-peach text-black rounded-xl font-bold text-xs uppercase tracking-wider hover:bg-brand-peach/90 transition-all shadow-lg"
-              >
-                <FaEdit />
-                Edit Performance
-              </button>
-            )}
+            {/* Autonomous Engine Status Badge */}
+            <div className="flex items-center gap-2 px-4 py-2.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                ⚡ Workout-Calibrated Engine
+              </span>
+            </div>
 
           </div>
 
@@ -466,14 +495,19 @@ export default function Performance() {
 
             <div>
 
-              {performance.isCoachVerified ? (
+              {performance.lastEvaluatedBy === "WORKOUT_ENGINE" ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold uppercase tracking-wider mb-3">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>⚡ AUTONOMOUS WORKLOAD INDEX (TRIMP Engine)</span>
+                </div>
+              ) : performance.isCoachVerified ? (
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold uppercase tracking-wider mb-3">
                   <FaCheckCircle className="text-sm text-emerald-400" />
-                  <span>✔ OFFICIALLY VERIFIED RATING ({performance.verifiedByCoachName || "Coach"})</span>
+                  <span>✔ OFFICIALLY ENDORSED BY COACH ({performance.verifiedByCoachName || "Coach"})</span>
                 </div>
               ) : (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold uppercase tracking-wider mb-3">
-                  <span>📝 ATHLETE SELF-REPORTED (Pending Coach Review)</span>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider mb-3">
+                  <span>⚡ WORKLOAD-CALIBRATED INDEX</span>
                 </div>
               )}
 
@@ -489,9 +523,11 @@ export default function Performance() {
               </h2>
 
               <p className="text-gray-500 mt-2">
-                {performance.isCoachVerified 
-                  ? `Endorsed & verified by Coach ${performance.verifiedByCoachName || ""}` 
-                  : "Self-entered metrics — saved for training progress tracking"}
+                {performance.lastEvaluatedBy === "WORKOUT_ENGINE"
+                  ? "Scientific athletic conditioning score continuously calculated from completed workout volume, RPE intensity, and combine tests."
+                  : performance.isCoachVerified 
+                    ? `Officially endorsed & verified by Coach ${performance.verifiedByCoachName || ""}` 
+                    : "Autonomous conditioning score evaluated across verified training sessions."}
               </p>
 
             </div>
@@ -542,33 +578,9 @@ export default function Performance() {
                     {metric.title}
                   </p>
 
-                  {isEditing ? (
-
-                    <div className="flex items-center mt-3">
-
-                      <input
-                        type="number"
-                        name={metric.name}
-                        value={formData[metric.name]}
-                        onChange={handleChange}
-                        min="0"
-                        max="100"
-                        className="w-24 bg-white/5 border border-white/10 focus:border-brand-peach/50 rounded-lg px-3 py-2 text-2xl font-extrabold text-white outline-none transition-colors"
-                      />
-
-                      <span className={`ml-2 text-lg font-bold ${metric.color}`}>
-                        %
-                      </span>
-
-                    </div>
-
-                  ) : (
-
-                    <p className={`text-3xl font-extrabold mt-3 ${metric.color}`}>
-                      {metric.value}
-                    </p>
-
-                  )}
+                  <p className={`text-3xl font-extrabold mt-3 ${metric.color}`}>
+                    {metric.value}%
+                  </p>
 
                 </div>
 
@@ -602,51 +614,13 @@ export default function Performance() {
 
 
         {/* ============================= */}
-        {/* SAVE / CANCEL */}
+        {/* WORKLOAD ATTRIBUTION ENGINE */}
         {/* ============================= */}
-
-        {isEditing && (
-          <div className="flex flex-col sm:flex-row justify-end gap-3">
-
-            <button
-              onClick={() => {
-                setIsEditing(false);
-
-                setFormData({
-                  speed: performance.speed ?? 0,
-                  strength: performance.strength ?? 0,
-                  endurance: performance.endurance ?? 0,
-                  agility: performance.agility ?? 0,
-                });
-
-                setMessage("");
-                setError("");
-              }}
-              disabled={saving}
-              className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-gray-300 hover:bg-white/10 transition-all font-bold text-xs uppercase tracking-wider"
-            >
-              Cancel
-            </button>
-
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="flex items-center justify-center gap-2 px-7 py-3 rounded-xl bg-brand-peach text-black hover:bg-brand-peach/90 transition-all font-bold text-xs uppercase tracking-wider disabled:opacity-50"
-            >
-
-              {saving ? (
-                "Saving..."
-              ) : (
-                <>
-                  <FaSave />
-                  Save Performance
-                </>
-              )}
-
-            </button>
-
-          </div>
-        )}
+        <WorkloadEngineCard
+          userId={currentUserId}
+          attribution={attribution}
+          onRecalculateSuccess={handleRecalculateSuccess}
+        />
 
 
         {/* ============================= */}

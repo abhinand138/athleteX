@@ -72,7 +72,7 @@ public class AthletexBackendApplication {
 				// Ensure password and role are active
 				coach.setRole(Role.COACH);
 				coach.setPassword(passwordEncoder.encode("Coach@123"));
-				coach.setIsVerified(true);
+				coach.setVerified(true);
 				coach.setVerificationStatus(VerificationStatus.APPROVED);
 				coach = userRepository.save(coach);
 			}
@@ -105,7 +105,7 @@ public class AthletexBackendApplication {
 			} else {
 				athlete.setRole(Role.ATHLETE);
 				athlete.setPassword(passwordEncoder.encode("Athlete@123"));
-				athlete.setIsVerified(true);
+				athlete.setVerified(true);
 				athlete = userRepository.save(athlete);
 			}
 

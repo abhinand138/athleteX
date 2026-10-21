@@ -125,14 +125,17 @@ export default function Login() {
 
   }
 
-} catch (error) {
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        (!error.response ? "CANNOT CONNECT TO SERVER (PORT 8080)" : "AUTHENTICATION FAILED");
 
-  setMessage({
-    type: "error",
-    text: error.response?.data?.message || "AUTHENTICATION FAILED",
-  });
+      setMessage({
+        type: "error",
+        text: errorMessage,
+      });
 
-  console.error(error);
+      console.error(error);
 
 } finally {
   setIsLoading(false);

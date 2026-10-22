@@ -12,4 +12,6 @@ public interface CoachConnectionRequestRepository extends MongoRepository<CoachC
     List<CoachConnectionRequest> findByAthleteId(String athleteId);
 
     boolean existsByAthleteIdAndCoachIdAndStatus(String athleteId, String coachId, String status);
+
+    List<CoachConnectionRequest> findByAthleteIdAndCoachId(String athleteId, String coachId);
 }

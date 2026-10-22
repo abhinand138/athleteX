@@ -44,6 +44,9 @@ public class UserService {
                 .specialization(user.getSpecialization())
                 .experienceYears(user.getExperienceYears())
                 .certifications(user.getCertifications())
+                .monthlyRate(user.getMonthlyRate())
+                .consultationRate(user.getConsultationRate())
+                .currency(user.getCurrency())
                 .build();
     }
 
@@ -71,6 +74,9 @@ public class UserService {
         if (request.getSpecialization() != null) user.setSpecialization(request.getSpecialization());
         if (request.getExperienceYears() != null) user.setExperienceYears(request.getExperienceYears());
         if (request.getCertifications() != null) user.setCertifications(request.getCertifications());
+        if (request.getMonthlyRate() != null) user.setMonthlyRate(request.getMonthlyRate());
+        if (request.getConsultationRate() != null) user.setConsultationRate(request.getConsultationRate());
+        if (request.getCurrency() != null && !request.getCurrency().isBlank()) user.setCurrency(request.getCurrency());
 
         userRepository.save(user);
 

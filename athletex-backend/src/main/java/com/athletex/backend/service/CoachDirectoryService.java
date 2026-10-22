@@ -176,6 +176,9 @@ public class CoachDirectoryService {
                     .bio(coach.getBio() != null ? coach.getBio() : "Dedicated high-performance athletic coach focusing on bio-mechanics, sprint mechanics, and elite conditioning.")
                     .profileImage(coach.getProfileImage())
                     .isAssignedToAthlete(isAssigned)
+                    .monthlyRate(coach.getMonthlyRate() != null ? coach.getMonthlyRate() : 4999.0)
+                    .consultationRate(coach.getConsultationRate() != null ? coach.getConsultationRate() : 1999.0)
+                    .currency(coach.getCurrency() != null ? coach.getCurrency() : "INR")
                     .build();
 
             dtos.add(dto);
@@ -216,6 +219,9 @@ public class CoachDirectoryService {
                 .bio("Former Olympic trials finalist specializing in sprint mechanics, top-end velocity development, and neural recovery protocols.")
                 .profileImage("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete(activeCoachId == null || activeCoachId.equals("coach-1"))
+                .monthlyRate(4999.0)
+                .consultationRate(1999.0)
+                .currency("INR")
                 .build());
 
         sample.add(CoachPublicProfileDto.builder()
@@ -235,6 +241,9 @@ public class CoachDirectoryService {
                 .bio("Pioneer in reactive strength index (RSI) optimization, rate of force development (RFD), and lower limb injury prevention.")
                 .profileImage("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete("coach-2".equals(activeCoachId))
+                .monthlyRate(5499.0)
+                .consultationRate(2499.0)
+                .currency("INR")
                 .build());
 
         sample.add(CoachPublicProfileDto.builder()
@@ -254,6 +263,9 @@ public class CoachDirectoryService {
                 .bio("Master of lactate threshold training, zone-based aerobic periodization, and altitude adaptation strategies.")
                 .profileImage("https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete("coach-3".equals(activeCoachId))
+                .monthlyRate(3999.0)
+                .consultationRate(1799.0)
+                .currency("INR")
                 .build());
 
         sample.add(CoachPublicProfileDto.builder()
@@ -273,6 +285,9 @@ public class CoachDirectoryService {
                 .bio("Expert in multi-planar movement efficiency, agility drills, and return-to-play ACL rehabilitation protocols.")
                 .profileImage("https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete("coach-4".equals(activeCoachId))
+                .monthlyRate(5999.0)
+                .consultationRate(2999.0)
+                .currency("INR")
                 .build());
 
         return sample;

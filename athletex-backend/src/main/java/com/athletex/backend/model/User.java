@@ -92,4 +92,31 @@ public class User {
     public AccountStatus getAccountStatus() {
         return accountStatus != null ? accountStatus : AccountStatus.ACTIVE;
     }
+
+    // ==========================
+    // Coach Marketplace & Pricing
+    // ==========================
+
+    @Builder.Default
+    private Double monthlyRate = 4999.0;
+
+    @Builder.Default
+    private Double consultationRate = 1999.0;
+
+    @Builder.Default
+    private String currency = "INR";
+
+    private String payoutMethod;
+
+    public Double getMonthlyRate() {
+        return monthlyRate != null ? monthlyRate : 89.0;
+    }
+
+    public Double getConsultationRate() {
+        return consultationRate != null ? consultationRate : 40.0;
+    }
+
+    public String getCurrency() {
+        return currency != null && !currency.isBlank() ? currency : "USD";
+    }
 }

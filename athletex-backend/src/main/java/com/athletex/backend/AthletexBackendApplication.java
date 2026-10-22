@@ -15,6 +15,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @SpringBootApplication
 @EnableScheduling
@@ -65,16 +66,43 @@ public class AthletexBackendApplication {
 						.bio("Olympic trials finalist specializing in sprint mechanics, top-end velocity, and combine assessment.")
 						.isVerified(true)
 						.verificationStatus(VerificationStatus.APPROVED)
+						.monthlyRate(4999.0)
+						.consultationRate(1999.0)
+						.currency("INR")
 						.build();
 				coach = userRepository.save(coach);
 				System.out.println("✅ Demo Coach User created: " + coachEmail + " / Coach@123");
 			} else {
-				// Ensure password and role are active
+				// Ensure password, role, and rates are active in INR
 				coach.setRole(Role.COACH);
 				coach.setPassword(passwordEncoder.encode("Coach@123"));
 				coach.setVerified(true);
 				coach.setVerificationStatus(VerificationStatus.APPROVED);
+				coach.setMonthlyRate(4999.0);
+				coach.setConsultationRate(1999.0);
+				coach.setCurrency("INR");
 				coach = userRepository.save(coach);
+			}
+
+			// Migrate all existing coach accounts to INR
+			List<User> coachesInDb = userRepository.findByRole(Role.COACH);
+			for (User c : coachesInDb) {
+				boolean updated = false;
+				if ("USD".equalsIgnoreCase(c.getCurrency()) || c.getCurrency() == null) {
+					c.setCurrency("INR");
+					updated = true;
+				}
+				if (c.getMonthlyRate() == null || c.getMonthlyRate() <= 200.0) {
+					c.setMonthlyRate(4999.0);
+					updated = true;
+				}
+				if (c.getConsultationRate() == null || c.getConsultationRate() <= 100.0) {
+					c.setConsultationRate(1999.0);
+					updated = true;
+				}
+				if (updated) {
+					userRepository.save(c);
+				}
 			}
 
 			// 3. Demo Athlete Account

@@ -13,7 +13,8 @@ import {
   FiCheck,
   FiArrowLeft,
   FiCamera,
-  FiMap
+  FiMap,
+  FiDollarSign
 } from "react-icons/fi";
 import { FaDumbbell, FaCalendarAlt } from "react-icons/fa";
 import { uploadProfilePhotoFromDevice } from "../../utils/profilePhotoUpload";
@@ -113,7 +114,10 @@ export default function CoachEditProfile() {
     state: "",
     country: "India",
     bio: "",
-    profileImage: ""
+    profileImage: "",
+    monthlyRate: 4999,
+    consultationRate: 1999,
+    currency: "INR"
   });
 
   useEffect(() => {
@@ -146,7 +150,10 @@ export default function CoachEditProfile() {
           state: res.data.state || "",
           country: countryVal,
           bio: res.data.bio || "",
-          profileImage: res.data.profileImage || ""
+          profileImage: res.data.profileImage || "",
+          monthlyRate: res.data.monthlyRate != null ? res.data.monthlyRate : 89,
+          consultationRate: res.data.consultationRate != null ? res.data.consultationRate : 40,
+          currency: res.data.currency || "USD"
         });
 
         if (res.data.state && countryVal === "India" && !INDIAN_STATES_AND_UTS.includes(res.data.state)) {
@@ -205,7 +212,10 @@ export default function CoachEditProfile() {
         state: formData.state.trim(),
         country: formData.country.trim(),
         bio: formData.bio.trim(),
-        profileImage: formData.profileImage.trim()
+        profileImage: formData.profileImage.trim(),
+        monthlyRate: formData.monthlyRate ? parseFloat(formData.monthlyRate) : 4999,
+        consultationRate: formData.consultationRate ? parseFloat(formData.consultationRate) : 1999,
+        currency: formData.currency || "INR"
       };
 
       await api.put(`/users/profile/${coachId}`, payload);
@@ -653,6 +663,50 @@ export default function CoachEditProfile() {
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Section: Marketplace & Coaching Rates */}
+          <div>
+            <div className="flex items-center gap-2 mb-4 pb-2 border-b border-white/5">
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                <FiDollarSign className="text-brand-peach" /> Marketplace & Coaching Rates
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <InputField
+                label="Monthly Coaching Retainer (₹)"
+                name="monthlyRate"
+                type="number"
+                value={formData.monthlyRate}
+                onChange={handleChange}
+                icon={FiDollarSign}
+                placeholder="e.g. 4999"
+              />
+              <InputField
+                label="1-on-1 Consultation Rate (₹)"
+                name="consultationRate"
+                type="number"
+                value={formData.consultationRate}
+                onChange={handleChange}
+                icon={FiDollarSign}
+                placeholder="e.g. 1999"
+              />
+              <SelectField
+                label="Payout Currency"
+                name="currency"
+                value={formData.currency}
+                onChange={handleChange}
+                icon={FiGlobe}
+              >
+                <option value="INR" className="bg-[#111317] text-white">INR (₹) - Indian Rupee</option>
+                <option value="USD" className="bg-[#111317] text-white">USD ($) - US Dollar</option>
+                <option value="EUR" className="bg-[#111317] text-white">EUR (€) - Euro</option>
+                <option value="GBP" className="bg-[#111317] text-white">GBP (£) - British Pound</option>
+              </SelectField>
+            </div>
+            <p className="text-[11px] text-gray-400 mt-2">
+              Athletes in the AthleteX directory can hire you directly or book single drill assessments at these set rates.
+            </p>
           </div>
 
           {/* Section: Coaching Philosophy & Bio */}

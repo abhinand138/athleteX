@@ -22,7 +22,11 @@ import {
   FaEdit,
   FaTimes,
   FaHistory,
-  FaBan
+  FaBan,
+  FaDollarSign,
+  FaRupeeSign,
+  FaReceipt,
+  FaCreditCard
 } from "react-icons/fa";
 
 export default function AdminDashboard() {
@@ -36,6 +40,13 @@ export default function AdminDashboard() {
     totalAssignments: 0,
     totalSuspended: 0,
     recentUsers: []
+  });
+  const [marketplaceStats, setMarketplaceStats] = useState({
+    grossMerchandiseVolume: 0,
+    platformRevenue: 0,
+    coachPayoutsTotal: 0,
+    totalTransactions: 0,
+    activeSubscribersCount: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,6 +67,13 @@ export default function AdminDashboard() {
     try {
       const res = await api.get("/admin/stats");
       setStats(res.data || {});
+
+      try {
+        const mktRes = await api.get("/payments/admin/stats");
+        setMarketplaceStats(mktRes.data || {});
+      } catch (e) {
+        console.warn("Could not load marketplace stats:", e);
+      }
     } catch (err) {
       setError(getErrorMessage(err, "Failed to load platform statistics."));
     } finally {
@@ -366,6 +384,55 @@ export default function AdminDashboard() {
             </div>
           </div>
 
+        </div>
+
+        {/* Coach Marketplace Financials & Platform Revenue */}
+        <div className="glass-card rounded-3xl p-7 border border-brand-peach/20 shadow-2xl relative overflow-hidden bg-gradient-to-r from-brand-peach/5 via-white/5 to-transparent">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-4 mb-6">
+            <div>
+              <span className="text-[10px] font-black uppercase text-brand-peach tracking-widest block">Financial Metrics</span>
+              <h2 className="text-xl font-extrabold text-white flex items-center gap-2 mt-0.5">
+                <FaRupeeSign className="text-brand-peach" /> Marketplace Revenue & Escrow (INR)
+              </h2>
+            </div>
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1.5 self-start md:self-auto">
+              <FaCheckCircle className="text-[10px]" /> 10% Platform Cut Enabled
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Gross Merchandise Volume (GMV)</span>
+              <p className="text-2xl font-black text-white mt-1">
+                ₹{marketplaceStats.grossMerchandiseVolume?.toFixed(2) || "0.00"}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1">Total athlete payments processed</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20">
+              <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest block">AthleteX Platform Take (10%)</span>
+              <p className="text-2xl font-black text-emerald-300 mt-1">
+                ₹{marketplaceStats.platformRevenue?.toFixed(2) || "0.00"}
+              </p>
+              <p className="text-[10px] text-emerald-400/80 mt-1">Net platform marketplace commission</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Coach Payouts (90%)</span>
+              <p className="text-2xl font-black text-white mt-1">
+                ₹{marketplaceStats.coachPayoutsTotal?.toFixed(2) || "0.00"}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1">Disbursed to certified coaches</p>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/5 border border-white/5">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest block">Active Subscriptions</span>
+              <p className="text-2xl font-black text-brand-peach mt-1">
+                {marketplaceStats.activeSubscribersCount || 0}
+              </p>
+              <p className="text-[10px] text-gray-400 mt-1">Recurring athlete retainers</p>
+            </div>
+          </div>
         </div>
 
         {/* Recent Registrations Live Stream */}

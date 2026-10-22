@@ -28,4 +28,13 @@ public class CoachPublicProfileDto {
 
     @Builder.Default
     private boolean isAssignedToAthlete = false;
+
+    @Builder.Default
+    private Double monthlyRate = 89.0;
+
+    @Builder.Default
+    private Double consultationRate = 40.0;
+
+    @Builder.Default
+    private String currency = "USD";
 }

@@ -47,4 +47,7 @@ public class ProfileResponse {
     private String specialization;
     private Integer experienceYears;
     private String certifications;
+    private Double monthlyRate;
+    private Double consultationRate;
+    private String currency;
 }

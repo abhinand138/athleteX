@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
 import api from "../../services/api";
-import { FaUsers, FaCalendarAlt, FaChartLine, FaUserFriends, FaArrowRight, FaMagic } from "react-icons/fa";
+import { FaUsers, FaCalendarAlt, FaChartLine, FaUserFriends, FaArrowRight, FaMagic, FaDollarSign, FaRupeeSign, FaCreditCard } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 import AiWorkoutGeneratorModal from "../../components/coach/AiWorkoutGeneratorModal";
 
@@ -24,6 +24,7 @@ const StatCard = ({ title, value, icon, color }) => (
 
 export default function CoachDashboard() {
   const [dashboard, setDashboard] = useState(null);
+  const [earnings, setEarnings] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
@@ -39,6 +40,14 @@ export default function CoachDashboard() {
         if (user.role !== "COACH") { setError("Access denied. Not a coach."); setLoading(false); return; }
         const response = await api.get(`/coach/dashboard/${user.id}`);
         setDashboard(response.data);
+
+        // Fetch marketplace earnings
+        try {
+          const earnRes = await api.get("/payments/coach/earnings", { params: { coachId: user.id } });
+          setEarnings(earnRes.data);
+        } catch (e) {
+          console.warn("Could not load coach earnings:", e);
+        }
       } catch (err) {
         setError(err.response?.data?.message || "Failed to load dashboard.");
       } finally {
@@ -116,9 +125,10 @@ export default function CoachDashboard() {
         )}
 
         {/* Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard title="Total Athletes" value={dashboard.totalAthletes || 0} icon={<FaUsers />} color="text-blue-500" />
-          <StatCard title="Upcoming Training" value={dashboard.upcomingTraining || 0} icon={<FaCalendarAlt />} color="text-brand-peach" />
+          <StatCard title="Est. Monthly Revenue" value={`₹${earnings?.monthlyRecurringRevenue != null ? Number(earnings.monthlyRecurringRevenue).toLocaleString('en-IN') : 0}`} icon={<FaRupeeSign />} color="text-brand-peach" />
+          <StatCard title="Paying Clients" value={earnings?.activePaidAthletes || 0} icon={<FaCreditCard />} color="text-purple-400" />
           <StatCard title="Average Performance" value={`${dashboard.averagePerformance || 0}%`} icon={<FaChartLine />} color="text-emerald-500" />
         </div>
 

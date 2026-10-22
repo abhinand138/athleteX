@@ -20,6 +20,7 @@ public class AdminStatsResponse {
     private long totalTrainings;
     private long totalAchievements;
     private long totalAssignments;
+    private long totalSuspended;
 
     private List<UserAdminResponse> recentUsers;
 }

@@ -1,11 +1,14 @@
 package com.athletex.backend.dto;
 
+import com.athletex.backend.model.AccountStatus;
 import com.athletex.backend.model.Role;
 import com.athletex.backend.model.VerificationStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -30,4 +33,8 @@ public class UserAdminResponse {
     private String certifications;
     private Integer experienceYears;
     private String title;
+
+    private AccountStatus accountStatus;
+    private String suspensionReason;
+    private LocalDateTime suspendedAt;
 }

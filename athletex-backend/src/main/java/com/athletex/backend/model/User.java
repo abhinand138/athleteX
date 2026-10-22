@@ -2,6 +2,7 @@ package com.athletex.backend.model;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import java.time.LocalDateTime;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -76,4 +77,19 @@ public class User {
 
     @Builder.Default
     private VerificationStatus verificationStatus = VerificationStatus.APPROVED;
+
+    // ==========================
+    // Governance & Security Status
+    // ==========================
+
+    @Builder.Default
+    private AccountStatus accountStatus = AccountStatus.ACTIVE;
+
+    private String suspensionReason;
+
+    private LocalDateTime suspendedAt;
+
+    public AccountStatus getAccountStatus() {
+        return accountStatus != null ? accountStatus : AccountStatus.ACTIVE;
+    }
 }

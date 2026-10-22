@@ -1,12 +1,15 @@
 package com.athletex.backend.controller;
 
 import com.athletex.backend.dto.*;
+import com.athletex.backend.model.AccountStatus;
 import com.athletex.backend.model.AdminAuditLog;
 import com.athletex.backend.model.Role;
 import com.athletex.backend.service.AdminAuditLogService;
 import com.athletex.backend.service.AdminUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,6 +23,14 @@ public class AdminUserController {
 
     private final AdminUserService adminUserService;
     private final AdminAuditLogService adminAuditLogService;
+
+    private String getActingAdminId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
+            return auth.getName();
+        }
+        return null;
+    }
 
     // GET /api/admin/stats
     @GetMapping("/stats")
@@ -48,8 +59,9 @@ public class AdminUserController {
     @GetMapping("/users")
     public ResponseEntity<List<UserAdminResponse>> getAllUsers(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Role role) {
-        return ResponseEntity.ok(adminUserService.getAllUsers(search, role));
+            @RequestParam(required = false) Role role,
+            @RequestParam(required = false) AccountStatus status) {
+        return ResponseEntity.ok(adminUserService.getAllUsers(search, role, status));
     }
 
     // PUT /api/admin/users/{userId}
@@ -76,11 +88,43 @@ public class AdminUserController {
                 return ResponseEntity.badRequest().body("Role is required");
             }
             Role newRole = Role.valueOf(roleStr.toUpperCase());
-            UserAdminResponse updated = adminUserService.updateUserRole(userId, newRole);
+            UserAdminResponse updated = adminUserService.updateUserRole(userId, newRole, getActingAdminId());
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body("Invalid role specified");
         } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // PUT /api/admin/users/{userId}/status
+    @PutMapping("/users/{userId}/status")
+    public ResponseEntity<?> updateUserStatus(
+            @PathVariable String userId,
+            @RequestBody AdminUpdateStatusRequest request) {
+        try {
+            if (request == null || request.getStatus() == null) {
+                return ResponseEntity.badRequest().body("Status is required (ACTIVE, SUSPENDED, BANNED)");
+            }
+            UserAdminResponse updated = adminUserService.updateUserStatus(
+                    userId, request.getStatus(), request.getReason(), getActingAdminId());
+            return ResponseEntity.ok(updated);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // POST /api/admin/users/{userId}/reset-password
+    @PostMapping("/users/{userId}/reset-password")
+    public ResponseEntity<?> resetUserPassword(
+            @PathVariable String userId,
+            @RequestBody(required = false) AdminResetPasswordRequest request) {
+        try {
+            String newPassword = request != null ? request.getNewPassword() : null;
+            AdminResetPasswordResponse response = adminUserService.resetUserPassword(
+                    userId, newPassword, getActingAdminId());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
@@ -134,7 +178,7 @@ public class AdminUserController {
     @DeleteMapping("/users/{userId}")
     public ResponseEntity<String> deleteUser(@PathVariable String userId) {
         try {
-            String message = adminUserService.deleteUser(userId);
+            String message = adminUserService.deleteUser(userId, getActingAdminId());
             return ResponseEntity.ok(message);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -188,8 +232,9 @@ public class AdminUserController {
     @GetMapping(value = "/export/users", produces = "text/csv")
     public ResponseEntity<String> exportUsers(
             @RequestParam(required = false) String search,
-            @RequestParam(required = false) Role role) {
-        String csvData = adminUserService.exportUsersCsv(search, role);
+            @RequestParam(required = false) Role role,
+            @RequestParam(required = false) AccountStatus status) {
+        String csvData = adminUserService.exportUsersCsv(search, role, status);
         return ResponseEntity.ok()
                 .header("Content-Disposition", "attachment; filename=\"athletex_users_export.csv\"")
                 .body(csvData);

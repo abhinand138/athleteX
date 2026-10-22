@@ -4,6 +4,7 @@ import com.athletex.backend.dto.*;
 import com.athletex.backend.model.*;
 import com.athletex.backend.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,7 @@ public class AdminUserService {
     private final TrainingRepository trainingRepository;
     private final AchievementRepository achievementRepository;
     private final AdminAuditLogService adminAuditLogService;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminStatsResponse getAdminStats() {
         List<User> allUsers = userRepository.findAll();
@@ -30,6 +32,9 @@ public class AdminUserService {
         long totalTrainings = trainingRepository.count();
         long totalAchievements = achievementRepository.count();
         long totalAssignments = assignmentRepository.findByStatus(AssignmentStatus.ACTIVE).size();
+        long totalSuspended = allUsers.stream()
+                .filter(u -> u.getAccountStatus() == AccountStatus.SUSPENDED || u.getAccountStatus() == AccountStatus.BANNED)
+                .count();
 
         // Get 5 most recent registered users
         List<UserAdminResponse> recentUsers = allUsers.stream()
@@ -46,16 +51,24 @@ public class AdminUserService {
                 .totalTrainings(totalTrainings)
                 .totalAchievements(totalAchievements)
                 .totalAssignments(totalAssignments)
+                .totalSuspended(totalSuspended)
                 .recentUsers(recentUsers)
                 .build();
     }
 
     public List<UserAdminResponse> getAllUsers(String search, Role roleFilter) {
+        return getAllUsers(search, roleFilter, null);
+    }
+
+    public List<UserAdminResponse> getAllUsers(String search, Role roleFilter, AccountStatus statusFilter) {
         List<User> users = userRepository.findAll();
 
         return users.stream()
                 .filter(u -> {
                     if (roleFilter != null && u.getRole() != roleFilter) {
+                        return false;
+                    }
+                    if (statusFilter != null && u.getAccountStatus() != statusFilter) {
                         return false;
                     }
                     if (search != null && !search.isBlank()) {
@@ -73,8 +86,30 @@ public class AdminUserService {
     }
 
     public UserAdminResponse updateUserRole(String userId, Role newRole) {
+        return updateUserRole(userId, newRole, null);
+    }
+
+    public UserAdminResponse updateUserRole(String userId, Role newRole, String actingAdminId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        // Role Escalation Safeguards
+        if (actingAdminId != null && actingAdminId.equals(userId) && newRole != Role.ADMIN) {
+            throw new RuntimeException("Role escalation safeguard: Administrators cannot demote their own account.");
+        }
+
+        if ("admin@athletex.com".equalsIgnoreCase(user.getEmail()) && newRole != Role.ADMIN) {
+            throw new RuntimeException("Role escalation safeguard: The root system administrator account role cannot be altered.");
+        }
+
+        if (user.getRole() == Role.ADMIN && newRole != Role.ADMIN) {
+            long activeAdminCount = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.ADMIN && u.getAccountStatus() == AccountStatus.ACTIVE)
+                    .count();
+            if (activeAdminCount <= 1) {
+                throw new RuntimeException("Role escalation safeguard: At least one active Administrator must remain on the platform.");
+            }
+        }
 
         Role oldRole = user.getRole();
         user.setRole(newRole);
@@ -84,6 +119,97 @@ public class AdminUserService {
                 saved.getId(), saved.getFullName(), "Updated user role from " + oldRole + " to " + newRole);
 
         return mapToUserAdminResponse(saved);
+    }
+
+    public UserAdminResponse updateUserStatus(String userId, AccountStatus newStatus, String reason, String actingAdminId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        if (newStatus == null) {
+            throw new RuntimeException("Target account status is required.");
+        }
+
+        // Governance & Security Safeguards
+        if (actingAdminId != null && actingAdminId.equals(userId) && newStatus != AccountStatus.ACTIVE) {
+            throw new RuntimeException("Security safeguard: Administrators cannot suspend or ban their own account.");
+        }
+
+        if ("admin@athletex.com".equalsIgnoreCase(user.getEmail()) && newStatus != AccountStatus.ACTIVE) {
+            throw new RuntimeException("Security safeguard: The root system administrator account cannot be suspended or banned.");
+        }
+
+        if (user.getRole() == Role.ADMIN && newStatus != AccountStatus.ACTIVE) {
+            long activeAdminCount = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.ADMIN && u.getAccountStatus() == AccountStatus.ACTIVE)
+                    .count();
+            if (activeAdminCount <= 1) {
+                throw new RuntimeException("Security safeguard: Cannot suspend or ban the last remaining active Administrator.");
+            }
+        }
+
+        String action;
+        String logDetail;
+        if (newStatus == AccountStatus.ACTIVE) {
+            user.setAccountStatus(AccountStatus.ACTIVE);
+            user.setSuspensionReason(null);
+            user.setSuspendedAt(null);
+            action = "USER_REACTIVATED";
+            logDetail = "Reactivated account for user " + user.getFullName() + " (" + user.getEmail() + ")";
+        } else if (newStatus == AccountStatus.SUSPENDED) {
+            user.setAccountStatus(AccountStatus.SUSPENDED);
+            user.setSuspensionReason(reason != null && !reason.isBlank() ? reason.trim() : "Account suspended by administrator");
+            user.setSuspendedAt(LocalDateTime.now());
+            action = "USER_SUSPENDED";
+            logDetail = "Suspended account for " + user.getFullName() + ". Reason: " + user.getSuspensionReason();
+        } else {
+            user.setAccountStatus(AccountStatus.BANNED);
+            user.setSuspensionReason(reason != null && !reason.isBlank() ? reason.trim() : "Account permanently banned by administrator");
+            user.setSuspendedAt(LocalDateTime.now());
+            action = "USER_BANNED";
+            logDetail = "Permanently banned account for " + user.getFullName() + ". Reason: " + user.getSuspensionReason();
+        }
+
+        User saved = userRepository.save(user);
+        adminAuditLogService.logAction(action, "ADMIN_CONSOLE", "System Admin",
+                saved.getId(), saved.getFullName(), logDetail);
+
+        return mapToUserAdminResponse(saved);
+    }
+
+    public AdminResetPasswordResponse resetUserPassword(String userId, String customPassword, String actingAdminId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        if ("admin@athletex.com".equalsIgnoreCase(user.getEmail()) && (actingAdminId != null && !actingAdminId.equals(userId))) {
+            throw new RuntimeException("Security safeguard: The root administrator password cannot be reset through this action.");
+        }
+
+        String effectivePassword;
+        if (customPassword != null && !customPassword.isBlank()) {
+            String p = customPassword.trim();
+            if (p.length() < 8 || !p.matches(".*[A-Z].*") || !p.matches(".*[0-9].*") || !p.matches(".*[@$!%*?&].*")) {
+                throw new RuntimeException("Password does not meet complexity requirements (minimum 8 characters, uppercase letter, digit, special character).");
+            }
+            effectivePassword = p;
+        } else {
+            int randomPin = 100000 + new Random().nextInt(900000);
+            effectivePassword = "AthleteX@" + randomPin;
+        }
+
+        user.setPassword(passwordEncoder.encode(effectivePassword));
+        userRepository.save(user);
+
+        adminAuditLogService.logAction("USER_PASSWORD_RESET", "ADMIN_CONSOLE", "System Admin",
+                user.getId(), user.getFullName(),
+                "Administrator triggered password reset for " + user.getFullName() + " (" + user.getEmail() + ")");
+
+        return AdminResetPasswordResponse.builder()
+                .message("Password reset successfully.")
+                .temporaryPassword(effectivePassword)
+                .userId(user.getId())
+                .userEmail(user.getEmail())
+                .userName(user.getFullName())
+                .build();
     }
 
     public UserAdminResponse updateUserDetails(String userId, AdminUserUpdateRequest request) {
@@ -267,8 +393,21 @@ public class AdminUserService {
     }
 
     public String deleteUser(String userId) {
+        return deleteUser(userId, null);
+    }
+
+    public String deleteUser(String userId, String actingAdminId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found: " + userId));
+
+        // Safeguards
+        if (actingAdminId != null && actingAdminId.equals(userId)) {
+            throw new RuntimeException("Security safeguard: Administrators cannot delete their own account.");
+        }
+
+        if ("admin@athletex.com".equalsIgnoreCase(user.getEmail())) {
+            throw new RuntimeException("Security safeguard: Root System Administrator account cannot be deleted.");
+        }
 
         String deletedInfo = user.getFullName() + " (" + user.getEmail() + ", Role: " + user.getRole() + ")";
 
@@ -329,9 +468,13 @@ public class AdminUserService {
     }
 
     public String exportUsersCsv(String search, Role roleFilter) {
-        List<UserAdminResponse> users = getAllUsers(search, roleFilter);
+        return exportUsersCsv(search, roleFilter, null);
+    }
+
+    public String exportUsersCsv(String search, Role roleFilter, AccountStatus statusFilter) {
+        List<UserAdminResponse> users = getAllUsers(search, roleFilter, statusFilter);
         StringBuilder csv = new StringBuilder();
-        csv.append("User ID,Full Name,Email,Phone,Role,Sport,City,Verification Status\n");
+        csv.append("User ID,Full Name,Email,Phone,Role,Sport,City,Account Status,Suspension Reason,Verification Status\n");
         for (UserAdminResponse u : users) {
             csv.append(escapeCsv(u.getId())).append(",")
                .append(escapeCsv(u.getFullName())).append(",")
@@ -340,6 +483,8 @@ public class AdminUserService {
                .append(escapeCsv(u.getRole() != null ? u.getRole().name() : "")).append(",")
                .append(escapeCsv(u.getSport())).append(",")
                .append(escapeCsv(u.getCity())).append(",")
+               .append(escapeCsv(u.getAccountStatus() != null ? u.getAccountStatus().name() : "ACTIVE")).append(",")
+               .append(escapeCsv(u.getSuspensionReason())).append(",")
                .append(escapeCsv(u.getVerificationStatus() != null ? u.getVerificationStatus().name() : "")).append("\n");
         }
         return csv.toString();
@@ -389,6 +534,9 @@ public class AdminUserService {
                 .profileImage(u.getProfileImage())
                 .activeAssignmentsCount(count)
                 .verificationStatus(u.getVerificationStatus() != null ? u.getVerificationStatus() : VerificationStatus.APPROVED)
+                .accountStatus(u.getAccountStatus())
+                .suspensionReason(u.getSuspensionReason())
+                .suspendedAt(u.getSuspendedAt())
                 .specialization(u.getSpecialization())
                 .certifications(u.getCertifications())
                 .experienceYears(u.getExperienceYears())

@@ -3,6 +3,7 @@ package com.athletex.backend.service;
 import com.athletex.backend.dto.LoginResponse;
 import com.athletex.backend.dto.LoginRequest;
 import com.athletex.backend.dto.RegisterRequest;
+import com.athletex.backend.model.AccountStatus;
 import com.athletex.backend.model.Role;
 import com.athletex.backend.model.User;
 import com.athletex.backend.model.VerificationStatus;
@@ -93,6 +94,18 @@ public class AuthService {
 
         if (user == null) {
             throw new RuntimeException("User not found with provided name or email");
+        }
+
+        // Account Governance Security Enforcement
+        if (user.getAccountStatus() == AccountStatus.SUSPENDED) {
+            String reason = user.getSuspensionReason() != null && !user.getSuspensionReason().isBlank()
+                    ? ": " + user.getSuspensionReason()
+                    : ". Please contact platform administration.";
+            throw new RuntimeException("Account is suspended" + reason);
+        }
+
+        if (user.getAccountStatus() == AccountStatus.BANNED) {
+            throw new RuntimeException("Account has been banned by an administrator. Access denied.");
         }
 
         // Auto-verify user if not verified

@@ -17,11 +17,18 @@ import {
   FaExclamationCircle,
   FaClock,
   FaInfoCircle,
-  FaDownload
+  FaDownload,
+  FaBan,
+  FaKey,
+  FaCheckCircle
 } from "react-icons/fa";
 
 const ACTION_CATEGORIES = [
   { id: "ALL", label: "All Events" },
+  { id: "USER_SUSPENDED", label: "User Suspensions" },
+  { id: "USER_REACTIVATED", label: "Account Reactivations" },
+  { id: "USER_BANNED", label: "Account Bans" },
+  { id: "USER_PASSWORD_RESET", label: "Password Resets" },
   { id: "COACH_VERIFIED", label: "Coach Approvals" },
   { id: "COACH_REJECTED", label: "Coach Rejections" },
   { id: "USER_ROLE_UPDATED", label: "Role Updates" },
@@ -117,6 +124,30 @@ export default function AdminAuditLogs() {
 
   const getBadgeStyle = (action) => {
     switch (action) {
+      case "USER_SUSPENDED":
+        return {
+          badgeClass: "bg-amber-500/10 text-amber-400 border-amber-500/20",
+          icon: <FaBan className="text-amber-400" />,
+          label: "USER SUSPENDED"
+        };
+      case "USER_REACTIVATED":
+        return {
+          badgeClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+          icon: <FaCheckCircle className="text-emerald-400" />,
+          label: "ACCOUNT REACTIVATED"
+        };
+      case "USER_BANNED":
+        return {
+          badgeClass: "bg-red-500/10 text-red-400 border-red-500/20",
+          icon: <FaShieldAlt className="text-red-400" />,
+          label: "ACCOUNT BANNED"
+        };
+      case "USER_PASSWORD_RESET":
+        return {
+          badgeClass: "bg-purple-500/10 text-purple-400 border-purple-500/20",
+          icon: <FaKey className="text-purple-400" />,
+          label: "PASSWORD RESET"
+        };
       case "COACH_VERIFIED":
         return {
           badgeClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",

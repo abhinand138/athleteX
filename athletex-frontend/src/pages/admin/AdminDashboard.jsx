@@ -21,7 +21,8 @@ import {
   FaUser,
   FaEdit,
   FaTimes,
-  FaHistory
+  FaHistory,
+  FaBan
 } from "react-icons/fa";
 
 export default function AdminDashboard() {
@@ -33,6 +34,7 @@ export default function AdminDashboard() {
     totalTrainings: 0,
     totalAchievements: 0,
     totalAssignments: 0,
+    totalSuspended: 0,
     recentUsers: []
   });
   const [loading, setLoading] = useState(true);
@@ -154,56 +156,71 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* 4 Main KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* 5 Main KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           
-          <div className="glass-card rounded-3xl p-6 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-brand-peach/30 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-peach/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="glass-card rounded-3xl p-5 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-brand-peach/30 transition-all">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-brand-peach/10 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">Total Platform Accounts</span>
-              <div className="p-3 bg-brand-peach/10 text-brand-peach rounded-2xl border border-brand-peach/20 text-xl">
+              <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Total Accounts</span>
+              <div className="p-2.5 bg-brand-peach/10 text-brand-peach rounded-2xl border border-brand-peach/20 text-lg">
                 <FaUsers />
               </div>
             </div>
-            <p className="text-4xl font-black text-white mt-4 tracking-tight">{stats.totalUsers}</p>
-            <p className="text-xs text-gray-400 mt-2 font-medium">Registered Platform Users</p>
+            <p className="text-3xl font-black text-white mt-3 tracking-tight">{stats.totalUsers}</p>
+            <p className="text-[11px] text-gray-400 mt-1.5 font-medium">Platform Registered</p>
           </div>
 
-          <div className="glass-card rounded-3xl p-6 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-blue-500/30 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="glass-card rounded-3xl p-5 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-blue-500/30 transition-all">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-blue-400 uppercase tracking-widest">Active Athletes</span>
-              <div className="p-3 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20 text-xl">
+              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-widest">Athletes</span>
+              <div className="p-2.5 bg-blue-500/10 text-blue-400 rounded-2xl border border-blue-500/20 text-lg">
                 <FaUserCheck />
               </div>
             </div>
-            <p className="text-4xl font-black text-white mt-4 tracking-tight">{stats.totalAthletes}</p>
-            <p className="text-xs text-gray-400 mt-2 font-medium">{athletePct}% of total platform accounts</p>
+            <p className="text-3xl font-black text-white mt-3 tracking-tight">{stats.totalAthletes}</p>
+            <p className="text-[11px] text-gray-400 mt-1.5 font-medium">{athletePct}% of total</p>
           </div>
 
-          <div className="glass-card rounded-3xl p-6 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="glass-card rounded-3xl p-5 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-emerald-500/30 transition-all">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-emerald-500/10 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">Certified Coaches</span>
-              <div className="p-3 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 text-xl">
+              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-widest">Coaches</span>
+              <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 text-lg">
                 <FaUserTie />
               </div>
             </div>
-            <p className="text-4xl font-black text-white mt-4 tracking-tight">{stats.totalCoaches}</p>
-            <p className="text-xs text-gray-400 mt-2 font-medium">{coachPct}% of total platform accounts</p>
+            <p className="text-3xl font-black text-white mt-3 tracking-tight">{stats.totalCoaches}</p>
+            <p className="text-[11px] text-gray-400 mt-1.5 font-medium">{coachPct}% of total</p>
           </div>
 
-          <div className="glass-card rounded-3xl p-6 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-purple-500/30 transition-all">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="glass-card rounded-3xl p-5 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-purple-500/30 transition-all">
+            <div className="absolute top-0 right-0 w-28 h-28 bg-purple-500/10 blur-3xl rounded-full pointer-events-none" />
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-purple-400 uppercase tracking-widest">Roster Assignments</span>
-              <div className="p-3 bg-purple-500/10 text-purple-400 rounded-2xl border border-purple-500/20 text-xl">
+              <span className="text-[11px] font-bold text-purple-400 uppercase tracking-widest">Pairings</span>
+              <div className="p-2.5 bg-purple-500/10 text-purple-400 rounded-2xl border border-purple-500/20 text-lg">
                 <FaUserFriends />
               </div>
             </div>
-            <p className="text-4xl font-black text-white mt-4 tracking-tight">{stats.totalAssignments}</p>
-            <p className="text-xs text-gray-400 mt-2 font-medium">Active Coach ↔ Athlete Pairings</p>
+            <p className="text-3xl font-black text-white mt-3 tracking-tight">{stats.totalAssignments}</p>
+            <p className="text-[11px] text-gray-400 mt-1.5 font-medium">Active Rosters</p>
           </div>
+
+          <Link
+            to="/admin/users?status=SUSPENDED"
+            className="glass-card rounded-3xl p-5 border border-white/5 shadow-2xl relative overflow-hidden group hover:border-amber-500/40 transition-all block cursor-pointer"
+          >
+            <div className="absolute top-0 right-0 w-28 h-28 bg-amber-500/10 blur-3xl rounded-full pointer-events-none" />
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-amber-400 uppercase tracking-widest">Flagged</span>
+              <div className="p-2.5 bg-amber-500/10 text-amber-400 rounded-2xl border border-amber-500/20 text-lg">
+                <FaBan />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-amber-400 mt-3 tracking-tight">{stats.totalSuspended || 0}</p>
+            <p className="text-[11px] text-gray-400 mt-1.5 font-medium group-hover:text-amber-400 transition-colors">Suspended / Banned</p>
+          </Link>
 
         </div>
 
@@ -387,7 +404,17 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  <div>
+                  <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                    {u.accountStatus === "SUSPENDED" && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        SUSPENDED
+                      </span>
+                    )}
+                    {u.accountStatus === "BANNED" && (
+                      <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-red-500/10 text-red-400 border border-red-500/20">
+                        BANNED
+                      </span>
+                    )}
                     {u.role === "ADMIN" && (
                       <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase bg-red-500/10 text-red-400 border border-red-500/20">
                         ADMIN

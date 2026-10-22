@@ -153,4 +153,35 @@ class AuthServiceTest {
 
         assertEquals("Invalid password", exception.getMessage());
     }
+
+    @Test
+    @DisplayName("Should throw exception when user account is suspended")
+    void login_SuspendedAccount() {
+        mockUser.setAccountStatus(com.athletex.backend.model.AccountStatus.SUSPENDED);
+        mockUser.setSuspensionReason("Violation of terms");
+        LoginRequest loginRequest = new LoginRequest("john@example.com", "Password123!");
+
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(mockUser));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            authService.login(loginRequest);
+        });
+
+        assertTrue(exception.getMessage().contains("Account is suspended: Violation of terms"));
+    }
+
+    @Test
+    @DisplayName("Should throw exception when user account is banned")
+    void login_BannedAccount() {
+        mockUser.setAccountStatus(com.athletex.backend.model.AccountStatus.BANNED);
+        LoginRequest loginRequest = new LoginRequest("john@example.com", "Password123!");
+
+        when(userRepository.findByEmail("john@example.com")).thenReturn(Optional.of(mockUser));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+            authService.login(loginRequest);
+        });
+
+        assertTrue(exception.getMessage().contains("Account has been banned by an administrator"));
+    }
 }

@@ -1,7 +1,29 @@
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { FiArrowRight, FiLogIn } from "react-icons/fi";
 
 export default function CtaArena() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error("Failed to parse user session in CtaArena", e);
+    }
+  }, []);
+
+  const getDashboardPath = () => {
+    if (!user) return "/dashboard";
+    if (user.role === "COACH") return "/coach/dashboard";
+    if (user.role === "ADMIN") return "/admin/dashboard";
+    return "/dashboard";
+  };
+
   const scoutsAvatars = [
     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=100&auto=format&fit=crop",
     "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=100&auto=format&fit=crop",
@@ -37,20 +59,40 @@ export default function CtaArena() {
           THE NEXT GENERATION OF ELITE SPORTS RECRUITMENT STARTS HERE
         </motion.p>
 
-        {/* Action Button */}
+        {/* Action Buttons */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.3 }}
-          className="mt-8"
+          className="mt-8 flex flex-col sm:flex-row items-center gap-4 justify-center"
         >
-         <Link
-         to="/login"
-         className="px-10 py-4 bg-[#080809] hover:bg-[#080809]/90 text-white font-sans font-bold text-xs tracking-[0.25em] rounded-sm transition-all duration-300 hover:scale-105 inline-block shadow-xl"
-         >
-        GET STARTED
-        </Link>
+          {user ? (
+            <Link
+              to={getDashboardPath()}
+              className="px-10 py-4 bg-[#080809] hover:bg-[#080809]/90 text-white font-sans font-bold text-xs tracking-[0.25em] rounded-sm transition-all duration-300 hover:scale-105 inline-flex items-center gap-2 shadow-xl"
+            >
+              <span>ACCESS DASHBOARD</span>
+              <FiArrowRight className="text-sm" />
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/register"
+                className="px-10 py-4 bg-[#080809] hover:bg-[#080809]/90 text-white font-sans font-bold text-xs tracking-[0.25em] rounded-sm transition-all duration-300 hover:scale-105 inline-flex items-center gap-2 shadow-xl"
+              >
+                <span>GET STARTED NOW</span>
+                <FiArrowRight className="text-sm" />
+              </Link>
+              <Link
+                to="/login"
+                className="px-8 py-4 border-2 border-[#080809] hover:bg-[#080809] hover:text-white text-[#080809] font-sans font-bold text-xs tracking-[0.25em] rounded-sm transition-all duration-300 inline-flex items-center gap-2"
+              >
+                <span>SIGN IN</span>
+                <FiLogIn className="text-sm" />
+              </Link>
+            </>
+          )}
         </motion.div>
 
         {/* Avatars group + Scout info */}

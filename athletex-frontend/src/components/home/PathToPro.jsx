@@ -1,6 +1,22 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { FiArrowRight } from "react-icons/fi";
 
 export default function PathToPro() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error("Failed to parse user in PathToPro", e);
+    }
+  }, []);
+
   const steps = [
     {
       num: "01",
@@ -20,7 +36,7 @@ export default function PathToPro() {
   ];
 
   return (
-    <section className="py-24 bg-[#0c0c0e] border-y border-white/5 px-6 md:px-12 text-center relative overflow-hidden">
+    <section id="programs" className="py-24 bg-[#0c0c0e] border-y border-white/5 px-6 md:px-12 text-center relative overflow-hidden">
       {/* Background radial glow */}
       <div className="absolute inset-0 radial-glow z-0 pointer-events-none opacity-40" />
 
@@ -64,6 +80,33 @@ export default function PathToPro() {
             </motion.div>
           ))}
         </div>
+
+        {/* Action Callout */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="mt-16 flex justify-center"
+        >
+          {user ? (
+            <Link
+              to={user.role === "COACH" ? "/coach/training" : "/training"}
+              className="px-8 py-3.5 border border-brand-peach/40 hover:border-brand-peach bg-brand-peach/10 hover:bg-brand-peach text-white hover:text-brand-dark font-sans font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 flex items-center gap-2 group shadow-lg"
+            >
+              <span>ACCESS TRAINING MODULES</span>
+              <FiArrowRight className="text-sm transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+          ) : (
+            <Link
+              to="/register?role=ATHLETE"
+              className="px-8 py-3.5 border border-brand-peach/40 hover:border-brand-peach bg-brand-peach/10 hover:bg-brand-peach text-white hover:text-brand-dark font-sans font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 flex items-center gap-2 group shadow-lg"
+            >
+              <span>START YOUR ATHLETE EVALUATION</span>
+              <FiArrowRight className="text-sm transition-transform duration-300 group-hover:translate-x-1" />
+            </Link>
+          )}
+        </motion.div>
 
       </div>
     </section>

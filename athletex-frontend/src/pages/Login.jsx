@@ -118,6 +118,8 @@ export default function Login() {
     setTimeout(() => {
       if (response.data.role === "COACH") {
         navigate("/coach/dashboard");
+      } else if (response.data.role === "ADMIN") {
+        navigate("/admin/dashboard");
       } else {
         navigate("/dashboard");
       }
@@ -263,7 +265,7 @@ export default function Login() {
           {/* Navigation Links */}
           <div className="flex justify-between items-center text-[9px] font-sans font-bold tracking-[0.15em] text-gray-500 uppercase">
             <Link
-              to="/register"
+              to="/register?role=COACH"
               className="flex items-center gap-2 hover:text-brand-peach transition-colors duration-200"
             >
               <FiUsers className="text-[11px]" />
@@ -273,7 +275,7 @@ export default function Login() {
             <span className="text-white/5">|</span>
             
             <Link
-              to="/register"
+              to="/register?role=ATHLETE"
               className="flex items-center gap-2 hover:text-brand-peach transition-colors duration-200"
             >
               <FiUserPlus className="text-[11px]" />

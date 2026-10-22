@@ -1,23 +1,34 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FiCreditCard, FiAtSign, FiPhone, FiLock, FiUsers, FiChevronRight, FiCheck, FiX, FiKey } from "react-icons/fi";
 import api from "../services/api";
 import { getErrorMessage } from "../utils/errorHandler";
 
 export default function Register() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   
   // Registration Step: 1 for Details, 2 for OTP
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState("");
   
+  const roleParam = searchParams.get("role")?.toUpperCase();
+  const initialRole = roleParam === "COACH" ? "COACH" : "ATHLETE";
+
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     phone: "",
     password: "",
-    role: "ATHLETE",
+    role: initialRole,
   });
+
+  useEffect(() => {
+    const r = searchParams.get("role")?.toUpperCase();
+    if (r === "COACH" || r === "ATHLETE") {
+      setFormData((prev) => ({ ...prev, role: r }));
+    }
+  }, [searchParams]);
 
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
@@ -126,6 +137,8 @@ export default function Register() {
       setTimeout(() => {
         if (targetRole === "COACH") {
           navigate("/coach/dashboard");
+        } else if (targetRole === "ADMIN") {
+          navigate("/admin/dashboard");
         } else {
           navigate("/dashboard");
         }

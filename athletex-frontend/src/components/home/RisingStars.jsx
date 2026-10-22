@@ -1,6 +1,29 @@
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { FiArrowUpRight } from "react-icons/fi";
 
 export default function RisingStars() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error("Failed to parse user in RisingStars", e);
+    }
+  }, []);
+
+  const getTalentDestination = () => {
+    if (!user) return "/register?role=COACH";
+    if (user.role === "COACH") return "/coach/athletes";
+    if (user.role === "ADMIN") return "/admin/rosters";
+    return "/coaches";
+  };
+
   const athletes = [
     {
       name: "MARCUS VANCE",
@@ -54,12 +77,13 @@ export default function RisingStars() {
               RISING STARS
             </h2>
           </div>
-          <a
-            href="#all-talent"
-            className="text-[11px] font-sans font-bold tracking-[0.2em] text-white hover:text-brand-peach transition-colors duration-300 underline underline-offset-8 decoration-white/20 hover:decoration-brand-peach uppercase"
+          <Link
+            to={getTalentDestination()}
+            className="text-[11px] font-sans font-bold tracking-[0.2em] text-white hover:text-brand-peach transition-colors duration-300 underline underline-offset-8 decoration-white/20 hover:decoration-brand-peach uppercase flex items-center gap-1.5 group"
           >
-            VIEW ALL TALENT
-          </a>
+            <span>VIEW ALL TALENT</span>
+            <FiArrowUpRight className="text-sm transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+          </Link>
         </div>
 
         {/* Athlete Cards Grid */}
@@ -71,7 +95,7 @@ export default function RisingStars() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: idx * 0.1 }}
-              className="group relative h-[450px] w-full bg-[#0c0c0e] rounded-sm overflow-hidden border border-white/5 hover:border-brand-peach/30 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-peach/5 flex flex-col justify-end"
+              className="group relative h-[460px] w-full bg-[#0c0c0e] rounded-sm overflow-hidden border border-white/5 hover:border-brand-peach/30 transition-all duration-500 hover:shadow-2xl hover:shadow-brand-peach/5 flex flex-col justify-end"
             >
               {/* Athlete Background Image */}
               <div className="absolute inset-0 z-0">
@@ -114,6 +138,20 @@ export default function RisingStars() {
                       </span>
                     </div>
                   ))}
+                </div>
+
+                {/* Action Button */}
+                <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between">
+                  <span className="text-[9px] font-sans font-bold tracking-wider text-gray-500 uppercase group-hover:text-gray-300 transition-colors">
+                    PROSPECT METRICS
+                  </span>
+                  <Link
+                    to={getTalentDestination()}
+                    className="text-[10px] font-sans font-bold tracking-wider text-brand-peach hover:text-white transition-colors flex items-center gap-1 uppercase"
+                  >
+                    <span>ANALYZE</span>
+                    <FiArrowUpRight />
+                  </Link>
                 </div>
 
               </div>

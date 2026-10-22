@@ -1,7 +1,29 @@
 import { motion } from "framer-motion";
-
+import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { FiArrowRight } from "react-icons/fi";
 
 export default function Hero() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        setUser(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error("Failed to parse user session in Hero", e);
+    }
+  }, []);
+
+  const getDashboardPath = () => {
+    if (!user) return "/dashboard";
+    if (user.role === "COACH") return "/coach/dashboard";
+    if (user.role === "ADMIN") return "/admin/dashboard";
+    return "/dashboard";
+  };
+
   return (
     <section
       id="home"
@@ -59,20 +81,44 @@ export default function Hero() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.6 }}
-          className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto"
+          className="mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto items-center justify-center"
         >
-          <a
-            href="#register-athlete"
-            className="px-8 py-4 bg-brand-peach hover:bg-brand-peach/90 text-brand-dark font-sans font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:scale-[1.03] text-center"
-          >
-            SIGN UP AS ATHLETE
-          </a>
-          <a
-            href="#register-scout"
-            className="px-8 py-4 border border-white/20 hover:border-brand-peach text-white hover:text-brand-peach font-sans font-semibold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:bg-brand-peach/5 text-center"
-          >
-            JOIN AS SCOUT
-          </a>
+          {user ? (
+            <>
+              <Link
+                to={getDashboardPath()}
+                className="px-8 py-4 bg-brand-peach hover:bg-brand-peach/90 text-brand-dark font-sans font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:scale-[1.03] text-center shadow-lg flex items-center justify-center gap-2"
+              >
+                <span>ENTER DASHBOARD</span>
+                <FiArrowRight className="text-sm" />
+              </Link>
+              <a
+                href="#talent"
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.getElementById("talent")?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="px-8 py-4 border border-white/20 hover:border-brand-peach text-white hover:text-brand-peach font-sans font-semibold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:bg-brand-peach/5 text-center"
+              >
+                EXPLORE TALENT
+              </a>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/register?role=ATHLETE"
+                className="px-8 py-4 bg-brand-peach hover:bg-brand-peach/90 text-brand-dark font-sans font-bold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:scale-[1.03] text-center shadow-lg"
+              >
+                SIGN UP AS ATHLETE
+              </Link>
+              <Link
+                to="/register?role=COACH"
+                className="px-8 py-4 border border-white/20 hover:border-brand-peach text-white hover:text-brand-peach font-sans font-semibold text-xs tracking-[0.2em] rounded-sm transition-all duration-300 hover:bg-brand-peach/5 text-center"
+              >
+                JOIN AS SCOUT
+              </Link>
+            </>
+          )}
         </motion.div>
 
       </div>

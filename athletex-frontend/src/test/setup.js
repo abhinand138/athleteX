@@ -21,3 +21,20 @@ Object.defineProperty(window, 'localStorage', {
   value: localStorageMock,
   writable: true
 });
+
+class IntersectionObserverMock {
+  constructor(callback) {
+    this.callback = callback;
+  }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+Object.defineProperty(window, 'IntersectionObserver', {
+  value: IntersectionObserverMock,
+  writable: true,
+  configurable: true,
+});
+
+global.IntersectionObserver = IntersectionObserverMock;

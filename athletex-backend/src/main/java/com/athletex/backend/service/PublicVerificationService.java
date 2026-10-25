@@ -130,12 +130,23 @@ public class PublicVerificationService {
                 .title(a.getTitle())
                 .category(a.getCategory())
                 .description(a.getDescription())
+                .level(a.getLevel())
+                .icon(a.getIcon())
                 .date(a.getDate())
+                .proofUrl(a.getProofUrl())
+                .proofType(a.getProofType())
+                .tournamentName(a.getTournamentName())
+                .organizer(a.getOrganizer())
+                .sanctionId(a.getSanctionId())
+                .certificateHash(a.getCertificateHash())
+                .verificationStatus(a.getVerificationStatus() != null ? a.getVerificationStatus() : "APPROVED")
+                .isCoachAwarded(Boolean.TRUE.equals(a.getIsCoachAwarded()))
                 .isVerified(Boolean.TRUE.equals(a.getIsVerified()))
                 .verifiedByCoachId(a.getVerifiedByCoachId())
                 .verifiedByCoachName(a.getVerifiedByCoachName())
                 .verifiedAt(a.getVerifiedAt())
                 .createdAt(a.getCreatedAt())
+                .updatedAt(a.getUpdatedAt())
                 .build();
     }
 }

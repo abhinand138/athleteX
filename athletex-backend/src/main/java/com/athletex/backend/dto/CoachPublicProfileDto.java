@@ -1,6 +1,7 @@
 package com.athletex.backend.dto;
 
 import com.athletex.backend.model.Role;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
 
 @Getter
@@ -26,15 +27,30 @@ public class CoachPublicProfileDto {
     private String bio;
     private String profileImage;
 
+    @JsonProperty("isAssignedToAthlete")
     @Builder.Default
     private boolean isAssignedToAthlete = false;
 
+    @JsonProperty("isHired")
     @Builder.Default
-    private Double monthlyRate = 89.0;
+    private boolean isHired = false;
 
     @Builder.Default
-    private Double consultationRate = 40.0;
+    private Double monthlyRate = 4999.0;
 
     @Builder.Default
-    private String currency = "USD";
+    private Double consultationRate = 1999.0;
+
+    @Builder.Default
+    private String currency = "INR";
+
+    @JsonProperty("hired")
+    public boolean getHired() {
+        return isHired;
+    }
+
+    @JsonProperty("assignedToAthlete")
+    public boolean getAssignedToAthlete() {
+        return isAssignedToAthlete;
+    }
 }

@@ -13,6 +13,8 @@ public interface CoachAthleteAssignmentRepository extends MongoRepository<CoachA
 
     Optional<CoachAthleteAssignment> findByAthleteIdAndStatus(String athleteId, AssignmentStatus status);
 
+    List<CoachAthleteAssignment> findAllByAthleteIdAndStatus(String athleteId, AssignmentStatus status);
+
     List<CoachAthleteAssignment> findByStatus(AssignmentStatus status);
 
     long countByCoachIdAndStatus(String coachId, AssignmentStatus status);

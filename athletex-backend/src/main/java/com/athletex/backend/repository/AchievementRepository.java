@@ -24,4 +24,8 @@ public interface AchievementRepository extends MongoRepository<Achievement, Stri
     long countByUserId(String userId);
 
     long countByCoachId(String coachId);
+
+    java.util.Optional<Achievement> findByCertificateHash(String certificateHash);
+
+    List<Achievement> findByAthleteIdAndVerificationStatusOrderByDateDesc(String athleteId, String verificationStatus);
 }

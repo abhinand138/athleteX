@@ -54,7 +54,8 @@ public class GlobalExceptionHandler {
         body.put("timestamp", LocalDateTime.now());
         body.put("status", HttpStatus.BAD_REQUEST.value());
         body.put("error", "Invalid Request Format");
-        body.put("message", "Invalid input format or numeric data provided. Please check all fields.");
+        String detail = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
+        body.put("message", detail != null ? detail : "Invalid input format or numeric data provided.");
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 

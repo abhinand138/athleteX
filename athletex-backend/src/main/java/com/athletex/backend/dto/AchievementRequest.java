@@ -38,12 +38,21 @@ public class AchievementRequest {
 
     @NotNull(message = "Date is required")
     @PastOrPresent(message = "Achievement date cannot be in the future")
+    @com.fasterxml.jackson.annotation.JsonFormat(shape = com.fasterxml.jackson.annotation.JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate date;
 
     private String icon;
 
-    @Pattern(regexp = "^(https?://.+)?$", message = "Proof URL must be a valid link starting with http:// or https://")
+    @Pattern(regexp = "^(https?://.+|/api/uploads/.+|/uploads/.+)?$", message = "Proof URL must be a valid link or uploaded file path")
     private String proofUrl;
 
     private String proofType;
+
+    private String tournamentName;
+
+    private String organizer;
+
+    private String sanctionId;
+
+    private String coachFeedback;
 }

@@ -56,7 +56,7 @@ export default function AthleteCoaches() {
   });
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const athleteId = user.id || user._id || "";
+  const athleteId = user.id || user._id || user.userId || user.email || "";
 
   // Dynamically load Razorpay checkout script
   useEffect(() => {
@@ -83,7 +83,41 @@ export default function AthleteCoaches() {
       const response = await api.get("/coaches/directory", {
         params: { athleteId }
       });
-      setCoaches(Array.isArray(response.data) ? response.data : []);
+      let directory = Array.isArray(response.data) ? response.data : [];
+
+      // Also cross-reference completed payments for this athlete to guarantee hired tagging
+      if (athleteId) {
+        try {
+          const paymentsRes = await api.get("/payments/history", {
+            params: { athleteId }
+          });
+          const payments = Array.isArray(paymentsRes.data) ? paymentsRes.data : [];
+          const completedCoachIds = new Set(
+            payments
+              .filter((p) => p.paymentStatus === "COMPLETED" || !p.paymentStatus)
+              .map((p) => p.coachId)
+              .filter(Boolean)
+          );
+          if (completedCoachIds.size > 0) {
+            directory = directory.map((c) => {
+              if (completedCoachIds.has(c.id)) {
+                return { 
+                  ...c, 
+                  isAssignedToAthlete: true, 
+                  assignedToAthlete: true, 
+                  isHired: true, 
+                  hired: true 
+                };
+              }
+              return c;
+            });
+          }
+        } catch (e) {
+          // ignore payment cross-check error
+        }
+      }
+
+      setCoaches(directory);
     } catch (error) {
       console.error("Error fetching coaches directory:", error);
       setCoaches([
@@ -103,6 +137,9 @@ export default function AthleteCoaches() {
           bio: "Former Olympic trials finalist specializing in sprint mechanics, top-end velocity development, and neural recovery protocols.",
           profileImage: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400",
           isAssignedToAthlete: true,
+          assignedToAthlete: true,
+          isHired: true,
+          hired: true,
           monthlyRate: 4999.0,
           consultationRate: 1999.0,
           currency: "INR"
@@ -174,7 +211,13 @@ export default function AthleteCoaches() {
   };
 
   const safeCoaches = Array.isArray(coaches) ? coaches : [];
-  const assignedCoach = safeCoaches.find((c) => c.isAssignedToAthlete);
+  const isCoachHired = (c) => Boolean(
+    c?.isHired ?? 
+    c?.hired ?? 
+    c?.isAssignedToAthlete ?? 
+    c?.assignedToAthlete
+  );
+  const assignedCoach = safeCoaches.find(isCoachHired);
 
   const categories = [
     "All",
@@ -398,14 +441,14 @@ export default function AthleteCoaches() {
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-emerald-400/60 shadow-lg"
                   />
                   <div className="absolute -bottom-2 -right-2 bg-emerald-500 text-black text-xs font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                    <FaCheckCircle className="text-xs" /> ACTIVE COACH
+                    <FaCheckCircle className="text-xs" /> HIRED
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold uppercase tracking-wider">
-                      Your Primary Coach
+                      Your Hired Coach
                     </span>
                     <span className="text-xs text-gray-400 flex items-center gap-1">
                       <FaMapMarkerAlt className="text-emerald-400" />
@@ -429,7 +472,7 @@ export default function AthleteCoaches() {
                 <div className="text-left sm:text-right">
                   <div className="text-xs text-gray-400 uppercase tracking-widest font-semibold">Monthly Rate</div>
                   <div className="text-lg font-black text-emerald-300">
-                    ${assignedCoach.monthlyRate || 89}/mo
+                    ₹{(assignedCoach.monthlyRate || 4999).toLocaleString('en-IN')}/mo
                   </div>
                 </div>
 
@@ -533,16 +576,16 @@ export default function AthleteCoaches() {
                 <div
                   key={coach.id}
                   className={`group relative rounded-2xl bg-gradient-to-b from-[#15171c] to-brand-dark border transition-all duration-300 hover:-translate-y-1.5 shadow-xl overflow-hidden flex flex-col justify-between ${
-                    coach.isAssignedToAthlete
-                      ? "border-emerald-500/50 shadow-emerald-500/10"
+                    isCoachHired(coach)
+                      ? "border-emerald-500/60 shadow-emerald-500/15 bg-gradient-to-b from-emerald-950/20 via-[#15171c] to-brand-dark"
                       : "border-white/10 hover:border-brand-peach/50 hover:shadow-brand-peach/10"
                   }`}
                 >
                   {/* Status / Pricing Tag Top Right */}
                   <div className="absolute top-3.5 right-3.5 z-10 flex items-center gap-2">
-                    {coach.isAssignedToAthlete ? (
-                      <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black tracking-wider uppercase flex items-center gap-1 shadow-md">
-                        <FaCheckCircle /> Your Coach
+                    {isCoachHired(coach) ? (
+                      <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black tracking-wider uppercase flex items-center gap-1.5 shadow-lg shadow-emerald-500/20">
+                        <FaCheckCircle className="text-xs" /> HIRED
                       </span>
                     ) : (
                       <span className="px-3 py-1 rounded-full bg-brand-peach/20 border border-brand-peach/40 text-brand-peach text-xs font-black shadow-md flex items-center gap-1">
@@ -610,17 +653,25 @@ export default function AthleteCoaches() {
                     >
                       Profile & Bio
                     </button>
-                    {coach.isAssignedToAthlete ? (
-                      <button
-                        onClick={() => navigate("/chat")}
-                        className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1"
-                      >
-                        <FaComments /> Chat Now
-                      </button>
+                    {isCoachHired(coach) ? (
+                      <div className="flex-1 flex items-center gap-1.5">
+                        <button
+                          disabled
+                          className="py-2.5 px-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-extrabold text-[11px] flex items-center justify-center gap-1 select-none shadow-sm cursor-default"
+                        >
+                          <FaCheckCircle className="text-[10px]" /> Hired
+                        </button>
+                        <button
+                          onClick={() => navigate("/chat")}
+                          className="flex-1 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-md flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <FaComments /> Message
+                        </button>
+                      </div>
                     ) : (
                       <button
                         onClick={() => handleOpenCheckout(coach, "COACH_MONTHLY_SUBSCRIPTION")}
-                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-peach to-orange-500 hover:opacity-95 text-black font-extrabold text-xs transition-all shadow-md shadow-brand-peach/20 flex items-center justify-center gap-1"
+                        className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-brand-peach to-orange-500 hover:opacity-95 text-black font-extrabold text-xs transition-all shadow-md shadow-brand-peach/20 flex items-center justify-center gap-1 cursor-pointer"
                       >
                         <FaCreditCard /> Hire Coach
                       </button>
@@ -652,9 +703,9 @@ export default function AthleteCoaches() {
                   className="w-24 h-24 rounded-2xl object-cover border-2 border-brand-peach shadow-xl"
                 />
                 <div className="space-y-1">
-                  {selectedCoach.isAssignedToAthlete && (
-                    <span className="px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase tracking-wider inline-block mb-1">
-                      Assigned Primary Coach
+                  {isCoachHired(selectedCoach) && (
+                    <span className="px-3 py-1 rounded-full bg-emerald-500 text-black text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1.5 mb-1.5 shadow-md">
+                      <FaCheckCircle className="text-xs" /> HIRED
                     </span>
                   )}
                   <h3 className="text-2xl font-black text-white tracking-wide">
@@ -725,20 +776,37 @@ export default function AthleteCoaches() {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                  <button
-                    onClick={() => handleOpenCheckout(selectedCoach, "COACH_CONSULTATION_SESSION")}
-                    className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all border border-white/10"
-                  >
-                    Book Session (₹{selectedCoach.consultationRate || 1999})
-                  </button>
-                  <button
-                    onClick={() => handleOpenCheckout(selectedCoach, "COACH_MONTHLY_SUBSCRIPTION")}
-                    className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-brand-peach to-orange-500 text-black font-extrabold text-xs hover:opacity-95 transition-all shadow-lg shadow-brand-peach/20"
-                  >
-                    Hire Coach (₹{selectedCoach.monthlyRate || 4999}/mo)
-                  </button>
-                </div>
+                {isCoachHired(selectedCoach) ? (
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <span className="px-4 py-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-extrabold text-xs flex items-center gap-1.5 shadow-sm">
+                      <FaCheckCircle className="text-emerald-400" /> Hired Coach
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSelectedCoach(null);
+                        navigate("/chat");
+                      }}
+                      className="w-full sm:w-auto px-6 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs transition-all shadow-lg hover:shadow-emerald-500/25 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <FaComments /> Direct Chat
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button
+                      onClick={() => handleOpenCheckout(selectedCoach, "COACH_CONSULTATION_SESSION")}
+                      className="w-full sm:w-auto px-4 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-all border border-white/10 cursor-pointer"
+                    >
+                      Book Session (₹{selectedCoach.consultationRate || 1999})
+                    </button>
+                    <button
+                      onClick={() => handleOpenCheckout(selectedCoach, "COACH_MONTHLY_SUBSCRIPTION")}
+                      className="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-brand-peach to-orange-500 text-black font-extrabold text-xs hover:opacity-95 transition-all shadow-lg shadow-brand-peach/20 cursor-pointer"
+                    >
+                      Hire Coach (₹{selectedCoach.monthlyRate || 4999}/mo)
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>

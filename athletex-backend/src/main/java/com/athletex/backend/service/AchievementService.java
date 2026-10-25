@@ -6,10 +6,13 @@ import com.athletex.backend.dto.AchievementStatsResponse;
 import com.athletex.backend.model.*;
 import com.athletex.backend.repository.AchievementRepository;
 import com.athletex.backend.repository.CoachAthleteAssignmentRepository;
+import com.athletex.backend.repository.PerformanceDrillRepository;
 import com.athletex.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
@@ -25,9 +28,10 @@ public class AchievementService {
     private final UserRepository userRepository;
     private final CoachAthleteAssignmentRepository assignmentRepository;
     private final NotificationService notificationService;
+    private final PerformanceDrillRepository drillRepository;
 
     // =============================
-    // CREATE ACHIEVEMENT (DTO / COACH)
+    // CREATE ACHIEVEMENT (DTO / COACH OR ATHLETE)
     // =============================
     public AchievementResponse createAchievement(AchievementRequest request) {
         validateAchievementFields(request.getTitle(), request.getDescription(), request.getDate(), request.getProofUrl());
@@ -36,8 +40,9 @@ public class AchievementService {
         String athleteName = "Athlete";
         User coachObj = null;
         User athleteObj = null;
+        boolean isCoachCreating = request.getCoachId() != null && !request.getCoachId().isBlank();
 
-        if (request.getCoachId() != null && !request.getCoachId().isBlank()) {
+        if (isCoachCreating) {
             User coach = userRepository.findById(request.getCoachId())
                     .orElseThrow(() -> new RuntimeException("Coach not found"));
             if (coach.getRole() != Role.COACH) {
@@ -66,6 +71,7 @@ public class AchievementService {
         }
 
         String icon = (request.getIcon() != null && !request.getIcon().isBlank()) ? request.getIcon() : "🏆";
+        String certHash = generateCertificateHash(UUID.randomUUID().toString(), request.getAthleteId(), request.getTitle(), request.getDate());
 
         Achievement achievement = Achievement.builder()
                 .athleteId(request.getAthleteId())
@@ -79,6 +85,17 @@ public class AchievementService {
                 .icon(icon)
                 .proofUrl(request.getProofUrl())
                 .proofType(request.getProofType())
+                .tournamentName(request.getTournamentName())
+                .organizer(request.getOrganizer())
+                .sanctionId(request.getSanctionId())
+                .certificateHash(certHash)
+                .isCoachAwarded(isCoachCreating)
+                .isVerified(isCoachCreating)
+                .verificationStatus(isCoachCreating ? "APPROVED" : "PENDING")
+                .verifiedByCoachId(isCoachCreating ? request.getCoachId() : null)
+                .verifiedByCoachName(isCoachCreating ? coachName : null)
+                .verifiedAt(isCoachCreating ? LocalDateTime.now() : null)
+                .coachFeedback(request.getCoachFeedback())
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -88,14 +105,30 @@ public class AchievementService {
         activityService.createActivity(
                 request.getAthleteId(),
                 "achievement_added",
-                "Achievement Unlocked",
+                isCoachCreating ? "Achievement Awarded by Coach" : "Achievement Logged",
                 achievement.getTitle(),
                 icon
         );
 
+        final String finalAthleteName = athleteName;
         if (athleteObj != null) {
             try {
-                notificationService.notifyAchievementUnlocked(saved, coachObj, athleteObj);
+                if (isCoachCreating) {
+                    notificationService.notifyAchievementUnlocked(saved, coachObj, athleteObj);
+                } else {
+                    // Notify assigned coach that athlete submitted an achievement for verification
+                    assignmentRepository.findByAthleteIdAndStatus(
+                            request.getAthleteId(), AssignmentStatus.ACTIVE
+                    ).ifPresent(assign -> {
+                        notificationService.sendNotification(
+                                assign.getCoachId(),
+                                "Achievement Verification Request 🏆",
+                                finalAthleteName + " submitted '" + saved.getTitle() + "' for official verification.",
+                                "VERIFICATION",
+                                "/coach/achievements"
+                        );
+                    });
+                }
             } catch (Exception e) {
                 // Non-blocking
             }
@@ -113,6 +146,9 @@ public class AchievementService {
         achievement.setId(null);
         achievement.setAthleteId(userId);
         achievement.setUserId(userId);
+        achievement.setIsVerified(false);
+        achievement.setVerificationStatus("PENDING");
+        achievement.setCertificateHash(generateCertificateHash(UUID.randomUUID().toString(), userId, achievement.getTitle(), achievement.getDate()));
         achievement.setCreatedAt(LocalDateTime.now());
         achievement.setUpdatedAt(LocalDateTime.now());
 
@@ -259,7 +295,7 @@ public class AchievementService {
             if (achievement.getCoachId() != null && !achievement.getCoachId().equals(request.getCoachId())) {
                 boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(
                         request.getCoachId(), achievement.getAthleteId(), AssignmentStatus.ACTIVE
-                );
+                    );
                 if (!isAssigned) {
                     throw new SecurityException("Unauthorized to edit this achievement");
                 }
@@ -279,6 +315,18 @@ public class AchievementService {
         }
         if (request.getProofType() != null) {
             achievement.setProofType(request.getProofType());
+        }
+        if (request.getTournamentName() != null) {
+            achievement.setTournamentName(request.getTournamentName());
+        }
+        if (request.getOrganizer() != null) {
+            achievement.setOrganizer(request.getOrganizer());
+        }
+        if (request.getSanctionId() != null) {
+            achievement.setSanctionId(request.getSanctionId());
+        }
+        if (request.getCoachFeedback() != null) {
+            achievement.setCoachFeedback(request.getCoachFeedback());
         }
         achievement.setUpdatedAt(LocalDateTime.now());
 
@@ -375,11 +423,16 @@ public class AchievementService {
         }
 
         boolean currentVerified = Boolean.TRUE.equals(achievement.getIsVerified());
-        achievement.setIsVerified(!currentVerified);
-        if (!currentVerified) {
+        boolean newVerified = !currentVerified;
+        achievement.setIsVerified(newVerified);
+        achievement.setVerificationStatus(newVerified ? "APPROVED" : "PENDING");
+        if (newVerified) {
             achievement.setVerifiedByCoachId(coachId);
             achievement.setVerifiedByCoachName(coach.getFullName());
             achievement.setVerifiedAt(LocalDateTime.now());
+            if (achievement.getCertificateHash() == null || achievement.getCertificateHash().isBlank()) {
+                achievement.setCertificateHash(generateCertificateHash(achievement.getId(), athleteId, achievement.getTitle(), achievement.getDate()));
+            }
         } else {
             achievement.setVerifiedByCoachId(null);
             achievement.setVerifiedByCoachName(null);
@@ -415,6 +468,116 @@ public class AchievementService {
     }
 
     // =============================
+    // REJECT ACHIEVEMENT
+    // =============================
+    public AchievementResponse rejectAchievement(String achievementId, String coachId, String feedback) {
+        User coach = userRepository.findById(coachId)
+                .orElseThrow(() -> new RuntimeException("Coach not found"));
+        if (coach.getRole() != Role.COACH) {
+            throw new RuntimeException("User is not a coach");
+        }
+
+        Achievement achievement = achievementRepository.findById(achievementId)
+                .orElseThrow(() -> new RuntimeException("Achievement not found"));
+
+        String athleteId = achievement.getAthleteId() != null ? achievement.getAthleteId() : achievement.getUserId();
+        boolean isAssigned = assignmentRepository.existsByCoachIdAndAthleteIdAndStatus(
+                coachId, athleteId, AssignmentStatus.ACTIVE
+        );
+        if (!isAssigned) {
+            throw new SecurityException("Unauthorized: Athlete is not assigned to this coach");
+        }
+
+        achievement.setIsVerified(false);
+        achievement.setVerificationStatus("REJECTED");
+        achievement.setCoachFeedback(feedback != null && !feedback.isBlank() ? feedback : "Evidence did not satisfy official verification criteria.");
+        achievement.setVerifiedByCoachId(coachId);
+        achievement.setVerifiedByCoachName(coach.getFullName());
+        achievement.setVerifiedAt(LocalDateTime.now());
+        achievement.setUpdatedAt(LocalDateTime.now());
+
+        Achievement saved = achievementRepository.save(achievement);
+
+        try {
+            notificationService.sendNotification(
+                    athleteId,
+                    "Achievement Verification Update ⚠️",
+                    "Coach " + coach.getFullName() + " reviewed '" + saved.getTitle() + "': " + achievement.getCoachFeedback(),
+                    "VERIFICATION",
+                    "/achievements"
+            );
+        } catch (Exception e) {
+            // Non-blocking
+        }
+
+        String athleteName = userRepository.findById(athleteId).map(User::getFullName).orElse("Athlete");
+        return mapToResponse(saved, coach.getFullName(), athleteName);
+    }
+
+    // =============================
+    // SYNC COMBINE PERSONAL RECORDS TO TROPHY CABINET
+    // =============================
+    public List<AchievementResponse> syncCombineMilestones(String athleteId) {
+        List<PerformanceDrill> approvedDrills = drillRepository.findByUserIdAndVerificationStatus(
+                athleteId, VerificationStatus.APPROVED
+        );
+
+        if (approvedDrills == null || approvedDrills.isEmpty()) {
+            return getAchievementsByAthlete(athleteId);
+        }
+
+        List<Achievement> existingAchievements = achievementRepository.findByAthleteIdOrderByDateDesc(athleteId);
+        if (existingAchievements == null) existingAchievements = new ArrayList<>();
+
+        User athlete = userRepository.findById(athleteId).orElse(null);
+        String athleteName = athlete != null ? athlete.getFullName() : "Athlete";
+
+        for (PerformanceDrill drill : approvedDrills) {
+            String expectedTitle = "Combine PR: " + drill.getDrillName();
+            boolean alreadyExists = existingAchievements.stream().anyMatch(a ->
+                    a.getTitle() != null && a.getTitle().equalsIgnoreCase(expectedTitle)
+            );
+
+            if (!alreadyExists) {
+                LocalDate date = drill.getRecordedAt() != null ? drill.getRecordedAt().toLocalDate() : LocalDate.now();
+                String icon = "⚡";
+                String category = "Milestone";
+                String level = drill.getTierBadge() != null ? drill.getTierBadge() : "Personal Best";
+
+                Achievement combineAchievement = Achievement.builder()
+                        .athleteId(athleteId)
+                        .userId(athleteId)
+                        .coachId(drill.getVerifiedByCoachId())
+                        .title(expectedTitle)
+                        .description("Official Combine PR recorded at " + drill.getValue() + " " + drill.getUnit() + " (" + level + " Tier, " + (drill.getPercentile() != null ? drill.getPercentile() : 75) + "th percentile).")
+                        .category(category)
+                        .level(level)
+                        .date(date)
+                        .icon(icon)
+                        .proofUrl(drill.getProofUrl())
+                        .proofType("VIDEO")
+                        .tournamentName("AthleteX Standardized Combine")
+                        .organizer("AthleteX Sports Performance Lab")
+                        .sanctionId("COMBINE-" + drill.getDrillCode())
+                        .isVerified(true)
+                        .verificationStatus("APPROVED")
+                        .verifiedByCoachId(drill.getVerifiedByCoachId())
+                        .verifiedByCoachName(drill.getVerifiedByCoachName() != null ? drill.getVerifiedByCoachName() : "Certified Coach")
+                        .verifiedAt(drill.getVerifiedAt() != null ? drill.getVerifiedAt() : LocalDateTime.now())
+                        .isCoachAwarded(true)
+                        .certificateHash(generateCertificateHash(UUID.randomUUID().toString(), athleteId, expectedTitle, date))
+                        .createdAt(LocalDateTime.now())
+                        .updatedAt(LocalDateTime.now())
+                        .build();
+
+                achievementRepository.save(combineAchievement);
+            }
+        }
+
+        return getAchievementsByAthlete(athleteId);
+    }
+
+    // =============================
     // GET ACHIEVEMENT COUNT
     // =============================
     public long getAchievementCount(String userId) {
@@ -425,6 +588,9 @@ public class AchievementService {
         return count;
     }
 
+    // =============================
+    // HELPER: VALIDATE
+    // =============================
     private void validateAchievementFields(String title, String description, LocalDate date, String proofUrl) {
         if (title == null || title.trim().length() < 3 || title.trim().length() > 100) {
             throw new IllegalArgumentException("Achievement title must be between 3 and 100 characters.");
@@ -440,12 +606,34 @@ public class AchievementService {
         }
         if (proofUrl != null && !proofUrl.isBlank()) {
             String trimmedUrl = proofUrl.trim().toLowerCase();
-            if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://")) {
-                throw new IllegalArgumentException("Proof URL must be a valid link starting with http:// or https://");
+            if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://")
+                    && !trimmedUrl.startsWith("/api/uploads/") && !trimmedUrl.startsWith("/uploads/")) {
+                throw new IllegalArgumentException("Proof URL must be a valid web link (http/https) or uploaded file path.");
             }
         }
     }
 
+    // =============================
+    // HELPER: CRYPTOGRAPHIC HASH
+    // =============================
+    private String generateCertificateHash(String id, String athleteId, String title, LocalDate date) {
+        try {
+            String raw = (id != null ? id : "") + ":" + athleteId + ":" + title + ":" + (date != null ? date.toString() : "") + ":AX-AUTH-2026";
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] digest = md.digest(raw.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : digest) {
+                sb.append(String.format("%02x", b));
+            }
+            return "AX-" + sb.substring(0, 12).toUpperCase();
+        } catch (Exception e) {
+            return "AX-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase();
+        }
+    }
+
+    // =============================
+    // HELPER: MAP TO RESPONSE
+    // =============================
     private AchievementResponse mapToResponse(Achievement a, String coachName, String athleteName) {
         return AchievementResponse.builder()
                 .id(a.getId())
@@ -462,6 +650,13 @@ public class AchievementService {
                 .proofUrl(a.getProofUrl())
                 .proofType(a.getProofType())
                 .isVerified(a.getIsVerified() != null ? a.getIsVerified() : false)
+                .verificationStatus(a.getVerificationStatus() != null ? a.getVerificationStatus() : (Boolean.TRUE.equals(a.getIsVerified()) ? "APPROVED" : "PENDING"))
+                .coachFeedback(a.getCoachFeedback())
+                .tournamentName(a.getTournamentName())
+                .organizer(a.getOrganizer())
+                .sanctionId(a.getSanctionId())
+                .certificateHash(a.getCertificateHash() != null ? a.getCertificateHash() : "AX-" + (a.getId() != null ? a.getId().substring(0, Math.min(8, a.getId().length())).toUpperCase() : "VERIFIED"))
+                .isCoachAwarded(Boolean.TRUE.equals(a.getIsCoachAwarded()))
                 .verifiedByCoachId(a.getVerifiedByCoachId())
                 .verifiedByCoachName(a.getVerifiedByCoachName())
                 .verifiedAt(a.getVerifiedAt())

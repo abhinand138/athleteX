@@ -122,6 +122,34 @@ public class AchievementController {
         }
     }
 
+    // PUT /api/achievements/{id}/reject
+    @PutMapping("/{id}/reject")
+    public ResponseEntity<?> rejectAchievement(
+            @PathVariable String id,
+            @RequestParam String coachId,
+            @RequestParam(required = false) String feedback,
+            org.springframework.security.core.Authentication authentication) {
+        String effectiveCoachId = coachId;
+        if (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getPrincipal())) {
+            effectiveCoachId = (String) authentication.getPrincipal();
+        }
+
+        try {
+            AchievementResponse response = achievementService.rejectAchievement(id, effectiveCoachId, feedback);
+            return ResponseEntity.ok(response);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    // POST /api/achievements/athlete/{athleteId}/sync-combine
+    @PostMapping("/athlete/{athleteId}/sync-combine")
+    public ResponseEntity<List<AchievementResponse>> syncCombineMilestones(@PathVariable String athleteId) {
+        return ResponseEntity.ok(achievementService.syncCombineMilestones(athleteId));
+    }
+
     // GET /api/achievements/athlete/{athleteId}/count
     @GetMapping("/athlete/{athleteId}/count")
     public ResponseEntity<Long> getAthleteAchievementCount(@PathVariable String athleteId) {

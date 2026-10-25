@@ -44,6 +44,20 @@ public class Achievement {
 
     private Boolean isVerified;
 
+    private String verificationStatus; // PENDING, APPROVED, REJECTED
+
+    private String coachFeedback;
+
+    private String tournamentName;
+
+    private String organizer;
+
+    private String sanctionId;
+
+    private String certificateHash;
+
+    private Boolean isCoachAwarded;
+
     private String verifiedByCoachId;
 
     private String verifiedByCoachName;

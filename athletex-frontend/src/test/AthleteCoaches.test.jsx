@@ -194,4 +194,49 @@ describe('AthleteCoaches Marketplace Component Tests', () => {
       expect(screen.getByText('Welcome to Team Marcus Vance!')).toBeInTheDocument();
     });
   });
+
+  it('renders HIRED badge and Message button for a hired coach', async () => {
+    const hiredCoaches = [
+      {
+        id: 'coach-2',
+        fullName: 'Ashokan Menon',
+        email: 'ashokan@athletex.com',
+        sport: 'General Athletics',
+        title: 'Head Performance Coach',
+        specialization: 'Strength & Conditioning',
+        experienceYears: 5,
+        certifications: 'NSCA-CSCS',
+        city: 'Los Angeles',
+        state: 'CA',
+        country: 'USA',
+        bio: 'Dedicated coach',
+        hired: true,
+        assignedToAthlete: true,
+        monthlyRate: 4999.0,
+        consultationRate: 1999.0,
+        currency: 'INR'
+      }
+    ];
+
+    api.get.mockImplementation((url) => {
+      if (url.includes('/coaches/directory')) {
+        return Promise.resolve({ data: hiredCoaches });
+      }
+      return Promise.resolve({ data: [] });
+    });
+
+    render(
+      <MemoryRouter>
+        <AthleteCoaches />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('Ashokan Menon').length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/HIRED/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Hired/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/Message/i).length).toBeGreaterThan(0);
+      expect(screen.queryByText('Hire Coach')).not.toBeInTheDocument();
+    });
+  });
 });

@@ -8,9 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -21,6 +19,7 @@ public class CoachDirectoryService {
     private final CoachAthleteAssignmentRepository assignmentRepository;
     private final CoachConnectionRequestRepository connectionRequestRepository;
     private final NotificationRepository notificationRepository;
+    private final PaymentTransactionRepository paymentTransactionRepository;
 
     public String sendConnectionRequest(ConnectionRequestDto dto) {
         if (dto.getAthleteId() == null || dto.getCoachId() == null) {
@@ -145,19 +144,38 @@ public class CoachDirectoryService {
     public List<CoachPublicProfileDto> getCoachDirectory(String athleteId, String sport, String search) {
         List<User> coaches = userRepository.findByRole(Role.COACH);
 
-        // Find active assigned coach ID for this athlete if athleteId is provided
-        String activeAssignedCoachId = null;
+        Set<String> hiredCoachIds = new HashSet<>();
         if (athleteId != null && !athleteId.isBlank()) {
-            Optional<CoachAthleteAssignment> activeAssignment = assignmentRepository.findByAthleteIdAndStatus(athleteId, AssignmentStatus.ACTIVE);
-            if (activeAssignment.isPresent()) {
-                activeAssignedCoachId = activeAssignment.get().getCoachId();
+            final String rawId = athleteId.trim();
+            Optional<User> athleteOpt = userRepository.findById(rawId)
+                    .or(() -> userRepository.findByEmail(rawId));
+            final String resolvedAthleteId = athleteOpt.isPresent() ? athleteOpt.get().getId() : rawId;
+
+            // 1. Gather from active assignments
+            List<CoachAthleteAssignment> activeAssignments = assignmentRepository.findAllByAthleteIdAndStatus(resolvedAthleteId, AssignmentStatus.ACTIVE);
+            for (CoachAthleteAssignment a : activeAssignments) {
+                if (a.getCoachId() != null) {
+                    hiredCoachIds.add(a.getCoachId());
+                }
+            }
+
+            // 2. Gather from completed payment transactions (direct hire)
+            try {
+                List<PaymentTransaction> transactions = paymentTransactionRepository.findByAthleteIdOrderByCreatedAtDesc(resolvedAthleteId);
+                for (PaymentTransaction tx : transactions) {
+                    if (tx.getPaymentStatus() == PaymentStatus.COMPLETED && tx.getCoachId() != null) {
+                        hiredCoachIds.add(tx.getCoachId());
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore query exceptions
             }
         }
 
         List<CoachPublicProfileDto> dtos = new ArrayList<>();
 
         for (User coach : coaches) {
-            boolean isAssigned = (activeAssignedCoachId != null && activeAssignedCoachId.equals(coach.getId()));
+            boolean isHired = hiredCoachIds.contains(coach.getId());
 
             CoachPublicProfileDto dto = CoachPublicProfileDto.builder()
                     .id(coach.getId())
@@ -175,7 +193,8 @@ public class CoachDirectoryService {
                     .country(coach.getCountry() != null ? coach.getCountry() : "USA")
                     .bio(coach.getBio() != null ? coach.getBio() : "Dedicated high-performance athletic coach focusing on bio-mechanics, sprint mechanics, and elite conditioning.")
                     .profileImage(coach.getProfileImage())
-                    .isAssignedToAthlete(isAssigned)
+                    .isAssignedToAthlete(isHired)
+                    .isHired(isHired)
                     .monthlyRate(coach.getMonthlyRate() != null ? coach.getMonthlyRate() : 4999.0)
                     .consultationRate(coach.getConsultationRate() != null ? coach.getConsultationRate() : 1999.0)
                     .currency(coach.getCurrency() != null ? coach.getCurrency() : "INR")
@@ -186,7 +205,8 @@ public class CoachDirectoryService {
 
         // If DB has no coaches yet, supply rich default coaches for demonstration
         if (dtos.isEmpty()) {
-            dtos = getSampleCoaches(activeAssignedCoachId);
+            String firstHired = hiredCoachIds.isEmpty() ? null : hiredCoachIds.iterator().next();
+            dtos = getSampleCoaches(firstHired);
         }
 
         // Apply filtering if parameters provided
@@ -219,6 +239,7 @@ public class CoachDirectoryService {
                 .bio("Former Olympic trials finalist specializing in sprint mechanics, top-end velocity development, and neural recovery protocols.")
                 .profileImage("https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete(activeCoachId == null || activeCoachId.equals("coach-1"))
+                .isHired(activeCoachId == null || activeCoachId.equals("coach-1"))
                 .monthlyRate(4999.0)
                 .consultationRate(1999.0)
                 .currency("INR")
@@ -241,6 +262,7 @@ public class CoachDirectoryService {
                 .bio("Pioneer in reactive strength index (RSI) optimization, rate of force development (RFD), and lower limb injury prevention.")
                 .profileImage("https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete("coach-2".equals(activeCoachId))
+                .isHired("coach-2".equals(activeCoachId))
                 .monthlyRate(5499.0)
                 .consultationRate(2499.0)
                 .currency("INR")
@@ -263,6 +285,7 @@ public class CoachDirectoryService {
                 .bio("Master of lactate threshold training, zone-based aerobic periodization, and altitude adaptation strategies.")
                 .profileImage("https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete("coach-3".equals(activeCoachId))
+                .isHired("coach-3".equals(activeCoachId))
                 .monthlyRate(3999.0)
                 .consultationRate(1799.0)
                 .currency("INR")
@@ -285,6 +308,7 @@ public class CoachDirectoryService {
                 .bio("Expert in multi-planar movement efficiency, agility drills, and return-to-play ACL rehabilitation protocols.")
                 .profileImage("https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=400")
                 .isAssignedToAthlete("coach-4".equals(activeCoachId))
+                .isHired("coach-4".equals(activeCoachId))
                 .monthlyRate(5999.0)
                 .consultationRate(2999.0)
                 .currency("INR")

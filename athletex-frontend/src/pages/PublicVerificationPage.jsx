@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import api from "../services/api";
 import {
   FaCheckCircle,
@@ -13,11 +13,18 @@ import {
   FaHeartbeat,
   FaBolt,
   FaVideo,
-  FaExternalLinkAlt
+  FaExternalLinkAlt,
+  FaFingerprint,
+  FaCertificate,
+  FaBuilding,
+  FaQrcode
 } from "react-icons/fa";
 
 export default function PublicVerificationPage() {
   const { athleteId } = useParams();
+  const [searchParams] = useSearchParams();
+  const certParam = searchParams.get("cert");
+
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -66,6 +73,13 @@ export default function PublicVerificationPage() {
     );
   }
 
+  // Check if a specific certificate matches the scanned QR parameter
+  const scannedCertificate = certParam && data.verifiedAchievements
+    ? data.verifiedAchievements.find(
+        (a) => a.certificateHash === certParam || a.id === certParam
+      )
+    : null;
+
   return (
     <div className="min-h-screen bg-[#0b0d12] text-white py-12 px-4 sm:px-6 relative overflow-hidden font-sans">
       
@@ -73,6 +87,38 @@ export default function PublicVerificationPage() {
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-96 bg-emerald-500/10 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="max-w-3xl mx-auto space-y-8 relative z-10">
+
+        {/* SCANNED QR CERTIFICATE SPOTLIGHT SEAL */}
+        {certParam && (
+          <div className="glass-card bg-[#151a26] border-2 border-emerald-500/60 rounded-3xl p-6 sm:p-7 shadow-2xl space-y-3 relative overflow-hidden animate-fadeIn">
+            <div className="absolute top-0 right-0 w-48 h-48 bg-emerald-500/15 blur-3xl pointer-events-none" />
+
+            <div className="flex items-center justify-between">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-black uppercase tracking-wider border border-emerald-500/40">
+                <FaQrcode className="text-emerald-400" />
+                <span>GENUINE SCANNED QR CODE VERIFIED</span>
+              </span>
+              <span className="text-xs font-mono text-gray-400">STATUS: AUDITED ✔</span>
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-black text-white">
+              {scannedCertificate ? scannedCertificate.title : "Accredited Athletic Merit Certificate"}
+            </h3>
+
+            {scannedCertificate && (
+              <p className="text-gray-300 text-sm leading-relaxed">
+                {scannedCertificate.description}
+              </p>
+            )}
+
+            <div className="pt-2 flex flex-wrap items-center justify-between text-xs text-emerald-400/90 font-mono gap-2 border-t border-white/10">
+              <span className="flex items-center gap-1.5">
+                <FaFingerprint /> TOKEN: {certParam}
+              </span>
+              <span>ISSUED BY: AthleteX Accreditation Engine</span>
+            </div>
+          </div>
+        )}
 
         {/* Top Verification Header Badge */}
         <div className="glass-card bg-[#12151e]/90 border border-emerald-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl text-center relative overflow-hidden">
@@ -223,36 +269,60 @@ export default function PublicVerificationPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {data.verifiedAchievements.map((ach) => (
-                <div
-                  key={ach.id}
-                  className="p-5 rounded-2xl bg-white/[0.02] border border-white/5 space-y-2 relative overflow-hidden"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-emerald-400 text-sm">✔</span>
-                        <h3 className="font-bold text-white text-base">{ach.title}</h3>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">{ach.description}</p>
-                    </div>
-                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
-                      {ach.category || "General"}
-                    </span>
-                  </div>
+              {data.verifiedAchievements.map((ach) => {
+                const isSelectedCert = certParam && (ach.certificateHash === certParam || ach.id === certParam);
+                return (
+                  <div
+                    key={ach.id}
+                    className={`p-5 rounded-2xl bg-white/[0.02] border transition-all space-y-3 relative overflow-hidden ${
+                      isSelectedCert
+                        ? "border-emerald-500/60 bg-emerald-500/5 shadow-lg shadow-emerald-500/10"
+                        : "border-white/5"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-emerald-400 text-sm">✔</span>
+                          <h3 className="font-bold text-white text-base">{ach.title}</h3>
+                        </div>
 
-                  <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between text-xs text-gray-500">
-                    <span className="flex items-center gap-1.5">
-                      <FaUserCheck className="text-emerald-400 text-xs" />
-                      Verified by <strong className="text-gray-300">{ach.verifiedByCoachName || "Certified Coach"}</strong>
-                    </span>
-                    <span className="flex items-center gap-1.5 font-mono">
-                      <FaCalendarAlt className="text-brand-peach text-xs" />
-                      {ach.verifiedAt ? new Date(ach.verifiedAt).toLocaleDateString() : (ach.date || "Verified")}
-                    </span>
+                        {(ach.tournamentName || ach.sanctionId) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-brand-peach font-semibold">
+                            {ach.tournamentName && <span>🏆 {ach.tournamentName}</span>}
+                            {ach.sanctionId && <span className="font-mono text-[10px] text-gray-400">ID: {ach.sanctionId}</span>}
+                          </div>
+                        )}
+
+                        <p className="text-xs text-gray-400 mt-1">{ach.description}</p>
+                      </div>
+
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 shrink-0">
+                        {ach.category || "General"}
+                      </span>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between text-xs text-gray-500 gap-2">
+                      <span className="flex items-center gap-1.5">
+                        <FaUserCheck className="text-emerald-400 text-xs" />
+                        Verified by <strong className="text-gray-300">{ach.verifiedByCoachName || "Certified Coach"}</strong>
+                      </span>
+
+                      <div className="flex items-center gap-4 font-mono text-[11px]">
+                        {ach.certificateHash && (
+                          <span className="text-gray-400">
+                            SIG: {ach.certificateHash}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1 text-brand-peach">
+                          <FaCalendarAlt className="text-xs" />
+                          {ach.verifiedAt ? new Date(ach.verifiedAt).toLocaleDateString() : (ach.date || "Verified")}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

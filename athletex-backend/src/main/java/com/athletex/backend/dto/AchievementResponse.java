@@ -28,6 +28,13 @@ public class AchievementResponse {
     private String proofUrl;
     private String proofType;
     private Boolean isVerified;
+    private String verificationStatus;
+    private String coachFeedback;
+    private String tournamentName;
+    private String organizer;
+    private String sanctionId;
+    private String certificateHash;
+    private Boolean isCoachAwarded;
     private String verifiedByCoachId;
     private String verifiedByCoachName;
     private LocalDateTime verifiedAt;

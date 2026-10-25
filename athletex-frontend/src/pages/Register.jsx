@@ -58,7 +58,17 @@ export default function Register() {
 
     try {
       const res = await api.post(`/auth/resend-otp?email=${encodeURIComponent(formData.email)}`);
-      setMessage({ type: "success", text: res.data?.message || "Verification code resent!" });
+      if (res.data?.message?.toLowerCase().includes("already verified")) {
+        setMessage({ 
+          type: "success", 
+          text: "This account is already verified! You can proceed directly to the login portal." 
+        });
+      } else {
+        setMessage({ 
+          type: "success", 
+          text: res.data?.message || "Verification code resent! Please check your inbox and spam folder." 
+        });
+      }
       setResendCooldown(30);
       await fetchDevOtpInfo(formData.email);
     } catch (err) {
@@ -120,7 +130,15 @@ export default function Register() {
         phone: formData.phone.trim(),
       };
 
-      await api.post("/auth/register", payload);
+      const res = await api.post("/auth/register", payload);
+      if (typeof res.data === "string" && res.data.toLowerCase().includes("already exists")) {
+        setMessage({ 
+          type: "error", 
+          text: "An account with this email is already registered. Please log in or use a different email." 
+        });
+        return;
+      }
+
       setMessage({ type: "success", text: "Enrollment initiated! Enter your verification code below." });
       
       // Move to OTP step
@@ -349,9 +367,21 @@ export default function Register() {
             {devOtpInfo?.smtpConfigured ? (
               <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-sm text-left flex items-start gap-2.5">
                 <FiMail className="text-emerald-400 text-sm mt-0.5 shrink-0" />
-                <div className="text-[11px] text-gray-300 leading-relaxed">
+                <div className="text-[11px] text-gray-300 leading-relaxed flex-grow">
                   <span className="text-emerald-400 font-bold uppercase tracking-wider block text-[10px]">Email Dispatched</span>
                   Verification email sent via SMTP. Please check your inbox (and spam/promotions folder).
+                  {devOtpInfo?.otp && (
+                    <div className="mt-2 pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[10px]">
+                      <span className="text-gray-400">Email delayed or spam-filtered?</span>
+                      <button
+                        type="button"
+                        onClick={() => setOtp(devOtpInfo.otp)}
+                        className="text-brand-peach font-bold hover:underline cursor-pointer"
+                      >
+                        Auto-fill ({devOtpInfo.otp})
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ) : (

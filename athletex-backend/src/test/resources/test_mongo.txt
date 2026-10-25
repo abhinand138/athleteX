@@ -1,0 +1,8 @@
+import com.athletex.backend.model.User;
+import com.athletex.backend.repository.UserRepository;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+// Check user in db

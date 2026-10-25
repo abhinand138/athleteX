@@ -1,6 +1,7 @@
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 
-export function generateAchievementCertificate(achievement, athleteName, coachName) {
+export async function generateAchievementCertificate(achievement, athleteName, coachName) {
   const doc = new jsPDF({
     orientation: "landscape",
     unit: "mm",
@@ -79,37 +80,48 @@ export function generateAchievementCertificate(achievement, athleteName, coachNa
   doc.setTextColor(220, 225, 235);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(12);
-  doc.text("In official recognition of athletic distinction, discipline, and outstanding milestone:", pageWidth / 2, 96, { align: "center" });
+  doc.text("In official recognition of athletic distinction, discipline, and outstanding milestone:", pageWidth / 2, 95, { align: "center" });
 
   // Achievement Title Box
   doc.setFillColor(20, 24, 35);
   doc.setDrawColor(238, 155, 116);
   doc.setLineWidth(0.5);
-  doc.roundedRect(pageWidth / 2 - 80, 103, 160, 18, 3, 3, "FD");
+  doc.roundedRect(pageWidth / 2 - 85, 102, 170, 18, 3, 3, "FD");
 
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(15);
-  doc.text(achievement.title || "Milestone Award", pageWidth / 2, 115, { align: "center" });
+  doc.text(achievement.title || "Milestone Award", pageWidth / 2, 114, { align: "center" });
 
-  // Category & Level
+  // Category, Level, Date & Tournament
   doc.setTextColor(170, 180, 195);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(10);
-  const metaText = `CATEGORY: ${achievement.category || "GENERAL"}  •  LEVEL: ${achievement.level || "GOLD"}  •  AWARD DATE: ${achievement.date || new Date().toISOString().split("T")[0]}`;
-  doc.text(metaText, pageWidth / 2, 131, { align: "center" });
+  doc.setFontSize(9.5);
+  let metaText = `CATEGORY: ${achievement.category || "GENERAL"}  •  LEVEL: ${achievement.level || "GOLD"}  •  DATE: ${achievement.date || new Date().toISOString().split("T")[0]}`;
+  if (achievement.tournamentName) {
+    metaText += `  •  EVENT: ${achievement.tournamentName}`;
+  }
+  doc.text(metaText, pageWidth / 2, 128, { align: "center" });
+
+  if (achievement.organizer || achievement.sanctionId) {
+    doc.setTextColor(238, 155, 116);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8.5);
+    const orgText = `SANCTION: ${achievement.sanctionId || "VERIFIED"}  •  FEDERATION / ORG: ${achievement.organizer || "AthleteX Accreditation Board"}`;
+    doc.text(orgText, pageWidth / 2, 134, { align: "center" });
+  }
 
   if (achievement.description) {
     doc.setTextColor(140, 150, 165);
     doc.setFont("helvetica", "italic");
-    doc.setFontSize(9);
-    const splitDesc = doc.splitTextToSize(`"${achievement.description}"`, 180);
-    doc.text(splitDesc, pageWidth / 2, 140, { align: "center" });
+    doc.setFontSize(8.5);
+    const splitDesc = doc.splitTextToSize(`"${achievement.description}"`, 190);
+    doc.text(splitDesc, pageWidth / 2, 142, { align: "center" });
   }
 
   // 9. Official Seal (Center-bottom)
   const sealX = pageWidth / 2;
-  const sealY = 162;
+  const sealY = 164;
   doc.setFillColor(238, 155, 116);
   doc.circle(sealX, sealY, 12, "F");
   doc.setFillColor(11, 13, 19);
@@ -122,53 +134,43 @@ export function generateAchievementCertificate(achievement, athleteName, coachNa
   doc.text("ATHLETEX", sealX, sealY + 2, { align: "center" });
   doc.text("★ EXCELLENCE ★", sealX, sealY + 5.5, { align: "center" });
 
-  // 10. QR Validation Graphic Box (Bottom Left Accent)
+  // 10. REAL SCANNABLE QR CODE (Bottom Left)
+  const athleteIdStr = achievement.athleteId || achievement.userId || "guest";
+  const certId = achievement.certificateHash || `AX-${achievement.id ? achievement.id.substring(0, 8).toUpperCase() : Math.random().toString(36).substring(2, 10).toUpperCase()}`;
+  const verifyUrl = `${window.location.origin}/verify/${athleteIdStr}?cert=${encodeURIComponent(certId)}`;
+
   const qrX = 18;
   const qrY = 145;
-  doc.setFillColor(20, 24, 35);
-  doc.setDrawColor(238, 155, 116);
-  doc.setLineWidth(0.4);
-  doc.roundedRect(qrX, qrY, 32, 32, 2, 2, "FD");
 
-  // Draw simulated QR matrix pattern
-  doc.setFillColor(238, 155, 116);
-  // Outer QR Corners
-  doc.rect(qrX + 3, qrY + 3, 7, 7, "F");
-  doc.setFillColor(11, 13, 19);
-  doc.rect(qrX + 4.5, qrY + 4.5, 4, 4, "F");
-  doc.setFillColor(238, 155, 116);
-  doc.rect(qrX + 5.5, qrY + 5.5, 2, 2, "F");
+  try {
+    const qrDataUrl = await QRCode.toDataURL(verifyUrl, {
+      margin: 1,
+      width: 256,
+      color: {
+        dark: "#ee9b74",
+        light: "#0b0d13"
+      }
+    });
 
-  doc.rect(qrX + 22, qrY + 3, 7, 7, "F");
-  doc.setFillColor(11, 13, 19);
-  doc.rect(qrX + 23.5, qrY + 4.5, 4, 4, "F");
-  doc.setFillColor(238, 155, 116);
-  doc.rect(qrX + 24.5, qrY + 5.5, 2, 2, "F");
+    // Draw background card for QR
+    doc.setFillColor(20, 24, 35);
+    doc.setDrawColor(238, 155, 116);
+    doc.setLineWidth(0.4);
+    doc.roundedRect(qrX, qrY, 32, 35, 2, 2, "FD");
 
-  doc.rect(qrX + 3, qrY + 22, 7, 7, "F");
-  doc.setFillColor(11, 13, 19);
-  doc.rect(qrX + 4.5, qrY + 23.5, 4, 4, "F");
-  doc.setFillColor(238, 155, 116);
-  doc.rect(qrX + 5.5, qrY + 24.5, 2, 2, "F");
+    // Embed genuine QR image
+    doc.addImage(qrDataUrl, "PNG", qrX + 2, qrY + 2, 28, 28);
 
-  // QR Random data dots
-  const dots = [
-    [12, 12], [14, 12], [16, 12], [18, 12],
-    [12, 14], [16, 14], [22, 14], [24, 14],
-    [14, 16], [18, 16], [20, 16], [26, 16],
-    [12, 18], [16, 18], [24, 18], [26, 18],
-    [14, 20], [20, 20], [22, 20], [26, 20],
-    [12, 22], [18, 22], [24, 22], [26, 22],
-    [14, 24], [16, 24], [20, 24], [22, 24]
-  ];
-  dots.forEach(([dx, dy]) => {
-    doc.rect(qrX + dx, qrY + dy, 1.5, 1.5, "F");
-  });
-
-  doc.setTextColor(170, 180, 195);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(6);
-  doc.text("SCAN TO VERIFY", qrX + 16, qrY + 30.5, { align: "center" });
+    doc.setTextColor(170, 180, 195);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(5.5);
+    doc.text("SCAN TO VERIFY", qrX + 16, qrY + 33, { align: "center" });
+  } catch (err) {
+    console.error("QR Code Generation Error:", err);
+    // Fallback graphic
+    doc.setFillColor(20, 24, 35);
+    doc.rect(qrX, qrY, 32, 32, "F");
+  }
 
   // 11. Signatures
   // Left: Coach Signature
@@ -179,35 +181,32 @@ export function generateAchievementCertificate(achievement, athleteName, coachNa
   doc.setTextColor(238, 155, 116);
   doc.setFont("times", "italic");
   doc.setFontSize(13);
-  doc.text(coachName ? `Coach ${coachName}` : "Assigned Coach", 90, 178, { align: "center" });
+  const displayCoachName = coachName || achievement.verifiedByCoachName || "Assigned Coach";
+  doc.text(`Coach ${displayCoachName.replace(/^Coach\s+/i, "")}`, 90, 178, { align: "center" });
 
   doc.setTextColor(160, 170, 185);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
   doc.text("OFFICIAL COACHING ATTESTATION", 90, 187, { align: "center" });
 
-  // Right: Platform Director Signature
+  // Right: Platform Director / Board Signature
   doc.line(pageWidth - 115, 182, pageWidth - 65, 182);
 
   doc.setTextColor(238, 155, 116);
   doc.setFont("times", "italic");
   doc.setFontSize(13);
-  doc.text("Dr. Marcus Vance", pageWidth - 90, 178, { align: "center" });
+  doc.text("AthleteX Accreditation Board", pageWidth - 90, 178, { align: "center" });
 
   doc.setTextColor(160, 170, 185);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(8);
-  doc.text("DIRECTOR OF ATHLETIC DEVELOPMENT", pageWidth - 90, 187, { align: "center" });
+  doc.text("CHIEF ACCREDITATION OFFICER", pageWidth - 90, 187, { align: "center" });
 
   // 12. Footer Verification Code & Anti-Counterfeit Hash
-  const certId = `AX-${achievement.id ? achievement.id.substring(0, 8).toUpperCase() : Math.random().toString(36).substring(2, 10).toUpperCase()}`;
-  const athleteIdStr = achievement.athleteId || achievement.userId || "guest";
-  const verifyUrl = `${window.location.origin}/verify/${athleteIdStr}`;
-
   doc.setTextColor(100, 110, 125);
   doc.setFont("courier", "normal");
   doc.setFontSize(7);
-  doc.text(`VERIFICATION ID: ${certId} • URL: ${verifyUrl} • SECURE DIGITAL ACCREDITATION`, pageWidth / 2, 202, { align: "center" });
+  doc.text(`DIGITAL SIGNATURE: ${certId} • SCAN QR TO AUDIT • ATHLETEX VERIFIED LEDGER`, pageWidth / 2, 202, { align: "center" });
 
   // 13. Save File
   const safeName = (athleteName || "Athlete").replace(/[^a-zA-Z0-9]/g, "_");

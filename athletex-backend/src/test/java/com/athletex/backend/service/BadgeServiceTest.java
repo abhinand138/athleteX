@@ -23,6 +23,9 @@ class BadgeServiceTest {
     @Mock
     private AchievementRepository achievementRepository;
 
+    @Mock
+    private com.athletex.backend.repository.PerformanceDrillRepository drillRepository;
+
     @InjectMocks
     private BadgeService badgeService;
 
@@ -42,7 +45,7 @@ class BadgeServiceTest {
         List<BadgeResponse> badges = badgeService.evaluateAthleteBadges(athleteId);
 
         assertNotNull(badges);
-        assertEquals(6, badges.size());
+        assertEquals(12, badges.size());
 
         // Verify all are locked
         assertTrue(badges.stream().noneMatch(BadgeResponse::getIsUnlocked));

@@ -33,6 +33,9 @@ class AuthControllerTest {
     @Mock
     private AuthService authService;
 
+    @Mock
+    private com.athletex.backend.service.EmailService emailService;
+
     @InjectMocks
     private AuthController authController;
 

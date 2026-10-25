@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,7 +34,7 @@ public class PaymentController {
             @Valid @RequestBody CheckoutRequest request,
             Authentication authentication) {
         try {
-            String actingAthleteId = (authentication != null && authentication.getName() != null)
+            String actingAthleteId = (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName()))
                     ? authentication.getName()
                     : request.getAthleteId();
 
@@ -63,12 +64,20 @@ public class PaymentController {
             @RequestParam(required = false) String athleteId,
             Authentication authentication) {
         try {
-            String targetAthleteId = (athleteId != null && !athleteId.isBlank())
-                    ? athleteId
-                    : (authentication != null ? authentication.getName() : null);
+            String authId = (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName()))
+                    ? authentication.getName()
+                    : null;
+            boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            String targetAthleteId = (athleteId != null && !athleteId.isBlank()) ? athleteId : authId;
 
             if (targetAthleteId == null) {
                 return ResponseEntity.badRequest().body("Athlete ID is required to fetch payment history.");
+            }
+
+            if (!isAdmin && authId != null && !targetAthleteId.equals(authId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied to requested payment history.");
             }
 
             List<PaymentReceiptResponse> history = paymentService.getAthletePaymentHistory(targetAthleteId);
@@ -87,12 +96,20 @@ public class PaymentController {
             @RequestParam(required = false) String coachId,
             Authentication authentication) {
         try {
-            String targetCoachId = (coachId != null && !coachId.isBlank())
-                    ? coachId
-                    : (authentication != null ? authentication.getName() : null);
+            String authId = (authentication != null && authentication.isAuthenticated() && !"anonymousUser".equals(authentication.getName()))
+                    ? authentication.getName()
+                    : null;
+            boolean isAdmin = authentication != null && authentication.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+            String targetCoachId = (coachId != null && !coachId.isBlank()) ? coachId : authId;
 
             if (targetCoachId == null) {
                 return ResponseEntity.badRequest().body("Coach ID is required to fetch earnings.");
+            }
+
+            if (!isAdmin && authId != null && !targetCoachId.equals(authId)) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Access denied to requested coach earnings.");
             }
 
             CoachEarningsResponse earnings = paymentService.getCoachEarnings(targetCoachId);
@@ -109,6 +126,7 @@ public class PaymentController {
      * Admin global marketplace financial overview.
      */
     @GetMapping("/admin/stats")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> getAdminMarketplaceStats() {
         try {
             AdminMarketplaceStatsResponse stats = paymentService.getAdminMarketplaceStats();

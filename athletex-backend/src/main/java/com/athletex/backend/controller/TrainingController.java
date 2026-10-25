@@ -68,6 +68,12 @@ public class TrainingController {
         return ResponseEntity.ok(Map.of("message", "Automated missed session check completed", "updatedCount", marked));
     }
 
+    // POST /api/training/seed-demo (Instant test session seeding for athlete)
+    @PostMapping("/seed-demo")
+    public ResponseEntity<?> seedDemoWorkouts(@RequestParam String athleteId) {
+        return ResponseEntity.ok(trainingService.seedDemoWorkouts(athleteId));
+    }
+
     // GET /api/training/coach/{coachId}
     @GetMapping("/coach/{coachId}")
     public ResponseEntity<List<TrainingResponse>> getCoachTraining(@PathVariable String coachId) {

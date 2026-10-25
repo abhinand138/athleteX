@@ -41,6 +41,8 @@ public class Training {
 
     private String athleteFeedback;
 
+    private java.util.List<com.athletex.backend.dto.ai.ExerciseDetail> exercises;
+
     private LocalDateTime completedAt;
 
     private LocalDateTime createdAt;

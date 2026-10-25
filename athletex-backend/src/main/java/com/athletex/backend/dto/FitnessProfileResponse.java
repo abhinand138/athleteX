@@ -24,6 +24,16 @@ public class FitnessProfileResponse {
     private String formDescription;
     private String fitnessTier;  // "ELITE_DIVISION", "SEMI_PRO", "VARSITY", "DEVELOPMENT"
 
+    // Tim Gabbett ACWR (Acute:Chronic Workload Ratio) - Sports Science Engine
+    private Double acwr;                     // e.g. 1.15
+    private String acwrStatus;               // "SWEET_SPOT", "MODERATE_SPIKE", "DANGER_ZONE", "UNDERTRAINING"
+    private String acwrBadge;                // "🟢 Sweet Spot (0.8 - 1.3)", "🟡 Moderate Spike (1.3 - 1.5)", "🔴 High Injury Danger (> 1.5)", "🔵 Under-Stimulated (< 0.8)"
+    private String acwrRecommendation;       // Actionable sports science recommendation
+    private Double acute7DayLoad;            // Total AU load in past 7 days
+    private Double chronic28DayLoad;         // Total AU load in past 28 days
+    private Double chronicWeeklyAverageLoad; // chronic28DayLoad / 4.0
+    private Double injuryRiskIndex;          // Scaled 0 - 100 injury risk score
+
     // 5 Pillars (0-100)
     private double speed;
     private double strength;

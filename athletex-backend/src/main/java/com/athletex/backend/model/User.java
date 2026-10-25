@@ -22,6 +22,7 @@ public class User {
     private String fullName;
 
     @Email
+    @org.springframework.data.mongodb.core.index.Indexed(unique = true)
     private String email;
 
     @NotBlank
@@ -109,14 +110,14 @@ public class User {
     private String payoutMethod;
 
     public Double getMonthlyRate() {
-        return monthlyRate != null ? monthlyRate : 89.0;
+        return monthlyRate != null ? monthlyRate : 4999.0;
     }
 
     public Double getConsultationRate() {
-        return consultationRate != null ? consultationRate : 40.0;
+        return consultationRate != null ? consultationRate : 1999.0;
     }
 
     public String getCurrency() {
-        return currency != null && !currency.isBlank() ? currency : "USD";
+        return currency != null && !currency.isBlank() ? currency : "INR";
     }
 }

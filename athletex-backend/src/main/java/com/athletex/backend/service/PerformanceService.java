@@ -221,11 +221,12 @@ public class PerformanceService {
 
         double overallFitness = Math.round(((speed * 0.25) + (endurance * 0.25) + (strength * 0.2) + (agility * 0.15) + (consistency * 0.15)) * 10.0) / 10.0;
 
-        // Banister calculation:
-        // Calculate recent 7-day load and 42-day load
+        // Banister & Tim Gabbett ACWR calculation:
+        // Calculate recent 7-day load and 28-day / 42-day loads
         LocalDate today = LocalDate.now();
         double recent7DayLoad = 0;
         double chronic42DayLoad = 0;
+        double chronic28DayLoad = 0;
         int chronicSessionCount = 0;
 
         for (Training t : trainings) {
@@ -233,13 +234,17 @@ public class PerformanceService {
                 long daysAgo = java.time.temporal.ChronoUnit.DAYS.between(t.getDate(), today);
                 int duration = t.getActualDurationMinutes() != null && t.getActualDurationMinutes() > 0 ? t.getActualDurationMinutes() : 60;
                 int rpe = t.getRpe() != null && t.getRpe() > 0 ? t.getRpe() : 7;
-                double sessionLoad = (duration * rpe) / 10.0; // Scaled AU
+                double sessionRawAU = (duration * rpe);
+                double sessionLoadScaled = sessionRawAU / 10.0; // Scaled AU
 
                 if (daysAgo >= 0 && daysAgo <= 7) {
-                    recent7DayLoad += sessionLoad;
+                    recent7DayLoad += sessionLoadScaled;
+                }
+                if (daysAgo >= 0 && daysAgo <= 28) {
+                    chronic28DayLoad += sessionRawAU;
                 }
                 if (daysAgo >= 0 && daysAgo <= 42) {
-                    chronic42DayLoad += sessionLoad;
+                    chronic42DayLoad += sessionLoadScaled;
                     chronicSessionCount++;
                 }
             }
@@ -279,6 +284,45 @@ public class PerformanceService {
             formStatus = "HEAVY_FATIGUE";
             formBadge = "🔴 Deload Required";
             formDescription = "Acute strain significantly outpaces recovery. High overreaching risk; schedule a rest day.";
+        }
+
+        // ACWR (Acute:Chronic Workload Ratio) Calculations
+        double rawAcute7Day = recent7DayLoad * 10.0; // unscaled raw AU
+        double chronicWeeklyAvg = chronic28DayLoad > 0 ? Math.round((chronic28DayLoad / 4.0) * 10.0) / 10.0 : 0.0;
+        double acwr;
+        if (chronicWeeklyAvg > 0) {
+            acwr = Math.round((rawAcute7Day / chronicWeeklyAvg) * 100.0) / 100.0;
+        } else if (rawAcute7Day > 0) {
+            acwr = 1.45;
+        } else {
+            acwr = 1.0;
+        }
+
+        String acwrStatus;
+        String acwrBadge;
+        String acwrRecommendation;
+        double injuryRiskIndex;
+
+        if (acwr >= 1.5) {
+            acwrStatus = "DANGER_ZONE";
+            acwrBadge = "🔴 High Injury Danger (> 1.5)";
+            acwrRecommendation = "Critical Acute Spike! Acute training impulse is " + acwr + "x higher than your 28-day chronic baseline. Soft-tissue injury risk is elevated 2.5x to 4x. Immediately schedule active recovery, foam rolling, and reduce sprint volume by 25-30%.";
+            injuryRiskIndex = Math.min(95.0, 65.0 + (acwr - 1.5) * 40.0);
+        } else if (acwr >= 1.3) {
+            acwrStatus = "MODERATE_SPIKE";
+            acwrBadge = "🟡 Elevated Strain (1.3 - 1.5)";
+            acwrRecommendation = "Overreaching Zone: Fatigue is accumulating faster than tissue remodelling. Ensure 8+ hours of sleep, hydrate well, and monitor hamstring/calf tightness before high-velocity sessions.";
+            injuryRiskIndex = 45.0 + ((acwr - 1.3) / 0.2) * 20.0;
+        } else if (acwr >= 0.8) {
+            acwrStatus = "SWEET_SPOT";
+            acwrBadge = "🟢 Optimal Sweet Spot (0.8 - 1.3)";
+            acwrRecommendation = "Gabbett Sweet Spot: Workload is building athletic capacity and endurance with minimized injury likelihood. Perfect physiological adaptation window.";
+            injuryRiskIndex = 15.0 + ((acwr - 0.8) / 0.5) * 15.0;
+        } else {
+            acwrStatus = "UNDERTRAINING";
+            acwrBadge = "🔵 Under-Stimulated (< 0.8)";
+            acwrRecommendation = "Fitness Decay Alert: Acute stimulus has dropped significantly below chronic capacity. Progressive re-introduction of volume is required to prevent an injury spike when resuming full competition.";
+            injuryRiskIndex = 35.0;
         }
 
         String fitnessTier;
@@ -326,6 +370,14 @@ public class PerformanceService {
                 .formBadge(formBadge)
                 .formDescription(formDescription)
                 .fitnessTier(fitnessTier)
+                .acwr(acwr)
+                .acwrStatus(acwrStatus)
+                .acwrBadge(acwrBadge)
+                .acwrRecommendation(acwrRecommendation)
+                .acute7DayLoad((double) Math.round(rawAcute7Day))
+                .chronic28DayLoad((double) Math.round(chronic28DayLoad))
+                .chronicWeeklyAverageLoad(chronicWeeklyAvg)
+                .injuryRiskIndex(Math.round(injuryRiskIndex * 10.0) / 10.0)
                 .speed(speed)
                 .strength(strength)
                 .endurance(endurance)

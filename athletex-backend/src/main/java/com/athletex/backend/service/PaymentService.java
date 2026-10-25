@@ -360,6 +360,7 @@ public class PaymentService {
                 .athleteEmail(athlete.getEmail())
                 .athletePhone(athlete.getPhone() != null ? athlete.getPhone() : "+91 9999999999")
                 .description(description)
+                .simulated(razorpayOrderId.startsWith("order_sim_"))
                 .build();
     }
 
@@ -396,9 +397,9 @@ public class PaymentService {
                 .orElseThrow(() -> new IllegalArgumentException("Coach not found with ID: " + request.getCoachId()));
 
         String currency = request.getCurrency() != null ? request.getCurrency().toUpperCase() : "INR";
-        double amount = request.getAmount() != null && request.getAmount() > 0
-                ? request.getAmount()
-                : (request.getPaymentType() == PaymentType.COACH_CONSULTATION_SESSION ? 1999.0 : 4999.0);
+        double amount = (request.getPaymentType() == PaymentType.COACH_MONTHLY_SUBSCRIPTION)
+                ? ((coach.getMonthlyRate() != null && coach.getMonthlyRate() > 0) ? coach.getMonthlyRate() : 4999.0)
+                : ((coach.getConsultationRate() != null && coach.getConsultationRate() > 0) ? coach.getConsultationRate() : 1999.0);
 
         double platformFee = Math.round(amount * 0.10 * 100.0) / 100.0;
         double coachEarning = Math.round((amount - platformFee) * 100.0) / 100.0;
@@ -541,8 +542,12 @@ public class PaymentService {
     }
 
     private boolean verifySignature(String orderId, String paymentId, String signature, String secret) {
-        if (secret == null || secret.isBlank() || signature == null || signature.isBlank()) {
-            return true; // Test/Sandbox mode
+        if (secret == null || secret.isBlank()) {
+            // In development/test mode without secret configured, only accept test/simulated orders with signatures
+            return (orderId != null && (orderId.startsWith("order_sim_") || orderId.startsWith("order_test_")));
+        }
+        if (signature == null || signature.isBlank()) {
+            return false;
         }
         try {
             String data = orderId + "|" + paymentId;

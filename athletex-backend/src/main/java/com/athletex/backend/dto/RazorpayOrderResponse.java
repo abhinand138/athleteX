@@ -22,4 +22,5 @@ public class RazorpayOrderResponse {
     private String athletePhone;
 
     private String description;
+    private Boolean simulated;
 }

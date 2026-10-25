@@ -26,6 +26,7 @@ import {
 } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import api from "../../services/api";
+import RazorpayModal from "../../components/payment/RazorpayModal";
 
 export default function AthleteCoaches() {
   const navigate = useNavigate();
@@ -42,6 +43,8 @@ export default function AthleteCoaches() {
   const [paymentGatewayTab, setPaymentGatewayTab] = useState("RAZORPAY");
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [completedReceipt, setCompletedReceipt] = useState(null);
+  const [showRazorpayModal, setShowRazorpayModal] = useState(false);
+  const [razorpayOrderData, setRazorpayOrderData] = useState(null);
 
   // Simulated Card State
   const [cardData, setCardData] = useState({
@@ -53,7 +56,7 @@ export default function AthleteCoaches() {
   });
 
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  const athleteId = user.id || "";
+  const athleteId = user.id || user._id || "";
 
   // Dynamically load Razorpay checkout script
   useEffect(() => {
@@ -270,24 +273,31 @@ export default function AthleteCoaches() {
       });
 
       const orderData = orderRes.data;
+      setRazorpayOrderData(orderData);
 
-      // 2. If window.Razorpay is loaded, launch Razorpay Checkout modal
-      if (typeof window.Razorpay === "function") {
+      // If backend created a genuine server-side order with live Razorpay keys, launch official Razorpay SDK
+      if (
+        orderData.orderId &&
+        !orderData.orderId.startsWith("order_sim_") &&
+        orderData.simulated !== true &&
+        typeof window.Razorpay === "function"
+      ) {
         const options = {
           key: orderData.keyId,
           amount: orderData.amountInPaise,
-          currency: orderData.currency,
+          currency: orderData.currency || "INR",
           name: "AthleteX High Performance",
-          description: orderData.description,
+          description: orderData.description || `Coaching Access: ${checkoutCoach.fullName}`,
+          image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?auto=format&fit=crop&q=80&w=200",
           order_id: orderData.orderId,
           prefill: {
-            name: orderData.athleteName || user.fullName,
-            email: orderData.athleteEmail || user.email,
+            name: orderData.athleteName || user.fullName || "Alex Rivera",
+            email: orderData.athleteEmail || user.email || "athlete@athletex.com",
             contact: orderData.athletePhone || "+919999999999"
           },
           notes: {
-            coachId: orderData.coachId,
-            athleteId: orderData.athleteId,
+            coachId: checkoutCoach.id,
+            athleteId: athleteId,
             paymentType: packageType
           },
           theme: {
@@ -303,7 +313,7 @@ export default function AthleteCoaches() {
                 coachId: checkoutCoach.id,
                 athleteId: athleteId,
                 paymentType: packageType,
-                currency: orderData.currency,
+                currency: orderData.currency || "INR",
                 amount: orderData.displayAmount
               });
 
@@ -333,21 +343,8 @@ export default function AthleteCoaches() {
         });
         rzp.open();
       } else {
-        // Fallback simulation if checkout.js CDN is blocked
-        const verifyRes = await api.post("/payments/razorpay/verify", {
-          razorpayOrderId: orderData.orderId,
-          razorpayPaymentId: "pay_sim_" + Date.now().toString().slice(-8),
-          razorpaySignature: "sig_simulated_success",
-          coachId: checkoutCoach.id,
-          athleteId: athleteId,
-          paymentType: packageType,
-          currency: orderData.currency,
-          amount: orderData.displayAmount
-        });
-        setCompletedReceipt(verifyRes.data);
-        setCheckoutCoach(null);
-        toast.success("Razorpay payment confirmed!");
-        fetchCoaches();
+        // Open the interactive Razorpay Payment Gateway Modal
+        setShowRazorpayModal(true);
       }
     } catch (error) {
       console.error("Razorpay order error:", error);
@@ -868,6 +865,7 @@ export default function AthleteCoaches() {
                 <div className="grid grid-cols-2 gap-3">
                   <button
                     type="button"
+                    id="tab-razorpay-btn"
                     onClick={() => setPaymentGatewayTab("RAZORPAY")}
                     className={`p-3.5 rounded-2xl border text-center transition-all ${
                       paymentGatewayTab === "RAZORPAY"
@@ -881,6 +879,7 @@ export default function AthleteCoaches() {
 
                   <button
                     type="button"
+                    id="tab-card-btn"
                     onClick={() => setPaymentGatewayTab("CARD")}
                     className={`p-3.5 rounded-2xl border text-center transition-all ${
                       paymentGatewayTab === "CARD"
@@ -931,6 +930,7 @@ export default function AthleteCoaches() {
 
                   <button
                     type="button"
+                    id="pay-razorpay-btn"
                     disabled={isProcessingPayment}
                     onClick={handleRazorpayPayment}
                     className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-peach to-orange-500 text-black font-black text-sm uppercase tracking-wider hover:opacity-95 transition-all shadow-xl shadow-brand-peach/25 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
@@ -938,7 +938,7 @@ export default function AthleteCoaches() {
                     {isProcessingPayment ? (
                       <>
                         <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
-                        <span>Launching Razorpay Window...</span>
+                        <span>Authorizing Payment...</span>
                       </>
                     ) : (
                       <>
@@ -1004,6 +1004,7 @@ export default function AthleteCoaches() {
 
                   <button
                     type="button"
+                    id="pay-card-btn"
                     disabled={isProcessingPayment}
                     onClick={handleExecutePayment}
                     className="w-full py-4 rounded-2xl bg-gradient-to-r from-brand-peach to-orange-500 text-black font-black text-sm uppercase tracking-wider hover:opacity-95 transition-all shadow-xl shadow-brand-peach/25 disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
@@ -1030,6 +1031,30 @@ export default function AthleteCoaches() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* RAZORPAY PAYMENT GATEWAY MODAL                                            */}
+        {/* ========================================================================= */}
+        {showRazorpayModal && razorpayOrderData && checkoutCoach && (
+          <RazorpayModal
+            isOpen={showRazorpayModal}
+            onClose={() => setShowRazorpayModal(false)}
+            orderData={razorpayOrderData}
+            coach={checkoutCoach}
+            packageType={packageType}
+            athleteId={athleteId}
+            onPaymentSuccess={(receipt) => {
+              setCompletedReceipt(receipt);
+              setCheckoutCoach(null);
+              setShowRazorpayModal(false);
+              toast.success("Razorpay payment confirmed! Coaching access activated.");
+              fetchCoaches();
+            }}
+            onPaymentFailure={(err) => {
+              toast.error("Payment could not be completed: " + err);
+            }}
+          />
         )}
 
         {/* ========================================================================= */}

@@ -40,8 +40,12 @@ public class PerformanceDrillService {
         }
         if (drillCode == null) return false;
         String code = drillCode.toUpperCase();
+        if (code.contains("BOWLING_SPEED") || code.contains("YO_YO") || code.contains("YOYO")) {
+            return false;
+        }
         return code.contains("DASH") || code.contains("SPRINT") || code.contains("RUN") ||
                 code.contains("SHUTTLE") || code.contains("AGILITY") || code.contains("TIME") ||
+                code.contains("TRIAL") || code.contains("PITCH") || code.contains("505") ||
                 code.contains("CONE") || code.contains("T_TEST");
     }
 
@@ -135,6 +139,62 @@ public class PerformanceDrillService {
                 else if (value <= 21.0) { percentile = 82.0; tier = "Varsity Star"; }
                 else if (value <= 25.0) { percentile = 68.0; tier = "Varsity"; }
                 else { percentile = 50.0; tier = "Development"; }
+                break;
+
+            case "BCCI_2KM_TIME_TRIAL":
+                double trialMinutes = value > 50 ? value / 60.0 : value;
+                if (trialMinutes <= 7.45) { percentile = 99.0; tier = "Elite Pro (BCCI Standard)"; }
+                else if (trialMinutes <= 8.15) { percentile = 93.0; tier = "National Bowler Standard"; }
+                else if (trialMinutes <= 8.30) { percentile = 84.0; tier = "Ranji / First Class"; }
+                else if (trialMinutes <= 9.00) { percentile = 70.0; tier = "State Academy"; }
+                else { percentile = 50.0; tier = "Club Developing"; }
+                break;
+
+            case "YO_YO_IR1_CRICKET":
+            case "YO_YO_TEST":
+                if (value >= 20.0) { percentile = 99.0; tier = "International Elite"; }
+                else if (value >= 18.5) { percentile = 92.0; tier = "National Team Cutoff"; }
+                else if (value >= 17.1) { percentile = 82.0; tier = "State / Pro Standard"; }
+                else if (value >= 16.1) { percentile = 70.0; tier = "Academy Qualified"; }
+                else { percentile = 50.0; tier = "Below Benchmark"; }
+                break;
+
+            case "CRICKET_22YD_PITCH_SPRINT":
+                if (value <= 2.85) { percentile = 99.0; tier = "Lightning Quick"; }
+                else if (value <= 3.00) { percentile = 92.0; tier = "International Standard"; }
+                else if (value <= 3.15) { percentile = 82.0; tier = "First Class / Pro"; }
+                else if (value <= 3.35) { percentile = 70.0; tier = "Club Athlete"; }
+                else { percentile = 50.0; tier = "Development"; }
+                break;
+
+            case "BOWLING_SPEED_KMH":
+                if (value >= 145.0) { percentile = 99.0; tier = "Express Pace (145+ km/h)"; }
+                else if (value >= 138.0) { percentile = 93.0; tier = "Fast (138-145 km/h)"; }
+                else if (value >= 128.0) { percentile = 82.0; tier = "Fast-Medium (128-138 km/h)"; }
+                else if (value >= 118.0) { percentile = 68.0; tier = "Medium-Pace (118-128 km/h)"; }
+                else { percentile = 50.0; tier = "Developing Pace"; }
+                break;
+
+            case "FOOTBALL_30M_SPRINT":
+                if (value <= 3.82) { percentile = 99.0; tier = "UCL / Premier Tier"; }
+                else if (value <= 3.98) { percentile = 93.0; tier = "Pro Division 1"; }
+                else if (value <= 4.15) { percentile = 82.0; tier = "Academy Tier 1"; }
+                else if (value <= 4.35) { percentile = 70.0; tier = "Varsity / Club"; }
+                else { percentile = 50.0; tier = "Development"; }
+                break;
+
+            case "FOOTBALL_505_AGILITY":
+                if (value <= 2.15) { percentile = 99.0; tier = "Elite Pro"; }
+                else if (value <= 2.28) { percentile = 92.0; tier = "Pro Academy"; }
+                else if (value <= 2.42) { percentile = 80.0; tier = "Varsity Starter"; }
+                else { percentile = 60.0; tier = "Development"; }
+                break;
+
+            case "ILLINOIS_AGILITY_TEST":
+                if (value <= 15.2) { percentile = 99.0; tier = "World Class"; }
+                else if (value <= 16.1) { percentile = 92.0; tier = "Elite Academy"; }
+                else if (value <= 17.2) { percentile = 80.0; tier = "Competitor"; }
+                else { percentile = 55.0; tier = "Development"; }
                 break;
 
             default:

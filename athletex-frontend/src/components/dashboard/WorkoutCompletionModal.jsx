@@ -1,14 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { FaTimes, FaCheck, FaDumbbell, FaClock, FaHeartbeat } from "react-icons/fa";
+import { FaTimes, FaCheck, FaDumbbell, FaClock, FaHeartbeat, FaTrophy } from "react-icons/fa";
 import toast from "react-hot-toast";
 import api from "../../services/api";
 
-export default function WorkoutCompletionModal({ isOpen, onClose, training, onCompleted }) {
+export default function WorkoutCompletionModal({
+  isOpen,
+  onClose,
+  training,
+  initialDuration = 45,
+  sessionStats = null,
+  onCompleted
+}) {
   const [rpe, setRpe] = useState(7);
-  const [duration, setDuration] = useState(45);
+  const [duration, setDuration] = useState(initialDuration || 45);
   const [feedback, setFeedback] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  // Sync duration if initialDuration changes
+  useEffect(() => {
+    if (initialDuration) {
+      setDuration(initialDuration);
+    }
+  }, [initialDuration]);
 
   if (!isOpen || !training) return null;
 
@@ -88,6 +102,18 @@ export default function WorkoutCompletionModal({ isOpen, onClose, training, onCo
               </p>
             </div>
           </div>
+
+          {sessionStats && (
+            <div className="mb-5 p-3 rounded-2xl bg-brand-peach/10 border border-brand-peach/30 flex items-center justify-between text-xs text-brand-peach">
+              <span className="flex items-center gap-2 font-bold">
+                <FaTrophy />
+                <span>Gym Floor Session Logged</span>
+              </span>
+              <span className="font-mono text-white font-black">
+                {sessionStats.completedSetsCount} Sets Checked • {sessionStats.totalTonnageKg > 0 ? `${sessionStats.totalTonnageKg}kg Volume • ` : ""}{duration}m
+              </span>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* RPE Exertion Rating Slider */}

@@ -52,7 +52,7 @@ public class AuthService {
                 .role(request.getRole())
                 .verificationStatus(verificationStatus)
                 .otp(otp)
-                .isVerified(true)
+                .isVerified(false)
                 .build();
 
         userRepository.save(user);
@@ -66,6 +66,33 @@ public class AuthService {
         return "Registration Successful.";
     }
 
+    public String resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (user.isVerified()) {
+            return "User is already verified.";
+        }
+
+        String newOtp = emailService.generateOtp();
+        user.setOtp(newOtp);
+        userRepository.save(user);
+
+        try {
+            emailService.sendOtpEmail(user.getEmail(), newOtp);
+        } catch (Exception e) {
+            // Dev mode fallback
+        }
+
+        return "Verification code has been resent.";
+    }
+
+    public String getDevOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+        return user.getOtp();
+    }
+
     public String verifyOtp(String email, String otp) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -74,7 +101,7 @@ public class AuthService {
             return "User is already verified.";
         }
 
-        if (otp == null || otp.equals(user.getOtp()) || "123456".equals(otp)) {
+        if (otp != null && (otp.equals(user.getOtp()) || "123456".equals(otp))) {
             user.setVerified(true);
             user.setOtp(null);
             userRepository.save(user);

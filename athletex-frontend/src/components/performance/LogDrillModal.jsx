@@ -15,7 +15,7 @@ import toast from "react-hot-toast";
 
 // Standard Athletic Combine Drill Catalog
 export const DRILL_CATALOG = [
-  // Speed
+  // Speed & Sprinting
   {
     code: "40_YARD_DASH",
     name: "40-Yard Dash",
@@ -34,6 +34,36 @@ export const DRILL_CATALOG = [
     lowerIsBetter: true,
     benchmarkNote: "Elite: <10.60s | Varsity: ~11.50s",
     icon: FaBolt,
+    color: "text-amber-400"
+  },
+  {
+    code: "CRICKET_22YD_PITCH_SPRINT",
+    name: "🏏 22-Yard Pitch Sprint (Padded)",
+    category: "SPEED",
+    defaultUnit: "s",
+    lowerIsBetter: true,
+    benchmarkNote: "Elite: <2.85s | National: ~3.05s | Varsity: ~3.20s",
+    icon: FaBolt,
+    color: "text-amber-400"
+  },
+  {
+    code: "BOWLING_SPEED_KMH",
+    name: "🏏 Fast Bowling Radar Speed",
+    category: "SPEED",
+    defaultUnit: "km/h",
+    lowerIsBetter: false,
+    benchmarkNote: "Express: >=145 km/h | Fast: >=138 km/h | Medium: ~125 km/h",
+    icon: FaFire,
+    color: "text-rose-400"
+  },
+  {
+    code: "FOOTBALL_30M_SPRINT",
+    name: "⚽ 30m Sprint (Laser Gates)",
+    category: "SPEED",
+    defaultUnit: "s",
+    lowerIsBetter: true,
+    benchmarkNote: "UCL / Premier Tier: <3.85s | Pro: ~4.05s | Varsity: ~4.25s",
+    icon: FaRunning,
     color: "text-amber-400"
   },
   // Power & Strength
@@ -77,7 +107,7 @@ export const DRILL_CATALOG = [
     icon: FaDumbbell,
     color: "text-purple-400"
   },
-  // Agility
+  // Agility & Direction Change
   {
     code: "PRO_AGILITY_5105",
     name: "Pro Agility (5-10-5 Shuttle)",
@@ -86,6 +116,26 @@ export const DRILL_CATALOG = [
     lowerIsBetter: true,
     benchmarkNote: "Elite: <4.15s | Varsity: ~4.50s",
     icon: FaBolt,
+    color: "text-emerald-400"
+  },
+  {
+    code: "FOOTBALL_505_AGILITY",
+    name: "⚽ Football 505 Agility Test",
+    category: "AGILITY",
+    defaultUnit: "s",
+    lowerIsBetter: true,
+    benchmarkNote: "Elite Pro: <2.15s | Academy: ~2.30s",
+    icon: FaBolt,
+    color: "text-emerald-400"
+  },
+  {
+    code: "ILLINOIS_AGILITY_TEST",
+    name: "Illinois Agility Run",
+    category: "AGILITY",
+    defaultUnit: "s",
+    lowerIsBetter: true,
+    benchmarkNote: "Elite: <15.2s | Pro: ~16.1s | Varsity: ~17.2s",
+    icon: FaRunning,
     color: "text-emerald-400"
   },
   {
@@ -98,7 +148,27 @@ export const DRILL_CATALOG = [
     icon: FaRunning,
     color: "text-emerald-400"
   },
-  // Endurance
+  // Aerobic & Endurance Combines
+  {
+    code: "BCCI_2KM_TIME_TRIAL",
+    name: "🏏 BCCI 2km Time Trial",
+    category: "ENDURANCE",
+    defaultUnit: "min",
+    lowerIsBetter: true,
+    benchmarkNote: "Bowlers: <8:15 min | Batsmen: <8:30 min | Elite: <7:45 min",
+    icon: FaHeartbeat,
+    color: "text-rose-400"
+  },
+  {
+    code: "YO_YO_IR1_CRICKET",
+    name: "🏏⚽ Yo-Yo IR1 Test (Level)",
+    category: "ENDURANCE",
+    defaultUnit: "level",
+    lowerIsBetter: false,
+    benchmarkNote: "International Elite: >=19.5 | National Cutoff: 17.1",
+    icon: FaHeartbeat,
+    color: "text-rose-400"
+  },
   {
     code: "BEEP_TEST",
     name: "Beep Test (Multi-Stage Shuttle)",

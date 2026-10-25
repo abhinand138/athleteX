@@ -7,7 +7,9 @@ import {
   FaSave,
   FaEdit,
   FaCheckCircle,
+  FaExclamationTriangle
 } from "react-icons/fa";
+import toast from "react-hot-toast";
 
 import DashboardLayout from "../layouts/DashboardLayout";
 import api from "../services/api";
@@ -18,6 +20,8 @@ import CombinePrSection from "../components/performance/CombinePrSection";
 import LogDrillModal from "../components/performance/LogDrillModal";
 import DrillHistoryModal from "../components/performance/DrillHistoryModal";
 import WorkloadEngineCard from "../components/performance/WorkloadEngineCard";
+import SportWorkloadCard from "../components/performance/SportWorkloadCard";
+import LogSportWorkloadModal from "../components/performance/LogSportWorkloadModal";
 
 export default function Performance() {
   const [performance, setPerformance] = useState(null);
@@ -45,6 +49,11 @@ export default function Performance() {
   const [isLogDrillOpen, setIsLogDrillOpen] = useState(false);
   const [selectedDrillForLog, setSelectedDrillForLog] = useState(null);
   const [historyModalDrill, setHistoryModalDrill] = useState(null);
+
+  // Sport-specific Workload states (Cricket Bowler & Football GPS)
+  const [isSportWorkloadModalOpen, setIsSportWorkloadModalOpen] = useState(false);
+  const [sportWorkloadInitialSport, setSportWorkloadInitialSport] = useState("CRICKET");
+  const [sportWorkloadRefreshTrigger, setSportWorkloadRefreshTrigger] = useState(0);
 
   // Automated Workout Engine attribution
   const [attribution, setAttribution] = useState(null);
@@ -155,6 +164,19 @@ export default function Performance() {
 
     fetchPerformance();
   }, []);
+
+  const handleOpenSportWorkloadModal = (sport = "CRICKET") => {
+    setSportWorkloadInitialSport(sport);
+    setIsSportWorkloadModalOpen(true);
+  };
+
+  const handleSportWorkloadSuccess = async () => {
+    setSportWorkloadRefreshTrigger((prev) => prev + 1);
+    if (currentUserId) {
+      await fetchWorkloadAttribution(currentUserId);
+      await fetchFitnessData(currentUserId);
+    }
+  };
 
   const handleOpenLogModal = (drillCode) => {
     setSelectedDrillForLog(drillCode || null);
@@ -495,24 +517,25 @@ export default function Performance() {
 
             <div>
 
-              {performance.lastEvaluatedBy === "WORKOUT_ENGINE" ? (
+              {performance.isCoachVerified ? (
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-black uppercase tracking-wider mb-3 shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                  <FaCheckCircle className="text-sm text-emerald-400" />
+                  <span>✔ CERTIFIED SCOUT PASSPORT (Verified by Coach {performance.verifiedByCoachName || "Coach"})</span>
+                </div>
+              ) : performance.lastEvaluatedBy === "WORKOUT_ENGINE" ? (
                 <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold uppercase tracking-wider mb-3">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   <span>⚡ AUTONOMOUS WORKLOAD INDEX (TRIMP Engine)</span>
                 </div>
-              ) : performance.isCoachVerified ? (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-extrabold uppercase tracking-wider mb-3">
-                  <FaCheckCircle className="text-sm text-emerald-400" />
-                  <span>✔ OFFICIALLY ENDORSED BY COACH ({performance.verifiedByCoachName || "Coach"})</span>
-                </div>
               ) : (
-                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-blue-400 text-xs font-bold uppercase tracking-wider mb-3">
-                  <span>⚡ WORKLOAD-CALIBRATED INDEX</span>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold uppercase tracking-wider mb-3">
+                  <FaExclamationTriangle className="text-amber-400" />
+                  <span>⚠️ UNVERIFIED SELF-REPORTED RATINGS</span>
                 </div>
               )}
 
               <p className="text-sm font-bold text-gray-400 tracking-widest uppercase">
-                Overall Performance
+                Overall Conditioning Index
               </p>
 
               <h2 className="text-6xl font-extrabold text-white mt-3">
@@ -522,13 +545,33 @@ export default function Performance() {
                 </span>
               </h2>
 
-              <p className="text-gray-500 mt-2">
-                {performance.lastEvaluatedBy === "WORKOUT_ENGINE"
+              <p className="text-gray-400 mt-2 max-w-xl text-xs leading-relaxed">
+                {performance.isCoachVerified 
+                  ? `Officially certified by Coach ${performance.verifiedByCoachName || ""}. This verified status gives college recruiters and scouts certified confidence in your athletic metrics.` 
+                  : performance.lastEvaluatedBy === "WORKOUT_ENGINE"
                   ? "Scientific athletic conditioning score continuously calculated from completed workout volume, RPE intensity, and combine tests."
-                  : performance.isCoachVerified 
-                    ? `Officially endorsed & verified by Coach ${performance.verifiedByCoachName || ""}` 
-                    : "Autonomous conditioning score evaluated across verified training sessions."}
+                  : "Self-reported scores carry an unverified badge on scout and college leaderboards. Calibrate from official combine PRs or completed coach workouts to certify your passport."}
               </p>
+
+              {/* Anti-Inflation Calibration CTA */}
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      const res = await api.post(`/performance/${currentUserId}/combine/sync-ratings`);
+                      handleRatingsCalibrated(res.data);
+                      toast.success("Ratings calibrated from your verified combine PRs!", { icon: "⚡" });
+                    } catch (err) {
+                      toast.error("Please log combine drill personal records first to calibrate ratings.");
+                    }
+                  }}
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-brand-peach/10 hover:bg-brand-peach/20 border border-brand-peach/30 text-brand-peach text-xs font-bold transition-all shadow-sm"
+                >
+                  <FaBolt />
+                  <span>Calibrate from Combine PRs</span>
+                </button>
+              </div>
 
             </div>
 
@@ -612,6 +655,15 @@ export default function Performance() {
 
         </div>
 
+
+        {/* ============================= */}
+        {/* REAL-WORLD SPORTS WORKLOAD ENGINE (Cricket & Football) */}
+        {/* ============================= */}
+        <SportWorkloadCard
+          userId={currentUserId}
+          onOpenLogModal={handleOpenSportWorkloadModal}
+          refreshTrigger={sportWorkloadRefreshTrigger}
+        />
 
         {/* ============================= */}
         {/* WORKLOAD ATTRIBUTION ENGINE */}
@@ -773,6 +825,14 @@ export default function Performance() {
             handleOpenLogModal(drillCode);
           }}
           onUpdate={handleDrillSuccess}
+        />
+
+        <LogSportWorkloadModal
+          isOpen={isSportWorkloadModalOpen}
+          onClose={() => setIsSportWorkloadModalOpen(false)}
+          userId={currentUserId}
+          initialSport={sportWorkloadInitialSport}
+          onSuccess={handleSportWorkloadSuccess}
         />
 
       </div>

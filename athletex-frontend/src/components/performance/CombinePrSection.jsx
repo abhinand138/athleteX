@@ -220,25 +220,37 @@ export default function CombinePrSection({
               onClick={() => onOpenLogModal && onOpenLogModal("40_YARD_DASH")}
               className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:border-brand-peach/40 hover:text-white transition-all"
             >
-              ⚡ Log 40-Yard Dash
+              ⚡ 40-Yard Dash
+            </button>
+            <button
+              onClick={() => onOpenLogModal && onOpenLogModal("BCCI_2KM_TIME_TRIAL")}
+              className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:border-brand-peach/40 hover:text-white transition-all"
+            >
+              🏏 BCCI 2km Trial
+            </button>
+            <button
+              onClick={() => onOpenLogModal && onOpenLogModal("FOOTBALL_30M_SPRINT")}
+              className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:border-brand-peach/40 hover:text-white transition-all"
+            >
+              ⚽ 30m Sprint
+            </button>
+            <button
+              onClick={() => onOpenLogModal && onOpenLogModal("BOWLING_SPEED_KMH")}
+              className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:border-brand-peach/40 hover:text-white transition-all"
+            >
+              🏏 Bowling Radar
             </button>
             <button
               onClick={() => onOpenLogModal && onOpenLogModal("VERTICAL_JUMP")}
               className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:border-brand-peach/40 hover:text-white transition-all"
             >
-              🚀 Log Vertical Jump
+              🚀 Vertical Jump
             </button>
             <button
               onClick={() => onOpenLogModal && onOpenLogModal("BENCH_PRESS_1RM")}
               className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:border-brand-peach/40 hover:text-white transition-all"
             >
-              🏋️ Log 1RM Bench
-            </button>
-            <button
-              onClick={() => onOpenLogModal && onOpenLogModal("PRO_AGILITY_5105")}
-              className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-semibold text-gray-300 hover:border-brand-peach/40 hover:text-white transition-all"
-            >
-              🌪️ Log 5-10-5 Shuttle
+              🏋️ 1RM Bench
             </button>
           </div>
         </div>

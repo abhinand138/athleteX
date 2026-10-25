@@ -130,8 +130,19 @@ describe('AthleteCoaches Marketplace Component Tests', () => {
           paymentType: 'COACH_MONTHLY_SUBSCRIPTION'
         })
       );
-      expect(screen.getByText('Welcome to Team Marcus Vance!')).toBeInTheDocument();
     });
+
+    // Verify Razorpay Payment Gateway Modal opened
+    await waitFor(() => {
+      expect(screen.getByText(/Scan with any UPI App/i)).toBeInTheDocument();
+    });
+
+    // Execute payment in Razorpay modal
+    fireEvent.click(screen.getByText(/Simulate Approved UPI Payment/i));
+
+    await waitFor(() => {
+      expect(screen.getByText('Welcome to Team Marcus Vance!')).toBeInTheDocument();
+    }, { timeout: 4000 });
   });
 
   it('allows switching to Direct Card Sandbox and processes payment', async () => {

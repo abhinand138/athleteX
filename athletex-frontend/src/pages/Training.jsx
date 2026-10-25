@@ -12,22 +12,44 @@ import {
   FaFilter,
   FaSearch,
   FaFire,
-  FaCheck
+  FaCheck,
+  FaPlay,
+  FaBolt
 } from "react-icons/fa";
+import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
 import WorkoutCompletionModal from "../components/dashboard/WorkoutCompletionModal";
+import ActiveWorkoutPlayer from "../components/training/ActiveWorkoutPlayer";
 import api from "../services/api";
 
 export default function Training() {
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [seeding, setSeeding] = useState(false);
   const [activeTab, setActiveTab] = useState("SCHEDULED"); // SCHEDULED, COMPLETED, ALL
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [selectedTraining, setSelectedTraining] = useState(null);
+  const [activePlayerTraining, setActivePlayerTraining] = useState(null);
+  const [sessionStats, setSessionStats] = useState(null);
 
   const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
   const athleteId = storedUser?.id;
+
+  const handleSeedDemoWorkouts = async () => {
+    if (!athleteId) return;
+    try {
+      setSeeding(true);
+      const res = await api.post(`/training/seed-demo?athleteId=${athleteId}`);
+      setTrainings(res.data || []);
+      toast.success("Coach demo workouts loaded successfully!", { icon: "⚡" });
+    } catch (err) {
+      console.error("Failed to seed demo workouts:", err);
+      toast.error("Could not load demo workouts.");
+    } finally {
+      setSeeding(false);
+    }
+  };
 
   useEffect(() => {
     if (athleteId) {
@@ -233,10 +255,45 @@ export default function Training() {
               <div className="w-10 h-10 border-4 border-brand-peach/30 border-t-brand-peach rounded-full animate-spin"></div>
             </div>
           ) : filteredTrainings.length === 0 ? (
-            <div className="text-center py-16 text-gray-500 space-y-2">
-              <FaDumbbell className="mx-auto text-4xl opacity-30 text-gray-400" />
-              <p className="text-sm font-semibold">No training sessions found</p>
-              <p className="text-xs text-gray-600">Your scheduled coach workouts will appear here.</p>
+            <div className="text-center py-16 text-gray-500 space-y-4 max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mx-auto text-2xl shadow-inner">
+                <FaDumbbell className="opacity-60" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-extrabold text-white">No Scheduled Workouts Found</h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Your coach hasn't scheduled any sessions for this view yet. Launch an on-demand gym floor session now or load Coach Marcus's demo training routine!
+                </p>
+              </div>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setActivePlayerTraining({
+                    id: "on_demand_combine",
+                    title: "Sprint Acceleration & Explosive Starts",
+                    category: "SPEED",
+                    description: "Dynamic sprint acceleration, plyometric power, and neurological activation.",
+                    exercises: [
+                      { name: "Dynamic High Knees & Hip Opener", sets: "2 Sets", repsOrDuration: "30 sec / side", restInterval: "30s", coachingNotes: "Increase core temperature and prime hip flexors." },
+                      { name: "20m Acceleration Drive Starts", sets: "4 Sets", repsOrDuration: "20 Meters Max Effort", restInterval: "75s", coachingNotes: "Maintain aggressive forward torso angle." },
+                      { name: "Trap-Bar Explosive Deadlifts", sets: "4 Sets", repsOrDuration: "5 Reps @ 80% 1RM", restInterval: "90s", coachingNotes: "Triple extension at ankles, knees, hips." }
+                    ]
+                  })}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-peach via-orange-400 to-amber-400 hover:from-orange-400 hover:to-brand-peach text-black font-extrabold text-xs uppercase tracking-wider shadow-lg shadow-brand-peach/25 transition-all"
+                >
+                  <FaPlay className="text-[10px]" />
+                  <span>Launch Gym Floor Player</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSeedDemoWorkouts}
+                  disabled={seeding}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-bold transition-all disabled:opacity-50"
+                >
+                  <FaBolt className="text-brand-peach text-[11px]" />
+                  <span>{seeding ? "Loading..." : "Load Demo Routine"}</span>
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -284,17 +341,31 @@ export default function Training() {
                       </div>
 
                       {!isCompleted && !isCancelled && (
-                        <button
-                          onClick={() => setSelectedTraining(t)}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-black text-xs font-bold transition-all shadow-md ${
-                            isMissed
-                              ? "bg-amber-400 hover:bg-amber-300 shadow-amber-500/20"
-                              : "bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/20"
-                          }`}
-                        >
-                          <FaCheck className="text-[10px]" />
-                          <span>{isMissed ? "Log Late" : "Complete"}</span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {!isMissed && (
+                            <button
+                              onClick={() => setActivePlayerTraining(t)}
+                              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-brand-peach via-orange-400 to-amber-400 hover:from-orange-400 hover:to-brand-peach text-black text-xs font-black uppercase tracking-wider transition-all shadow-lg shadow-brand-peach/25"
+                            >
+                              <FaPlay className="text-[9px]" />
+                              <span>Start Workout</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setSessionStats(null);
+                              setSelectedTraining(t);
+                            }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                              isMissed
+                                ? "bg-amber-400 hover:bg-amber-300 text-black shadow-amber-500/20"
+                                : "bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10"
+                            }`}
+                          >
+                            <FaCheck className="text-[10px]" />
+                            <span>{isMissed ? "Log Late" : "Quick Log"}</span>
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -343,11 +414,28 @@ export default function Training() {
         </div>
       </div>
 
+      {/* Active Gym Floor Workout Player */}
+      <ActiveWorkoutPlayer
+        isOpen={Boolean(activePlayerTraining)}
+        onClose={() => setActivePlayerTraining(null)}
+        training={activePlayerTraining}
+        onFinishWorkout={(stats) => {
+          setSessionStats(stats);
+          setSelectedTraining(activePlayerTraining);
+          setActivePlayerTraining(null);
+        }}
+      />
+
       {/* Completion Modal */}
       <WorkoutCompletionModal
         isOpen={Boolean(selectedTraining)}
-        onClose={() => setSelectedTraining(null)}
+        onClose={() => {
+          setSelectedTraining(null);
+          setSessionStats(null);
+        }}
         training={selectedTraining}
+        initialDuration={sessionStats?.elapsedMinutes || 45}
+        sessionStats={sessionStats}
         onCompleted={handleModalCompleted}
       />
     </DashboardLayout>

@@ -108,6 +108,28 @@ public class AiWorkoutService {
                     .restInterval("60 sec round rest")
                     .coachingNotes("High heart rate conditioning protocol.")
                     .build());
+        } else if (focusArea.toLowerCase().contains("agility") || focusArea.toLowerCase().contains("cod") || focusArea.toLowerCase().contains("direction")) {
+            mainDrills.add(ExerciseDetail.builder()
+                    .name("Pro Agility Shuttle 5-10-5")
+                    .sets("4 Sets")
+                    .repsOrDuration("Max Deceleration & Cut")
+                    .restInterval("75 sec rest")
+                    .coachingNotes("Drop center of gravity and plant outside foot decisively without crossing over.")
+                    .build());
+            mainDrills.add(ExerciseDetail.builder()
+                    .name("3-Cone L-Drill Reactive Cutting")
+                    .sets("4 Sets")
+                    .repsOrDuration("Full Speed Circuit")
+                    .restInterval("90 sec rest")
+                    .coachingNotes("Tight radius turns around cones with chest angled forward.")
+                    .build());
+            mainDrills.add(ExerciseDetail.builder()
+                    .name("Hexagon Quick-Foot Plyometrics")
+                    .sets("3 Sets")
+                    .repsOrDuration("3 Revolutions per side")
+                    .restInterval("45 sec rest")
+                    .coachingNotes("Sharp ankle stiffness and rapid reactive ground contact.")
+                    .build());
         } else {
             mainDrills.add(ExerciseDetail.builder()
                     .name("90/90 Hip Mobility & Thoracic Rotations")
@@ -183,11 +205,17 @@ public class AiWorkoutService {
         }
         descBuilder.append("\n💡 AI Tip: ").append(planDto.getAiCoachTip());
 
+        List<ExerciseDetail> allExercises = new ArrayList<>();
+        if (planDto.getWarmupExercises() != null) allExercises.addAll(planDto.getWarmupExercises());
+        if (planDto.getMainDrills() != null) allExercises.addAll(planDto.getMainDrills());
+        if (planDto.getCooldownExercises() != null) allExercises.addAll(planDto.getCooldownExercises());
+
         Training training = Training.builder()
                 .coachId(coachId)
                 .athleteId(athleteId)
                 .title(planDto.getTitle())
                 .description(descBuilder.toString())
+                .exercises(allExercises)
                 .category("AI_" + (planDto.getFocusArea() != null ? planDto.getFocusArea().toUpperCase().replace(" ", "_") : "TRAINING"))
                 .date(LocalDate.now().plusDays(1))
                 .time("09:00 AM")

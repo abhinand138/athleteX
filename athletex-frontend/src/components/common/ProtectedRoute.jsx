@@ -8,7 +8,18 @@ export default function ProtectedRoute({ children, requiredRole }) {
     return <Navigate to="/login" replace />;
   }
 
-  const user = JSON.parse(storedUser);
+  let user = null;
+  try {
+    user = JSON.parse(storedUser);
+  } catch (e) {
+    localStorage.removeItem("user");
+    localStorage.removeItem("token");
+    return <Navigate to="/login" replace />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   if (requiredRole && user.role !== requiredRole) {
     // Redirect based on actual role if access is denied

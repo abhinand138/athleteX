@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { FiCreditCard, FiAtSign, FiPhone, FiLock, FiUsers, FiChevronRight, FiCheck, FiX, FiKey } from "react-icons/fi";
+import { FiCreditCard, FiAtSign, FiPhone, FiLock, FiUsers, FiChevronRight, FiCheck, FiX, FiKey, FiRefreshCw, FiArrowLeft, FiMail } from "react-icons/fi";
 import api from "../services/api";
 import { getErrorMessage } from "../utils/errorHandler";
 
@@ -11,6 +11,8 @@ export default function Register() {
   // Registration Step: 1 for Details, 2 for OTP
   const [step, setStep] = useState(1);
   const [otp, setOtp] = useState("");
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [devOtpInfo, setDevOtpInfo] = useState(null);
   
   const roleParam = searchParams.get("role")?.toUpperCase();
   const initialRole = roleParam === "COACH" ? "COACH" : "ATHLETE";
@@ -30,8 +32,44 @@ export default function Register() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendCooldown]);
+
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  const fetchDevOtpInfo = async (email) => {
+    try {
+      const res = await api.get(`/auth/dev-otp?email=${encodeURIComponent(email)}`);
+      setDevOtpInfo(res.data);
+    } catch (err) {
+      console.log("Could not fetch OTP status:", err);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || isLoading) return;
+    setIsLoading(true);
+    setMessage({ type: "", text: "" });
+
+    try {
+      const res = await api.post(`/auth/resend-otp?email=${encodeURIComponent(formData.email)}`);
+      setMessage({ type: "success", text: res.data?.message || "Verification code resent!" });
+      setResendCooldown(30);
+      await fetchDevOtpInfo(formData.email);
+    } catch (err) {
+      setMessage({ 
+        type: "error", 
+        text: getErrorMessage(err, "Failed to resend code.") 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Password validation checks
   const passwordValidations = {
@@ -82,11 +120,12 @@ export default function Register() {
         phone: formData.phone.trim(),
       };
 
-      const response = await api.post("/auth/register", payload);
-      setMessage({ type: "success", text: "OTP sent! Please check your email." });
+      await api.post("/auth/register", payload);
+      setMessage({ type: "success", text: "Enrollment initiated! Enter your verification code below." });
       
       // Move to OTP step
       setStep(2);
+      fetchDevOtpInfo(formData.email.trim());
     } catch (error) {
       setMessage({ 
         type: "error", 
@@ -289,20 +328,81 @@ export default function Register() {
 
         {/* STEP 2: OTP VERIFICATION FORM */}
         {step === 2 && (
-          <form onSubmit={handleOtpSubmit} className="w-full flex flex-col gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center text-xs font-sans tracking-wider text-gray-400 mb-1">
+          <form onSubmit={handleOtpSubmit} className="w-full flex flex-col gap-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="flex items-center justify-between text-xs text-gray-400">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-white transition-all cursor-pointer font-bold uppercase tracking-wider"
+              >
+                <FiArrowLeft className="text-xs" /> Edit Details
+              </button>
+              <span className="text-[10px] text-gray-500 uppercase tracking-widest">Step 02 of 02</span>
+            </div>
+
+            <div className="text-center text-xs font-sans tracking-wider text-gray-400">
               A 6-digit verification code has been transmitted to<br/>
               <span className="text-brand-peach font-bold">{formData.email}</span>
             </div>
 
-            <div className="text-center bg-white/5 p-2.5 rounded border border-white/10 text-[11px] text-gray-300">
-              <span className="text-brand-peach font-bold">Local Dev Hint:</span> If you didn't receive an email, use code <button type="button" onClick={() => setOtp("123456")} className="font-mono text-brand-peach font-bold underline px-1 py-0.5 bg-brand-peach/10 rounded border border-brand-peach/30 hover:bg-brand-peach hover:text-black transition-all cursor-pointer">123456</button>
-            </div>
+            {/* Dynamic Status Banner based on SMTP / Dev Mode */}
+            {devOtpInfo?.smtpConfigured ? (
+              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-sm text-left flex items-start gap-2.5">
+                <FiMail className="text-emerald-400 text-sm mt-0.5 shrink-0" />
+                <div className="text-[11px] text-gray-300 leading-relaxed">
+                  <span className="text-emerald-400 font-bold uppercase tracking-wider block text-[10px]">Email Dispatched</span>
+                  Verification email sent via SMTP. Please check your inbox (and spam/promotions folder).
+                </div>
+              </div>
+            ) : (
+              <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-sm text-left space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    Active Verification Code
+                  </span>
+                  {devOtpInfo?.otp && (
+                    <button
+                      type="button"
+                      onClick={() => setOtp(devOtpInfo.otp)}
+                      className="text-[9px] font-bold text-amber-300 underline hover:text-white cursor-pointer uppercase tracking-wider"
+                    >
+                      Click to Auto-Fill
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between bg-black/50 px-3 py-2 rounded border border-white/5">
+                  <span className="font-mono text-base font-black tracking-[0.25em] text-brand-peach">
+                    {devOtpInfo?.otp || "123456"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOtp(devOtpInfo?.otp || "123456")}
+                    className="px-2.5 py-1 bg-brand-peach text-black text-[10px] font-black uppercase tracking-wider rounded hover:bg-brand-peach/90 transition-all cursor-pointer shadow"
+                  >
+                    Use Code
+                  </button>
+                </div>
+
+                <p className="text-[10px] text-gray-400 leading-normal">
+                  <span className="text-gray-300 font-semibold">Note:</span> Live Gmail SMTP password not configured in backend. Code is generated above (or bypass with <span className="font-mono text-white font-bold">123456</span>).
+                </p>
+              </div>
+            )}
             
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center">
                 <label className="text-[9px] font-sans font-bold tracking-[0.2em] text-brand-peach uppercase">VERIFICATION CODE (OTP)</label>
-                <button type="button" onClick={() => setOtp("123456")} className="text-[9px] font-bold text-emerald-400 hover:underline cursor-pointer">Auto-fill 123456</button>
+                <div className="flex items-center gap-2">
+                  <button 
+                    type="button" 
+                    onClick={() => setOtp("123456")} 
+                    className="text-[9px] font-bold text-gray-400 hover:text-white cursor-pointer"
+                  >
+                    Bypass: 123456
+                  </button>
+                </div>
               </div>
               <div className="relative flex items-center bg-[#111115]/40 border border-white/5 focus-within:border-brand-peach/40 focus-within:bg-[#111115]/70 transition-all duration-300 px-4 py-3.5 rounded-[2px]">
                 <FiKey className="text-gray-500 text-sm" />
@@ -318,10 +418,24 @@ export default function Register() {
               </div>
             </div>
 
-            <button type="submit" disabled={isLoading || otp.length !== 6} className="w-full mt-4 py-4 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/30 disabled:text-gray-500 text-[#080809] font-sans font-bold text-xs tracking-[0.25em] rounded-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg uppercase">
+            <button type="submit" disabled={isLoading || otp.length !== 6} className="w-full mt-2 py-4 bg-emerald-500 hover:bg-emerald-400 disabled:bg-emerald-500/30 disabled:text-gray-500 text-[#080809] font-sans font-bold text-xs tracking-[0.25em] rounded-sm transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg uppercase">
               {isLoading ? "VERIFYING..." : "CONFIRM IDENTITY"}
               {!isLoading && <FiCheck className="text-sm font-bold" />}
             </button>
+
+            {/* Resend OTP Button */}
+            <div className="flex items-center justify-center gap-2 text-center text-[11px] text-gray-400">
+              <span>Didn't receive code?</span>
+              <button
+                type="button"
+                onClick={handleResendOtp}
+                disabled={isLoading || resendCooldown > 0}
+                className="text-brand-peach font-bold hover:underline disabled:text-gray-600 disabled:no-underline transition-all cursor-pointer flex items-center gap-1"
+              >
+                <FiRefreshCw className={`text-[10px] ${isLoading ? "animate-spin" : ""}`} />
+                <span>{resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Resend Code"}</span>
+              </button>
+            </div>
           </form>
         )}
 

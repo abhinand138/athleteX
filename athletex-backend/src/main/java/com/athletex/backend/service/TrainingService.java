@@ -506,8 +506,77 @@ public class TrainingService {
                 .rpe(t.getRpe())
                 .actualDurationMinutes(t.getActualDurationMinutes())
                 .athleteFeedback(t.getAthleteFeedback())
+                .exercises(t.getExercises())
                 .completedAt(t.getCompletedAt())
                 .createdAt(t.getCreatedAt())
                 .build();
+    }
+
+    public List<TrainingResponse> seedDemoWorkouts(String athleteId) {
+        User athlete = userRepository.findById(athleteId)
+                .orElseThrow(() -> new RuntimeException("Athlete not found"));
+        User coach = userRepository.findByRole(Role.COACH).stream().findFirst().orElse(null);
+        String coachId = coach != null ? coach.getId() : "coach_demo";
+        String coachName = coach != null ? coach.getFullName() : "Coach Marcus Vance";
+
+        Training t1 = Training.builder()
+                .coachId(coachId)
+                .athleteId(athleteId)
+                .title("Sprint Acceleration & Explosive Starts")
+                .category("SPEED")
+                .description("Focus on acceleration mechanics, low drive angle, and high horizontal impulse.")
+                .date(LocalDate.now())
+                .time("10:00 AM")
+                .status(TrainingStatus.SCHEDULED)
+                .actualDurationMinutes(45)
+                .exercises(List.of(
+                        com.athletex.backend.dto.ai.ExerciseDetail.builder().name("Dynamic Leg Swings & High Knees").sets("2 Sets").repsOrDuration("30 sec per side").restInterval("30 sec").coachingNotes("Open hip flexors dynamic activation.").build(),
+                        com.athletex.backend.dto.ai.ExerciseDetail.builder().name("Resisted Band 20m Acceleration Drive").sets("4 Sets").repsOrDuration("20 Meters Max Effort").restInterval("90 sec").coachingNotes("Stay low through 10m; drive knees forcefully.").build(),
+                        com.athletex.backend.dto.ai.ExerciseDetail.builder().name("Flying 30m Speed Endurance").sets("3 Sets").repsOrDuration("30 Meters Flying").restInterval("120 sec").coachingNotes("Relax upper body and float over ground at top speed.").build()
+                ))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Training t2 = Training.builder()
+                .coachId(coachId)
+                .athleteId(athleteId)
+                .title("Lower Body Power & Agility Shuttle")
+                .category("AGILITY")
+                .description("Multi-directional cutting, deceleration control, and reactive plyometrics.")
+                .date(LocalDate.now().plusDays(1))
+                .time("04:30 PM")
+                .status(TrainingStatus.SCHEDULED)
+                .actualDurationMinutes(50)
+                .exercises(List.of(
+                        com.athletex.backend.dto.ai.ExerciseDetail.builder().name("Pro Agility Shuttle 5-10-5").sets("4 Sets").repsOrDuration("Max Deceleration & Cut").restInterval("75 sec").coachingNotes("Drop hips low on turn; plant outside foot firmly.").build(),
+                        com.athletex.backend.dto.ai.ExerciseDetail.builder().name("Trap-Bar Deadlifts").sets("4 Sets").repsOrDuration("5 Reps @ 80% 1RM").restInterval("90 sec").coachingNotes("Explosive hip drive, neutral spine.").build()
+                ))
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        Training t3 = Training.builder()
+                .coachId(coachId)
+                .athleteId(athleteId)
+                .title("Threshold Aerobic Conditioning")
+                .category("ENDURANCE")
+                .description("Tempo intervals for aerobic enzyme enhancement.")
+                .date(LocalDate.now().minusDays(2))
+                .time("08:00 AM")
+                .status(TrainingStatus.COMPLETED)
+                .actualDurationMinutes(45)
+                .rpe(7)
+                .athleteFeedback("Solid conditioning block; legs felt bouncy.")
+                .completedAt(LocalDateTime.now().minusDays(2))
+                .createdAt(LocalDateTime.now().minusDays(3))
+                .build();
+
+        List<Training> saved = trainingRepository.saveAll(List.of(t1, t2, t3));
+        try {
+            performanceService.recalculatePerformanceFromWorkouts(athleteId);
+        } catch (Exception ignored) {}
+
+        return saved.stream()
+                .map(t -> mapToResponse(t, coachName, athlete.getFullName()))
+                .toList();
     }
 }

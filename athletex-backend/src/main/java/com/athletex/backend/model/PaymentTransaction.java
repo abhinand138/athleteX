@@ -1,3 +1,4 @@
+
 package com.athletex.backend.model;
 
 import lombok.*;

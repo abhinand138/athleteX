@@ -29,6 +29,7 @@ public class TrainingResponse {
     private Integer rpe;
     private Integer actualDurationMinutes;
     private String athleteFeedback;
+    private java.util.List<com.athletex.backend.dto.ai.ExerciseDetail> exercises;
     private LocalDateTime completedAt;
     private LocalDateTime createdAt;
 }

@@ -33,7 +33,7 @@ services:
       - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
       - MAIL_PORT=${MAIL_PORT:-587}
       - MAIL_USERNAME=${MAIL_USERNAME:-nooreply.athletex@gmail.com}
-      - MAIL_PASSWORD=${MAIL_PASSWORD:-doummbrbxxosmyla}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
     depends_on:
       mongodb:
         condition: service_healthy

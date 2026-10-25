@@ -20,14 +20,17 @@ public class ChatMessage {
     @Id
     private String id;
 
+    @org.springframework.data.mongodb.core.index.Indexed
     private String conversationId; // Sorted combination of user IDs (e.g., id1_id2)
 
+    @org.springframework.data.mongodb.core.index.Indexed
     private String senderId;
 
     private String senderName;
 
     private String senderRole; // ATHLETE, COACH, ADMIN
 
+    @org.springframework.data.mongodb.core.index.Indexed
     private String recipientId;
 
     private String content;
@@ -40,6 +43,7 @@ public class ChatMessage {
     @Builder.Default
     private Boolean isRead = false;
 
+    @org.springframework.data.mongodb.core.index.Indexed
     private LocalDateTime timestamp;
 
     @JsonProperty("read")

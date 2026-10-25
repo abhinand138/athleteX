@@ -22,12 +22,12 @@ public class ChatController {
     private final ChatService chatService;
 
     private String resolveUserId(String explicitUserId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && auth.getName() != null && !"anonymousUser".equals(auth.getName())) {
+            return auth.getName();
+        }
         if (explicitUserId != null && !explicitUserId.trim().isEmpty() && !"null".equalsIgnoreCase(explicitUserId) && !"undefined".equalsIgnoreCase(explicitUserId)) {
             return explicitUserId;
-        }
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.getName() != null && !"anonymousUser".equals(auth.getName())) {
-            return auth.getName();
         }
         return null;
     }

@@ -83,8 +83,8 @@ public class PublicVerificationService {
         return PublicVerificationResponse.builder()
                 .athleteId(user.getId())
                 .fullName(user.getFullName())
-                .email(user.getEmail())
-                .phone(user.getPhone())
+                .email(maskEmail(user.getEmail()))
+                .phone(maskPhone(user.getPhone()))
                 .profileImage(user.getProfileImage())
                 .sport(user.getSport())
                 .position(user.getPosition())
@@ -106,6 +106,20 @@ public class PublicVerificationService {
                 .verifiedAchievements(verifiedAchievements)
                 .verifiedCombineDrills(verifiedCombineDrills)
                 .build();
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || !email.contains("@")) return "";
+        int atIdx = email.indexOf("@");
+        String name = email.substring(0, atIdx);
+        String domain = email.substring(atIdx);
+        if (name.length() <= 2) return name.charAt(0) + "***" + domain;
+        return name.charAt(0) + "***" + name.charAt(name.length() - 1) + domain;
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 4) return "";
+        return phone.substring(0, Math.min(3, phone.length())) + "****" + phone.substring(Math.max(phone.length() - 4, 3));
     }
 
     private AchievementResponse mapToAchievementResponse(Achievement a, String athleteName) {

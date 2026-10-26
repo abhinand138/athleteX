@@ -4,8 +4,6 @@ import {
   FaDumbbell,
   FaHeartbeat,
   FaBolt,
-  FaSave,
-  FaEdit,
   FaCheckCircle,
   FaExclamationTriangle
 } from "react-icons/fa";
@@ -27,20 +25,9 @@ export default function Performance() {
   const [performance, setPerformance] = useState(null);
   const [history, setHistory] = useState([]);
 
-  const [formData, setFormData] = useState({
-    speed: 0,
-    strength: 0,
-    endurance: 0,
-    agility: 0,
-  });
-
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
-
-  const [isEditing, setIsEditing] = useState(false);
 
   const [fitnessProfile, setFitnessProfile] = useState(null);
 
@@ -128,13 +115,6 @@ export default function Performance() {
 
         setPerformance(response.data);
 
-        setFormData({
-          speed: response.data.speed ?? 0,
-          strength: response.data.strength ?? 0,
-          endurance: response.data.endurance ?? 0,
-          agility: response.data.agility ?? 0,
-        });
-
         const historyResponse = await api.get(
           `/performance/${user.id}/history`
         );
@@ -204,12 +184,6 @@ export default function Performance() {
   const handleRecalculateSuccess = (updatedPerformance) => {
     if (updatedPerformance) {
       setPerformance(updatedPerformance);
-      setFormData({
-        speed: updatedPerformance.speed ?? 0,
-        strength: updatedPerformance.strength ?? 0,
-        endurance: updatedPerformance.endurance ?? 0,
-        agility: updatedPerformance.agility ?? 0,
-      });
     }
     if (currentUserId) {
       fetchWorkloadAttribution(currentUserId);
@@ -224,12 +198,6 @@ export default function Performance() {
   const handleRatingsCalibrated = (updatedPerformance) => {
     if (updatedPerformance) {
       setPerformance(updatedPerformance);
-      setFormData({
-        speed: updatedPerformance.speed ?? 0,
-        strength: updatedPerformance.strength ?? 0,
-        endurance: updatedPerformance.endurance ?? 0,
-        agility: updatedPerformance.agility ?? 0,
-      });
     }
     if (currentUserId) {
       fetchCombineData(currentUserId);
@@ -240,106 +208,7 @@ export default function Performance() {
     }
   };
 
-  /*
-   * =============================
-   * HANDLE INPUT
-   * =============================
-   */
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-
-    let numericValue = value === "" ? "" : Number(value);
-
-    if (numericValue !== "" && numericValue > 100) {
-      numericValue = 100;
-    }
-
-    if (numericValue !== "" && numericValue < 0) {
-      numericValue = 0;
-    }
-
-    setFormData({
-      ...formData,
-      [name]: numericValue,
-    });
-
-    setMessage("");
-    setError("");
-  };
-
-  /*
-   * =============================
-   * SAVE PERFORMANCE
-   * =============================
-   */
-
-  const handleSave = async () => {
-    try {
-      setSaving(true);
-      setMessage("");
-      setError("");
-
-      const storedUser = localStorage.getItem("user");
-
-      if (!storedUser) {
-        setError("User session not found. Please login again.");
-        return;
-      }
-
-      const user = JSON.parse(storedUser);
-
-      if (!user?.id) {
-        setError("User ID not found. Please login again.");
-        return;
-      }
-
-      const payload = {
-        speed: Number(formData.speed) || 0,
-        strength: Number(formData.strength) || 0,
-        endurance: Number(formData.endurance) || 0,
-        agility: Number(formData.agility) || 0,
-      };
-
-      const response = await api.put(
-        `/performance/${user.id}`,
-        payload
-      );
-
-      console.log("Updated performance:", response.data);
-
-      setPerformance(response.data);
-
-      setFormData({
-        speed: response.data.speed ?? 0,
-        strength: response.data.strength ?? 0,
-        endurance: response.data.endurance ?? 0,
-        agility: response.data.agility ?? 0,
-      });
-
-      const historyResponse = await api.get(
-        `/performance/${user.id}/history`
-      );
-      setHistory(historyResponse.data);
-
-      await fetchFitnessData(user.id);
-
-      setIsEditing(false);
-
-      setMessage("Performance updated successfully.");
-
-    } catch (error) {
-      console.error("Update Performance Error:", error);
-
-      setError(
-        error.response?.data?.message ||
-        "Unable to update performance."
-      );
-
-    } finally {
-      setSaving(false);
-    }
-  };
 
   /*
    * =============================
@@ -413,7 +282,7 @@ export default function Performance() {
     {
       title: "Speed",
       name: "speed",
-      value: Number(formData.speed) || 0,
+      value: Number(performance?.speed) || 0,
       icon: <FaRunning />,
       color: "text-blue-400",
       bar: "bg-blue-400",
@@ -421,7 +290,7 @@ export default function Performance() {
     {
       title: "Strength",
       name: "strength",
-      value: Number(formData.strength) || 0,
+      value: Number(performance?.strength) || 0,
       icon: <FaDumbbell />,
       color: "text-brand-peach",
       bar: "bg-brand-peach",
@@ -429,7 +298,7 @@ export default function Performance() {
     {
       title: "Endurance",
       name: "endurance",
-      value: Number(formData.endurance) || 0,
+      value: Number(performance?.endurance) || 0,
       icon: <FaHeartbeat />,
       color: "text-red-400",
       bar: "bg-red-400",
@@ -437,7 +306,7 @@ export default function Performance() {
     {
       title: "Agility",
       name: "agility",
-      value: Number(formData.agility) || 0,
+      value: Number(performance?.agility) || 0,
       icon: <FaBolt />,
       color: "text-yellow-400",
       bar: "bg-yellow-400",
@@ -566,7 +435,7 @@ export default function Performance() {
                       toast.error("Please log combine drill personal records first to calibrate ratings.");
                     }
                   }}
-                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-brand-peach/10 hover:bg-brand-peach/20 border border-brand-peach/30 text-brand-peach text-xs font-bold transition-all shadow-sm"
+                  className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-brand-peach/10 hover:bg-brand-peach/20 border border-brand-peach/30 text-brand-peach text-xs font-bold transition-all shadow-sm cursor-pointer"
                 >
                   <FaBolt />
                   <span>Calibrate from Combine PRs</span>
@@ -834,6 +703,8 @@ export default function Performance() {
           initialSport={sportWorkloadInitialSport}
           onSuccess={handleSportWorkloadSuccess}
         />
+
+
 
       </div>
 

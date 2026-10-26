@@ -32,7 +32,7 @@ import {
 } from "react-icons/fa";
 import toast from "react-hot-toast";
 import DashboardLayout from "../layouts/DashboardLayout";
-import api from "../services/api";
+import api, { getMediaUrl } from "../services/api";
 import { generateAchievementCertificate } from "../utils/certificateGenerator";
 import { getErrorMessage } from "../utils/errorHandler";
 
@@ -1115,7 +1115,7 @@ export default function Achievements() {
                     <FaCertificate className="text-4xl text-brand-peach mx-auto" />
                     <p className="text-sm text-gray-300">PDF Document Proof Attached</p>
                     <a
-                      href={previewEvidence.proofUrl}
+                      href={getMediaUrl(previewEvidence.proofUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-peach text-black text-xs font-bold uppercase tracking-wider"
@@ -1125,7 +1125,7 @@ export default function Achievements() {
                   </div>
                 ) : (
                   <img
-                    src={previewEvidence.proofUrl}
+                    src={getMediaUrl(previewEvidence.proofUrl)}
                     alt="Achievement Evidence"
                     className="max-h-[460px] w-auto object-contain rounded-xl"
                     onError={(e) => {
@@ -1139,7 +1139,7 @@ export default function Achievements() {
               <div className="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-white/5">
                 <span className="font-mono text-[10px] truncate max-w-xs">{previewEvidence.proofUrl}</span>
                 <a
-                  href={previewEvidence.proofUrl}
+                  href={getMediaUrl(previewEvidence.proofUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-brand-peach hover:underline font-bold flex items-center gap-1"

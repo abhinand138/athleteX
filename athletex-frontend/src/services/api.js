@@ -45,5 +45,20 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+export const getMediaUrl = (path) => {
+  if (!path) return "";
+  if (
+    path.startsWith("http://") ||
+    path.startsWith("https://") ||
+    path.startsWith("data:") ||
+    path.startsWith("blob:")
+  ) {
+    return path;
+  }
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+  const hostRoot = baseUrl.replace(/\/api\/?$/, "");
+  const cleanPath = path.startsWith("/") ? path : `/${path}`;
+  return `${hostRoot}${cleanPath}`;
+};
 
 export default api;

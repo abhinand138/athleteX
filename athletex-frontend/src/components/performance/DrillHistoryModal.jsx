@@ -8,7 +8,7 @@ import {
   FaCalendarAlt,
   FaPlus
 } from "react-icons/fa";
-import api from "../../services/api";
+import api, { getMediaUrl } from "../../services/api";
 import toast from "react-hot-toast";
 
 export default function DrillHistoryModal({
@@ -192,7 +192,7 @@ export default function DrillHistoryModal({
                 <div className="flex items-center gap-2 self-end sm:self-center">
                   {item.proofUrl && (
                     <a
-                      href={item.proofUrl}
+                      href={getMediaUrl(item.proofUrl)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 rounded-xl bg-white/5 border border-white/10 text-brand-peach hover:bg-white/10 transition-colors"

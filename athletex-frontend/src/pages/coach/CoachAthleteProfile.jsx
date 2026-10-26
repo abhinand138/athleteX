@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import DashboardLayout from "../../layouts/DashboardLayout";
-import api from "../../services/api";
+import api, { getMediaUrl } from "../../services/api";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   FaUser,
@@ -684,7 +684,7 @@ export default function CoachAthleteProfile() {
                       <div className="mt-4 pt-3 border-t border-white/5 flex items-center justify-between text-xs">
                         {drill.proofUrl ? (
                           <a
-                            href={drill.proofUrl}
+                            href={getMediaUrl(drill.proofUrl)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-brand-peach/10 hover:bg-brand-peach hover:text-black text-brand-peach font-bold border border-brand-peach/30 transition-all text-xs"
@@ -881,7 +881,7 @@ export default function CoachAthleteProfile() {
               </p>
               {reviewModalDrill.proofUrl && (
                 <a
-                  href={reviewModalDrill.proofUrl}
+                  href={getMediaUrl(reviewModalDrill.proofUrl)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-xs text-brand-peach hover:underline font-bold mt-1"

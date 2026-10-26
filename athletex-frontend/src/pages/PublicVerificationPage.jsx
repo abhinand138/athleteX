@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
-import api from "../services/api";
+import api, { getMediaUrl } from "../services/api";
 import {
   FaCheckCircle,
   FaShieldAlt,
@@ -231,7 +231,7 @@ export default function PublicVerificationPage() {
 
                     {drill.proofUrl && (
                       <a
-                        href={drill.proofUrl}
+                        href={getMediaUrl(drill.proofUrl)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-brand-peach hover:underline inline-flex items-center gap-1 font-bold"

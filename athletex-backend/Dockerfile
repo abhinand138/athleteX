@@ -14,12 +14,15 @@ RUN mvn clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-# Create non-root user for security compliance
-RUN addgroup -S athletex && adduser -S athletex -G athletex
-USER athletex:athletex
+# Create athletex group/user and pre-create uploads directory with proper ownership
+RUN addgroup -S athletex && adduser -S athletex -G athletex && \
+    mkdir -p /app/uploads && \
+    chown -R athletex:athletex /app
 
-# Copy compiled JAR artifact from builder stage
-COPY --from=builder /app/target/athletex-backend-0.0.1-SNAPSHOT.jar app.jar
+# Copy compiled JAR artifact from builder stage with athletex ownership
+COPY --from=builder --chown=athletex:athletex /app/target/athletex-backend-0.0.1-SNAPSHOT.jar app.jar
+
+USER athletex:athletex
 
 # Expose backend port
 EXPOSE 8080

@@ -1,16 +1,17 @@
 package com.athletex.backend.controller;
 
+import com.athletex.backend.util.FileStorageUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.*;
 
@@ -19,7 +20,7 @@ import java.util.*;
 @CrossOrigin(origins = "*")
 public class FileUploadController {
 
-    private final Path uploadDir = Paths.get("uploads").toAbsolutePath().normalize();
+    private static final Logger log = LoggerFactory.getLogger(FileUploadController.class);
 
     private static final Set<String> ALLOWED_EXTENSIONS = Set.of(
             "jpg", "jpeg", "png", "webp", "gif", "pdf", "mp4", "mov"
@@ -47,12 +48,13 @@ public class FileUploadController {
         }
 
         try {
-            if (!Files.exists(uploadDir)) {
-                Files.createDirectories(uploadDir);
+            Path targetDir = FileStorageUtil.resolveUploadDirectory();
+            if (!Files.exists(targetDir)) {
+                Files.createDirectories(targetDir);
             }
 
             String safeName = UUID.randomUUID().toString().substring(0, 12) + "_" + originalFilename.replaceAll("[^a-zA-Z0-9._-]", "_");
-            Path targetLocation = uploadDir.resolve(safeName);
+            Path targetLocation = targetDir.resolve(safeName);
             Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
 
             String fileType = "IMAGE";
@@ -71,6 +73,7 @@ public class FileUploadController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (IOException e) {
+            log.error("Failed to store uploaded file: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to store uploaded file: " + e.getMessage()));
         }

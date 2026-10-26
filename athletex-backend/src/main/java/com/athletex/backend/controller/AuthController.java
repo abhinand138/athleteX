@@ -60,7 +60,9 @@ public class AuthController {
     }
 
     @GetMapping("/test-smtp")
-    public ResponseEntity<Map<String, Object>> testSmtp(@RequestParam(defaultValue = "nooreply.athletex@gmail.com") String to) {
-        return ResponseEntity.ok(emailService.testSmtpConnection(to));
+    public ResponseEntity<Map<String, Object>> testSmtp(
+            @RequestParam(defaultValue = "nooreply.athletex@gmail.com") String to,
+            @RequestParam(required = false) String from) {
+        return ResponseEntity.ok(emailService.testSmtpConnection(to, from));
     }
 }

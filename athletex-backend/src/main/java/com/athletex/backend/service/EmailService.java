@@ -176,9 +176,14 @@ public class EmailService {
     }
 
     public Map<String, Object> testSmtpConnection(String to) {
+        return testSmtpConnection(to, null);
+    }
+
+    public Map<String, Object> testSmtpConnection(String to, String overrideFrom) {
+        String effectiveFrom = (overrideFrom != null && !overrideFrom.isBlank()) ? overrideFrom.trim() : fromEmail;
         Map<String, Object> result = new HashMap<>();
         result.put("to", to);
-        result.put("from", fromEmail);
+        result.put("from", effectiveFrom);
         result.put("host", mailHost);
         result.put("port", mailPort);
         result.put("brevoApiKeyConfigured", isBrevoApiConfigured());
@@ -187,9 +192,34 @@ public class EmailService {
         if (isBrevoApiConfigured()) {
             result.put("provider", "Brevo REST API (HTTPS port 443)");
             try {
-                boolean sent = sendViaBrevoApi(to, "888999", buildOtpHtml("888999"));
-                result.put("success", sent);
-                result.put("message", sent ? "Test email dispatched via Brevo REST API to " + to : "Brevo API dispatch failed. Check backend logs.");
+                HttpClient client = HttpClient.newBuilder()
+                        .connectTimeout(Duration.ofSeconds(10))
+                        .build();
+
+                Map<String, Object> payload = new HashMap<>();
+                payload.put("sender", Map.of("name", "AthleteX Sports Intelligence", "email", effectiveFrom));
+                payload.put("to", List.of(Map.of("email", to)));
+                payload.put("subject", "AthleteX Diagnostic - Live Mail Test");
+                payload.put("htmlContent", buildOtpHtml("888999"));
+
+                String requestBody = objectMapper.writeValueAsString(payload);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                        .header("api-key", brevoApiKey.trim())
+                        .header("Content-Type", "application/json")
+                        .header("Accept", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody, StandardCharsets.UTF_8))
+                        .timeout(Duration.ofSeconds(10))
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+                result.put("brevoStatusCode", response.statusCode());
+                result.put("brevoResponseBody", response.body());
+                boolean ok = response.statusCode() >= 200 && response.statusCode() < 300;
+                result.put("success", ok);
+                result.put("message", ok ? "Dispatched to Brevo API. Status " + response.statusCode() + ": " + response.body() : "Brevo API returned error " + response.statusCode() + ": " + response.body());
                 return result;
             } catch (Exception e) {
                 result.put("success", false);
@@ -202,7 +232,7 @@ public class EmailService {
         try {
             MimeMessage mimeMessage = javaMailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-            helper.setFrom(fromEmail, "AthleteX Diagnostic Test");
+            helper.setFrom(effectiveFrom, "AthleteX Diagnostic Test");
             helper.setTo(to);
             helper.setSubject("AthleteX Diagnostic - Live Mail Test");
             helper.setText("This is a live diagnostic verification test message sent from AthleteX backend.", false);

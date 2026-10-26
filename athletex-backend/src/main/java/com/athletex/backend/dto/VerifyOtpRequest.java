@@ -8,7 +8,6 @@ import lombok.Data;
 public class VerifyOtpRequest {
     
     @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
     private String email;
 
     @NotBlank(message = "OTP is required")

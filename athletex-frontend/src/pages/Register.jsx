@@ -57,7 +57,8 @@ export default function Register() {
     setMessage({ type: "", text: "" });
 
     try {
-      const res = await api.post(`/auth/resend-otp?email=${encodeURIComponent(formData.email)}`);
+      const cleanEmail = formData.email.trim();
+      const res = await api.post(`/auth/resend-otp?email=${encodeURIComponent(cleanEmail)}`);
       if (res.data?.message?.toLowerCase().includes("already verified")) {
         setMessage({ 
           type: "success", 
@@ -70,7 +71,7 @@ export default function Register() {
         });
       }
       setResendCooldown(30);
-      await fetchDevOtpInfo(formData.email);
+      await fetchDevOtpInfo(cleanEmail);
     } catch (err) {
       setMessage({ 
         type: "error", 
@@ -130,6 +131,13 @@ export default function Register() {
         phone: formData.phone.trim(),
       };
 
+      setFormData((prev) => ({
+        ...prev,
+        fullName: payload.fullName,
+        email: payload.email,
+        phone: payload.phone
+      }));
+
       const res = await api.post("/auth/register", payload);
       if (typeof res.data === "string" && res.data.toLowerCase().includes("already exists")) {
         setMessage({ 
@@ -143,7 +151,7 @@ export default function Register() {
       
       // Move to OTP step
       setStep(2);
-      fetchDevOtpInfo(formData.email.trim());
+      fetchDevOtpInfo(payload.email);
     } catch (error) {
       setMessage({ 
         type: "error", 
@@ -159,7 +167,10 @@ export default function Register() {
     e.preventDefault();
     setMessage({ type: "", text: "" });
 
-    if (otp.length !== 6) {
+    const cleanOtp = otp.trim();
+    const cleanEmail = formData.email.trim();
+
+    if (cleanOtp.length !== 6) {
       setMessage({ type: "error", text: "OTP must be exactly 6 digits." });
       return;
     }
@@ -167,43 +178,49 @@ export default function Register() {
     setIsLoading(true);
 
     try {
+      // 1. Verify OTP
       await api.post("/auth/verify-otp", {
-        email: formData.email,
-        otp: otp
+        email: cleanEmail,
+        otp: cleanOtp
       });
-
-      // Clear any old session from previous users (e.g. previous athlete)
-      localStorage.removeItem("user");
-      localStorage.removeItem("token");
-
-      // Auto-login to authenticate as the newly created user
-      const loginRes = await api.post("/auth/login", {
-        email: formData.email,
-        password: formData.password
-      });
-
-      if (loginRes.data && loginRes.data.token) {
-        localStorage.setItem("user", JSON.stringify(loginRes.data));
-        localStorage.setItem("token", loginRes.data.token);
-      }
 
       setMessage({ type: "success", text: "Enrollment Verified! Entering Dashboard..." });
 
-      const targetRole = loginRes.data?.role || formData.role;
+      // 2. Clear previous session & Auto-login
+      try {
+        localStorage.removeItem("user");
+        localStorage.removeItem("token");
 
-      setTimeout(() => {
-        if (targetRole === "COACH") {
-          navigate("/coach/dashboard");
-        } else if (targetRole === "ADMIN") {
-          navigate("/admin/dashboard");
-        } else {
-          navigate("/dashboard");
+        const loginRes = await api.post("/auth/login", {
+          email: cleanEmail,
+          password: formData.password
+        });
+
+        if (loginRes.data && loginRes.data.token) {
+          localStorage.setItem("user", JSON.stringify(loginRes.data));
+          localStorage.setItem("token", loginRes.data.token);
         }
-      }, 1000);
+
+        const targetRole = loginRes.data?.role || formData.role;
+
+        setTimeout(() => {
+          if (targetRole === "COACH") {
+            navigate("/coach/dashboard");
+          } else if (targetRole === "ADMIN") {
+            navigate("/admin/dashboard");
+          } else {
+            navigate("/dashboard");
+          }
+        }, 1000);
+      } catch (loginErr) {
+        console.warn("Auto-login note:", loginErr);
+        setMessage({ type: "success", text: "Identity Verified! Redirecting to login portal..." });
+        setTimeout(() => navigate("/login"), 1500);
+      }
     } catch (error) {
       setMessage({ 
         type: "error", 
-        text: getErrorMessage(error, "Verification Failed. Invalid OTP.")
+        text: getErrorMessage(error, "Verification Failed. Invalid OTP code.")
       });
       console.error(error);
     } finally {

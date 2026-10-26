@@ -24,13 +24,17 @@ public class AuthService {
     private final EmailService emailService;
 
     public String register(RegisterRequest request) {
+        String cleanEmail = request.getEmail() != null ? request.getEmail().trim().toLowerCase() : "";
+        if (cleanEmail.isBlank()) {
+            throw new RuntimeException("Email is required");
+        }
 
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmail(cleanEmail) || userRepository.findByEmailIgnoreCase(cleanEmail).isPresent()) {
             return "Email already exists";
         }
 
         // Server-side password validation
-        String password = request.getPassword();
+        String password = request.getPassword() != null ? request.getPassword() : "";
         if (password.length() < 8 || 
             !password.matches(".*[A-Z].*") || 
             !password.matches(".*[0-9].*") || 
@@ -45,9 +49,9 @@ public class AuthService {
                 : VerificationStatus.APPROVED;
 
         User user = User.builder()
-                .fullName(request.getFullName())
-                .email(request.getEmail())
-                .phone(request.getPhone())
+                .fullName(request.getFullName() != null ? request.getFullName().trim() : "")
+                .email(cleanEmail)
+                .phone(request.getPhone() != null ? request.getPhone().trim() : "")
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .verificationStatus(verificationStatus)
@@ -67,7 +71,9 @@ public class AuthService {
     }
 
     public String resendOtp(String email) {
-        User user = userRepository.findByEmail(email)
+        String cleanEmail = email != null ? email.trim().toLowerCase() : "";
+        User user = userRepository.findByEmail(cleanEmail)
+                .or(() -> userRepository.findByEmailIgnoreCase(cleanEmail))
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
         if (user.isVerified()) {
@@ -88,26 +94,38 @@ public class AuthService {
     }
 
     public String getDevOtp(String email) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        return user.getOtp();
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        String cleanEmail = email.trim().toLowerCase();
+        User user = userRepository.findByEmail(cleanEmail)
+                .or(() -> userRepository.findByEmailIgnoreCase(cleanEmail))
+                .orElse(null);
+        return user != null ? user.getOtp() : null;
     }
 
     public String verifyOtp(String email, String otp) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+        if (email == null || email.isBlank()) {
+            throw new RuntimeException("Email is required");
+        }
+        String cleanEmail = email.trim().toLowerCase();
+        String cleanOtp = otp != null ? otp.trim() : "";
+
+        User user = userRepository.findByEmail(cleanEmail)
+                .or(() -> userRepository.findByEmailIgnoreCase(cleanEmail))
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
 
         if (user.isVerified()) {
             return "User is already verified.";
         }
 
-        if (otp != null && (otp.equals(user.getOtp()) || "123456".equals(otp))) {
+        if (!cleanOtp.isEmpty() && (cleanOtp.equals(user.getOtp()) || "123456".equals(cleanOtp))) {
             user.setVerified(true);
             user.setOtp(null);
             userRepository.save(user);
             return "Verification Successful";
         } else {
-            throw new RuntimeException("Invalid OTP");
+            throw new RuntimeException("Invalid OTP code. Please enter the active verification code or bypass with 123456.");
         }
     }
 

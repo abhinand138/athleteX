@@ -15,7 +15,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;
@@ -38,7 +38,8 @@ public class AuthController {
 
     @PostMapping("/resend-otp")
     public ResponseEntity<Map<String, Object>> resendOtp(@RequestParam String email) {
-        String msg = authService.resendOtp(email);
+        String cleanEmail = email != null ? email.trim() : "";
+        String msg = authService.resendOtp(cleanEmail);
         boolean isSmtp = emailService.isSmtpConfigured();
         return ResponseEntity.ok(Map.of(
                 "message", msg,
@@ -48,10 +49,11 @@ public class AuthController {
 
     @GetMapping("/dev-otp")
     public ResponseEntity<Map<String, Object>> getDevOtp(@RequestParam String email) {
-        String otp = authService.getDevOtp(email);
+        String cleanEmail = email != null ? email.trim() : "";
+        String otp = authService.getDevOtp(cleanEmail);
         boolean isSmtp = emailService.isSmtpConfigured();
         return ResponseEntity.ok(Map.of(
-                "email", email,
+                "email", cleanEmail,
                 "otp", otp != null ? otp : "123456",
                 "smtpConfigured", isSmtp
         ));

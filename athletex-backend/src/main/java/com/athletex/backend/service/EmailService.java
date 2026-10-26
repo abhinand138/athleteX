@@ -23,6 +23,12 @@ public class EmailService {
     @Value("${spring.mail.password:}")
     private String mailPassword;
 
+    @Value("${spring.mail.host:smtp.gmail.com}")
+    private String mailHost;
+
+    @Value("${spring.mail.port:587}")
+    private int mailPort;
+
     public String generateOtp() {
         SecureRandom random = new SecureRandom();
         int otp = 100000 + random.nextInt(900000);
@@ -93,5 +99,39 @@ public class EmailService {
             log.warn("=====================================");
             return false;
         }
+    }
+
+    public java.util.Map<String, Object> testSmtpConnection(String to) {
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("to", to);
+        result.put("from", fromEmail);
+        result.put("host", mailHost);
+        result.put("port", mailPort);
+        result.put("passwordConfigured", mailPassword != null && !mailPassword.isBlank());
+        result.put("passwordLength", mailPassword != null ? mailPassword.length() : 0);
+
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(fromEmail, "AthleteX Diagnostic Test");
+            helper.setTo(to);
+            helper.setSubject("AthleteX Diagnostic - Live SMTP Test");
+            helper.setText("This is a live diagnostic verification test message sent from AthleteX backend.", false);
+
+            javaMailSender.send(mimeMessage);
+            result.put("success", true);
+            result.put("message", "Email successfully dispatched to " + to);
+            log.info("Diagnostic test email successfully sent to {}", to);
+        } catch (Exception e) {
+            result.put("success", false);
+            result.put("errorClass", e.getClass().getName());
+            result.put("errorMessage", e.getMessage());
+            Throwable cause = e.getCause();
+            if (cause != null) {
+                result.put("rootCause", cause.getClass().getName() + ": " + cause.getMessage());
+            }
+            log.error("Diagnostic test email failed: {}", e.getMessage(), e);
+        }
+        return result;
     }
 }

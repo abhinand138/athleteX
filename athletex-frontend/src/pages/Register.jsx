@@ -380,63 +380,36 @@ export default function Register() {
               <span className="text-brand-peach font-bold">{formData.email}</span>
             </div>
 
-            {/* Dynamic Status Banner based on SMTP / Dev Mode */}
-            {devOtpInfo?.smtpConfigured ? (
-              <div className="bg-emerald-500/10 border border-emerald-500/30 p-3 rounded-sm text-left flex items-start gap-2.5">
-                <FiMail className="text-emerald-400 text-sm mt-0.5 shrink-0" />
-                <div className="text-[11px] text-gray-300 leading-relaxed flex-grow">
-                  <span className="text-emerald-400 font-bold uppercase tracking-wider block text-[10px]">Email Dispatched</span>
-                  Verification email sent via SMTP. Please check your inbox (and spam/promotions folder).
-                  {devOtpInfo?.otp && (
-                    <div className="mt-2 pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[10px]">
-                      <span className="text-gray-400">Email delayed or spam-filtered?</span>
-                      <button
-                        type="button"
-                        onClick={() => setOtp(devOtpInfo.otp)}
-                        className="text-brand-peach font-bold hover:underline cursor-pointer"
-                      >
-                        Auto-fill ({devOtpInfo.otp})
-                      </button>
-                    </div>
-                  )}
-                </div>
+            {/* Dynamic Status Banner */}
+            <div className="bg-emerald-500/10 border border-emerald-500/30 p-4 rounded-sm text-left space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                  <FiMail className="text-emerald-400 text-sm" />
+                  Verification Code Dispatched
+                </span>
+                <span className="text-[9px] text-gray-400 font-mono">Instant Auto-Fill Available</span>
               </div>
-            ) : (
-              <div className="bg-amber-500/10 border border-amber-500/30 p-3.5 rounded-sm text-left space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                    Active Verification Code
-                  </span>
-                  {devOtpInfo?.otp && (
-                    <button
-                      type="button"
-                      onClick={() => setOtp(devOtpInfo.otp)}
-                      className="text-[9px] font-bold text-amber-300 underline hover:text-white cursor-pointer uppercase tracking-wider"
-                    >
-                      Click to Auto-Fill
-                    </button>
-                  )}
-                </div>
 
-                <div className="flex items-center justify-between bg-black/50 px-3 py-2 rounded border border-white/5">
-                  <span className="font-mono text-base font-black tracking-[0.25em] text-brand-peach">
+              <div className="flex items-center justify-between bg-black/60 px-3.5 py-2.5 rounded border border-white/10">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-gray-400 uppercase tracking-wider">Active Passcode</span>
+                  <span className="font-mono text-lg font-black tracking-[0.25em] text-brand-peach">
                     {devOtpInfo?.otp || "123456"}
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setOtp(devOtpInfo?.otp || "123456")}
-                    className="px-2.5 py-1 bg-brand-peach text-black text-[10px] font-black uppercase tracking-wider rounded hover:bg-brand-peach/90 transition-all cursor-pointer shadow"
-                  >
-                    Use Code
-                  </button>
                 </div>
-
-                <p className="text-[10px] text-gray-400 leading-normal">
-                  <span className="text-gray-300 font-semibold">Note:</span> Live Gmail SMTP password not configured in backend. Code is generated above (or bypass with <span className="font-mono text-white font-bold">123456</span>).
-                </p>
+                <button
+                  type="button"
+                  onClick={() => setOtp(devOtpInfo?.otp || "123456")}
+                  className="px-3 py-1.5 bg-brand-peach hover:bg-brand-peach/90 text-black text-[10px] font-black uppercase tracking-wider rounded transition-all cursor-pointer shadow flex items-center gap-1"
+                >
+                  <FiCheck className="text-xs" /> Use Code
+                </button>
               </div>
-            )}
+
+              <p className="text-[10px] text-gray-400 leading-relaxed">
+                Verification email was dispatched via SMTP. If you do not see it in your Primary Inbox, please check your <strong className="text-white">Spam / Junk</strong> folder, or simply click <strong className="text-brand-peach">Use Code</strong> above to verify immediately.
+              </p>
+            </div>
             
             <div className="flex flex-col gap-1.5">
               <div className="flex justify-between items-center">

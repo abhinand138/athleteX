@@ -55,7 +55,18 @@ export const getMediaUrl = (path) => {
   ) {
     return path;
   }
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+
+  let baseUrl = import.meta.env.VITE_API_BASE_URL || api.defaults?.baseURL;
+
+  // Auto-detect production backend when hosted on Render
+  if (!baseUrl || baseUrl === "/api" || baseUrl === "http://localhost:8080/api") {
+    if (typeof window !== "undefined" && window.location.hostname.includes("onrender.com")) {
+      baseUrl = "https://athletex-backend-qi9g.onrender.com/api";
+    } else {
+      baseUrl = "http://localhost:8080/api";
+    }
+  }
+
   const hostRoot = baseUrl.replace(/\/api\/?$/, "");
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   return `${hostRoot}${cleanPath}`;

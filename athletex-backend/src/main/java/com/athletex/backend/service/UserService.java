@@ -56,19 +56,23 @@ public class UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        user.setFullName(request.getFullName());
-        user.setPhone(request.getPhone());
-        user.setSport(request.getSport());
-        user.setPosition(request.getPosition());
-        user.setAge(request.getAge());
-        user.setGender(request.getGender());
-        user.setHeight(request.getHeight());
-        user.setWeight(request.getWeight());
-        user.setCity(request.getCity());
-        user.setState(request.getState());
-        user.setCountry(request.getCountry());
-        user.setBio(request.getBio());
-        user.setProfileImage(request.getProfileImage());
+        if (request.getFullName() != null && !request.getFullName().isBlank()) {
+            user.setFullName(request.getFullName().trim());
+        }
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            user.setPhone(request.getPhone().trim());
+        }
+        if (request.getSport() != null) user.setSport(request.getSport());
+        if (request.getPosition() != null) user.setPosition(request.getPosition());
+        if (request.getAge() != null) user.setAge(request.getAge());
+        if (request.getGender() != null) user.setGender(request.getGender());
+        if (request.getHeight() != null) user.setHeight(request.getHeight());
+        if (request.getWeight() != null) user.setWeight(request.getWeight());
+        if (request.getCity() != null) user.setCity(request.getCity());
+        if (request.getState() != null) user.setState(request.getState());
+        if (request.getCountry() != null) user.setCountry(request.getCountry());
+        if (request.getBio() != null) user.setBio(request.getBio());
+        if (request.getProfileImage() != null) user.setProfileImage(request.getProfileImage());
 
         if (request.getTitle() != null) user.setTitle(request.getTitle());
         if (request.getSpecialization() != null) user.setSpecialization(request.getSpecialization());
@@ -89,6 +93,25 @@ public class UserService {
         );
 
         return "Profile Updated Successfully";
+    }
+
+    // Update Profile Image Only
+    public String updateProfileImage(String id, String profileImage) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setProfileImage(profileImage);
+        userRepository.save(user);
+
+        activityService.createActivity(
+                user.getId(),
+                "profile_update",
+                "Profile Photo Updated",
+                "You updated your profile picture.",
+                "📸"
+        );
+
+        return "Profile photo updated successfully";
     }
 
     // Update Password

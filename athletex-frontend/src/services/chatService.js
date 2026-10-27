@@ -3,130 +3,46 @@ import api from "./api";
 const getUserId = () => {
   try {
     const user = JSON.parse(localStorage.getItem("user") || "{}");
-    return user.id || "user_1";
+    return user.id || user._id || user.userId || null;
   } catch (e) {
-    return "user_1";
+    return null;
   }
-};
-
-// Default fallback contacts for offline/demo mode
-const fallbackConversations = [
-  {
-    conversationId: "conv_coach_mike",
-    otherUserId: "coach_mike",
-    otherUserName: "Coach Mike",
-    otherUserRole: "COACH",
-    otherUserSport: "Track & Field",
-    lastMessage: "Great form on your 100m sprint today!",
-    lastMessageTime: new Date().toISOString(),
-    unreadCount: 1,
-    isOnline: true
-  },
-  {
-    conversationId: "conv_athlete_alex",
-    otherUserId: "athlete_alex",
-    otherUserName: "Alex Rivera",
-    otherUserRole: "ATHLETE",
-    otherUserSport: "Football",
-    lastMessage: "Schedule updated for tomorrow's recovery run.",
-    lastMessageTime: new Date(Date.now() - 3600000).toISOString(),
-    unreadCount: 0,
-    isOnline: true
-  }
-];
-
-const fallbackMessages = {
-  coach_mike: [
-    {
-      id: "msg_1",
-      conversationId: "conv_coach_mike",
-      senderId: "coach_mike",
-      senderName: "Coach Mike",
-      senderRole: "COACH",
-      recipientId: "user_1",
-      content: "Welcome to AthleteX Chat! How are your legs feeling after yesterday's squat session?",
-      messageType: "TEXT",
-      isRead: true,
-      timestamp: new Date(Date.now() - 7200000).toISOString()
-    },
-    {
-      id: "msg_2",
-      conversationId: "conv_coach_mike",
-      senderId: "coach_mike",
-      senderName: "Coach Mike",
-      senderRole: "COACH",
-      recipientId: "user_1",
-      content: "Great form on your 100m sprint today!",
-      messageType: "TEXT",
-      isRead: false,
-      timestamp: new Date().toISOString()
-    }
-  ],
-  athlete_alex: [
-    {
-      id: "msg_3",
-      conversationId: "conv_athlete_alex",
-      senderId: "athlete_alex",
-      senderName: "Alex Rivera",
-      senderRole: "ATHLETE",
-      recipientId: "user_1",
-      content: "Schedule updated for tomorrow's recovery run.",
-      messageType: "TEXT",
-      isRead: true,
-      timestamp: new Date(Date.now() - 3600000).toISOString()
-    }
-  ]
 };
 
 export const chatService = {
   // Get active conversations list
   getConversations: async () => {
     const userId = getUserId();
+    if (!userId) return [];
     try {
       const res = await api.get("/chat/conversations", {
-        params: userId ? { userId } : {}
+        params: { userId }
       });
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.data && Array.isArray(res.data)) {
         return res.data;
       }
-      return fallbackConversations;
+      return [];
     } catch (err) {
-      console.warn("Backend API unavailable, using chat fallback data.");
-      return fallbackConversations;
+      console.warn("Error loading conversations from backend:", err);
+      return [];
     }
   },
 
   // Get messages with a specific user
   getMessages: async (otherUserId) => {
     const userId = getUserId();
+    if (!userId || !otherUserId) return [];
     try {
       const res = await api.get(`/chat/messages/${otherUserId}`, {
-        params: userId ? { userId } : {}
+        params: { userId }
       });
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      if (res.data && Array.isArray(res.data)) {
         return res.data;
       }
-      return fallbackMessages[otherUserId] || [
-        {
-          id: "msg_demo",
-          senderId: otherUserId,
-          senderName: "Contact",
-          content: "Hello! Let's work on our performance goals.",
-          timestamp: new Date().toISOString(),
-          isRead: true
-        }
-      ];
+      return [];
     } catch (err) {
-      return fallbackMessages[otherUserId] || [
-        {
-          id: "msg_demo",
-          senderId: otherUserId,
-          senderName: "Contact",
-          content: "Hello! Let's work on our performance goals.",
-          timestamp: new Date().toISOString(),
-          isRead: true
-        }
-      ];
+      console.warn("Error loading messages for contact:", otherUserId, err);
+      return [];
     }
   },
 
@@ -183,7 +99,7 @@ export const chatService = {
       });
       return res.data?.unreadCount || 0;
     } catch (err) {
-      return 1;
+      return 0;
     }
   }
 };

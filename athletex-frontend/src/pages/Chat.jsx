@@ -214,9 +214,26 @@ export default function Chat() {
                 Loading contacts...
               </div>
             ) : filteredConversations.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-sm">
-                <p className="font-semibold text-gray-300">No contacts found</p>
-                <p className="text-xs mt-1">Connect with coaches or athletes to start chatting.</p>
+              <div className="p-8 text-center text-gray-400 text-sm flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 mb-3">
+                  <FaUserGraduate className="text-lg" />
+                </div>
+                <p className="font-semibold text-gray-200">
+                  {currentUser.role === "COACH" ? "No athletes assigned yet" : "No coaches assigned yet"}
+                </p>
+                <p className="text-xs text-gray-400 mt-1 max-w-[220px]">
+                  {currentUser.role === "COACH"
+                    ? "Athletes assigned to your training roster will appear here automatically."
+                    : "Connect with a certified coach in the Coach Directory to start chatting."}
+                </p>
+                {currentUser.role !== "COACH" && (
+                  <Link
+                    to="/coaches"
+                    className="mt-4 px-4 py-2 rounded-xl bg-brand-peach/10 text-brand-peach border border-brand-peach/30 text-xs font-bold hover:bg-brand-peach hover:text-black transition"
+                  >
+                    Browse Coaches
+                  </Link>
+                )}
               </div>
             ) : (
               filteredConversations.map((contact) => {
@@ -503,10 +520,24 @@ export default function Chat() {
               <div className="w-20 h-20 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-gray-500 text-3xl mb-4">
                 <FaComments />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">No Active Chat Selected</h3>
-              <p className="text-sm text-gray-400 max-w-sm">
-                Select a contact from the roster on the left to start sending messages and coordinating workouts.
+              <h3 className="text-xl font-bold text-white mb-2">
+                {conversations.length === 0 ? "No Active Conversations" : "No Active Chat Selected"}
+              </h3>
+              <p className="text-sm text-gray-400 max-w-sm mb-5">
+                {conversations.length === 0
+                  ? currentUser.role === "COACH"
+                    ? "You don't have any athletes assigned to your roster yet. When athletes connect with you, their direct chat will appear here."
+                    : "You don't have an assigned coach yet. Head over to the Coach Directory to connect with a coach and begin coordinating your training."
+                  : "Select a contact from the roster on the left to start sending messages and coordinating workouts."}
               </p>
+              {conversations.length === 0 && currentUser.role !== "COACH" && (
+                <Link
+                  to="/coaches"
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-brand-peach to-orange-500 text-black font-extrabold text-sm hover:shadow-[0_0_20px_rgba(238,155,116,0.4)] transition"
+                >
+                  Find a Coach
+                </Link>
+              )}
             </div>
           )}
         </div>

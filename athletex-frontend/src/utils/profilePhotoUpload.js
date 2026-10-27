@@ -59,26 +59,46 @@ export const uploadProfilePhotoFromDevice = async (file, userId, onComplete) => 
     return;
   }
 
+  const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+  const resolvedId = userId || storedUser.id || storedUser._id || storedUser.userId;
+
+  if (!resolvedId) {
+    toast.error("User session not found. Please log in again.");
+    return;
+  }
+
   const toastId = toast.loading("Uploading and saving profile photo...");
 
   try {
     const base64Data = await resizeImage(file, 400, 400);
 
-    // Fetch existing profile to maintain other details
-    const profRes = await api.get(`/users/profile/${userId}`);
-    const existing = profRes.data || {};
+    let saved = false;
 
-    const payload = {
-      ...existing,
-      profileImage: base64Data
-    };
+    // 1. Try dedicated lightweight profile-image endpoint first
+    try {
+      await api.put(`/users/profile-image/${resolvedId}`, { profileImage: base64Data });
+      saved = true;
+    } catch (e1) {
+      console.warn("Direct profile-image endpoint failed, falling back to full profile update:", e1);
+    }
 
-    await api.put(`/users/profile/${userId}`, payload);
+    // 2. Fallback to sanitized general profile endpoint if needed
+    if (!saved) {
+      const profRes = await api.get(`/users/profile/${resolvedId}`);
+      const existing = profRes.data || {};
+      const { id, _id, email, role, ...cleanExisting } = existing;
+
+      const payload = {
+        ...cleanExisting,
+        profileImage: base64Data
+      };
+
+      await api.put(`/users/profile/${resolvedId}`, payload);
+    }
 
     // Update localStorage
-    const stored = JSON.parse(localStorage.getItem("user") || "{}");
     const updated = {
-      ...stored,
+      ...storedUser,
       profileImage: base64Data
     };
     localStorage.setItem("user", JSON.stringify(updated));
@@ -97,6 +117,9 @@ export const uploadProfilePhotoFromDevice = async (file, userId, onComplete) => 
     }
   } catch (err) {
     console.error("Failed to upload profile photo:", err);
-    toast.error("Failed to update profile photo.", { id: toastId });
+    const msg =
+      err.response?.data?.message ||
+      (err.code === "ERR_NETWORK" ? "Cannot connect to server. Is backend running?" : "Failed to update profile photo.");
+    toast.error(msg, { id: toastId });
   }
 };
